@@ -1,0 +1,9 @@
+serial.c:20:5:Serial_wrap	16	static
+serial.c:33:5:Serial_available	16	static
+serial.c:38:9:Serial_read	24	static
+serial.c:50:9:Serial_peek	16	static
+serial.c:60:5:Serial_write	24	static
+serial.c:72:5:Serial_println	24	static
+serial.c:79:5:Serial_print	16	static
+serial.c:84:5:__initRx	16	static
+serial.c:97:5:__initTx	16	static
