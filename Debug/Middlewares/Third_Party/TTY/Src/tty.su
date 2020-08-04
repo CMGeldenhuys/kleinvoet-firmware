@@ -1,8 +1,0 @@
-tty.c:16:5:TTY_init	16	static
-tty.c:29:6:TTY_deint	8	static
-tty.c:34:5:__greet	8	static
-tty.c:39:5:TTY_yield	16	static
-tty.c:85:5:TTY_registerCommand	16	static
-tty.c:98:5:__processCommand	16	static
-tty.c:114:6:__clearCommandBuffer	4	static
-tty.c:121:5:__PS	8	static
