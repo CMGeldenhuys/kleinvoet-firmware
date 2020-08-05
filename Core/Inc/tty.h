@@ -50,7 +50,7 @@ typedef struct {
 	Serial_t* serial;
 }TTY_t;
 
-static TTY_t tty;
+extern TTY_t tty;
 
 int TTY_init(UART_HandleTypeDef* uart);
 int TTY_yield();

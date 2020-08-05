@@ -13,6 +13,8 @@ void __clearCommandBuffer();
 int __processCommand();
 int __PS();
 
+TTY_t tty;
+
 int TTY_init(UART_HandleTypeDef* uart)
 {
 	tty.serial = (Serial_t*) malloc(sizeof(Serial_t));
