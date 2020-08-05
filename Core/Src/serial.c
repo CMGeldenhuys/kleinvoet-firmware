@@ -14,15 +14,15 @@
 
 /** Functions ----------------------------------------------------------------*/
 // Private Function Defs.
-int __initRx(Serial_t* self, UART_HandleTypeDef* uart);
-int __initTx(Serial_t* self, UART_HandleTypeDef* uart);
+int Serial_initRx_(Serial_t* self, UART_HandleTypeDef* uart);
+int Serial_initTx_(Serial_t* self, UART_HandleTypeDef* uart);
 
 int Serial_wrap(Serial_t* self, UART_HandleTypeDef* uart)
 {
 	self->__config.uart = uart;
 
-	if(__initRx(self, uart) > 0
-	&& __initTx(self, uart) > 0 ) {
+	if(Serial_initRx_(self, uart) > 0
+     && Serial_initTx_(self, uart) > 0 ) {
 		return 1;
 	}
 	else {
@@ -81,7 +81,7 @@ int Serial_print(Serial_t* self, const char* str)
 	return Serial_write(self, (uint8_t*)str, strlen(str));
 }
 
-int __initRx(Serial_t* self, UART_HandleTypeDef* uart)
+int Serial_initRx_(Serial_t* self, UART_HandleTypeDef* uart)
 {
 #ifdef SERIAL_RX_DMA
 	self->rx.idx = 0;
@@ -94,7 +94,7 @@ int __initRx(Serial_t* self, UART_HandleTypeDef* uart)
 #endif
 }
 
-int __initTx(Serial_t* self, UART_HandleTypeDef* uart)
+int Serial_initTx_(Serial_t* self, UART_HandleTypeDef* uart)
 {
 #ifdef SERIAL_TX_BLOCKING
 	return 1;

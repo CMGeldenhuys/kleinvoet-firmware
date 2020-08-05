@@ -8,10 +8,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-int __greet();
-void __clearCommandBuffer();
-int __processCommand();
-int __PS();
+int TTY_greet_();
+void TTY_clearCommandBuffer_();
+int TTY_processCommand_();
+int TTY_PS_();
 
 TTY_t tty;
 
@@ -20,11 +20,11 @@ int TTY_init(UART_HandleTypeDef* uart)
 	tty.serial = (Serial_t*) malloc(sizeof(Serial_t));
 	Serial_wrap(tty.serial, uart);
 #ifdef TTY_GREETING
-	__greet();
+  TTY_greet_();
 #endif
-	__clearCommandBuffer();
+  TTY_clearCommandBuffer_();
 	if(!*tty.PS) tty.PS = SERIAL_EOL "> ";
-	__PS();
+  TTY_PS_();
 	return 1;
 }
 
@@ -33,7 +33,7 @@ void TTY_deint()
 	free(tty.serial);
 }
 
-int __greet()
+int TTY_greet_()
 {
 	return Serial_println(tty.serial, TTY_GREETING);
 }
@@ -76,9 +76,9 @@ int TTY_yield()
 			// Terminate command string
 			(*tty.command.pos) = '\0';
 
-			__processCommand();
-			__clearCommandBuffer();
-			__PS();
+      TTY_processCommand_();
+      TTY_clearCommandBuffer_();
+      TTY_PS_();
 		}
 	}
 	return 1;
@@ -102,7 +102,7 @@ int TTY_registerCommand(const char *command, int (*func)(int argc, char *argv[])
 	return idx;
 }
 
-int __processCommand()
+int TTY_processCommand_()
 {
 	//TODO: Split command string into command + args
 	for(size_t idx = 0; idx < TTY_CMD_LST; idx++){
@@ -118,14 +118,14 @@ int __processCommand()
 	return 0;
 }
 
-void __clearCommandBuffer()
+void TTY_clearCommandBuffer_()
 {
 	//TODO: Move buffer to heap (malloc) so can process multiple commands without risk of overwrite
 	tty.command.len = 0;
 	tty.command.pos = tty.command.buffer;
 }
 
-int __PS()
+int TTY_PS_()
 {
 	return Serial_print(tty.serial, tty.PS);
 }

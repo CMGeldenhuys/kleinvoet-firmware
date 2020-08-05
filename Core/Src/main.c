@@ -108,68 +108,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   TTY_init(&huart1);
   TTY_registerCommand("free", &FATFS_free);
-//  Serial_wrap(&serial1, &huart1);
-//  Serial_println(&serial1, "Hello, World!");
-//  FRESULT ret = f_mount(&SDFatFS, SDPath, 1);
-//  if (ret == FR_OK) {
-//    Serial_println(&serial1, "FS mounted successfully!");
-//    FATFS fs; uint64_t free;
-//    ret = f_getfree(SDPath, &free, &fs);
-//    if (ret == FR_OK) {
-//        /* Get total sectors and free sectors */
-//
-//        /* Print the free space (assuming 512 bytes/sector) */
-//        char buf[128];
-//        free *= 512*8;
-//        free = 32000000000;
-//        sprintf(buf, " %5lu MiB available.", free/1024/1024);
-//        Serial_println(&serial1, buf);
-//
-//        uint32_t recTime = free/((4*4+4)*4000);
-//        sprintf(buf, " ~%4lu hours of record time remaining.", recTime/60/60);
-//        Serial_println(&serial1, buf);
-//    }
-//  }
-//  else {
-//      Serial_println(&serial1, "Failed to mount FS...");
-//
-//      if (ret == FR_NO_FILESYSTEM) {
-//          Serial_println(&serial1, "No FS. (Attempting format)");
-//          void *work = malloc(4096*8);
-//
-//          ret = f_mkfs(SDPath, FM_FAT32, 512*8, work, 4096*8);
-//          if (ret == FR_OK) {
-//              Serial_println(&serial1, "Success");
-//          }
-//          free(work);
-//      }
-//
-//  }
-//  if (retSD == FR_OK) {
-//      const char *filName = "TEST.TXT";
-//      retSD = f_open(&SDFile, filName, FA_WRITE | FA_CREATE_ALWAYS);
-//      if (retSD == FR_OK) {
-//          if (f_puts("HELLO, WORLD!", &SDFile) > 0) {
-//              retSD = f_sync(&SDFile);
-//              if (retSD == FR_OK) {
-//                  retSD = f_close(&SDFile);
-//                  if (retSD != FR_OK) for(;;);
-//              }
-//              else {
-//                  for(;;);
-//              }
-//          }
-//          else {
-//              for(;;);
-//          }
-//      }
-//      else {
-//          for(;;);
-//      }
-//  }
-//  else {
-//      for(;;);
-//  }
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -177,8 +116,6 @@ int main(void)
   while (1)
   {
       TTY_yield();
-//      HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-//      HAL_Delay(10);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

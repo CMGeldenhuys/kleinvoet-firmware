@@ -52,7 +52,7 @@ DWORD get_fattime(void)
 }
 
 /* USER CODE BEGIN Application */
-int FATFS_free(int argc, char *argv[])
+int FATFS_free(__unused int argc, __unused char *argv[])
 {
   DWORD freClstr; FATFS *fs;
   FRESULT ret = f_getfree(SDPath, &freClstr, &fs);
@@ -68,6 +68,8 @@ int FATFS_free(int argc, char *argv[])
   }
   return 1;
 }
+
+
 /* USER CODE END Application */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
