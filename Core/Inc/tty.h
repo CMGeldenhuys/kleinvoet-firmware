@@ -12,6 +12,9 @@
 extern "C" {
 #endif
 
+//TODO: REMOVE!!
+#define TTY_PRINTF
+
 #include "stm32f4xx_hal.h"
 #include "serial.h"
 
@@ -29,6 +32,10 @@ extern "C" {
 
 #ifndef TTY_CMD_LST
 #define TTY_CMD_LST 8
+#endif
+
+#ifndef TTY_SCREEN_WIDTH
+#define TTY_SCREEN_WIDTH 80
 #endif
 
 typedef struct {
@@ -56,6 +63,13 @@ int TTY_init(UART_HandleTypeDef* uart);
 int TTY_yield();
 int TTY_registerCommand(const char* command, int (*func)(int argc, char *argv[]));
 int TTY_println(const char *str);
+int TTY_print(const char *str);
+int TTY_write(uint8_t *buf, size_t len);
+int TTY_available();
+uint8_t TTY_read();
+#ifdef TTY_PRINTF
+int TTY_printf(const char* fmt, ...);
+#endif
 
 #ifdef __cplusplus
 }

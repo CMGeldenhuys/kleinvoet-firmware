@@ -8,6 +8,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef TTY_PRINTF
+#include <stdio.h>
+#include <stdarg.h>
+char workBuf_[TTY_SCREEN_WIDTH];
+#endif
+
 int TTY_greet_();
 void TTY_clearCommandBuffer_();
 int TTY_processCommand_();
@@ -89,6 +95,26 @@ int TTY_println(const char *str)
   return Serial_println(tty.serial, str);
 }
 
+int TTY_print(const char *str)
+{
+  return Serial_print(tty.serial, str);
+}
+
+int TTY_write(uint8_t *buf, size_t len)
+{
+  return Serial_write(tty.serial, buf, len);
+}
+
+int TTY_available()
+{
+  return Serial_available(tty.serial);
+}
+
+uint8_t TTY_read()
+{
+  return Serial_read(tty.serial);
+}
+
 int TTY_registerCommand(const char *command, int (*func)(int argc, char *argv[]))
 {
 	static size_t idx = 0;
@@ -101,6 +127,20 @@ int TTY_registerCommand(const char *command, int (*func)(int argc, char *argv[])
 	};
 	return idx;
 }
+
+#ifdef TTY_PRINTF
+int TTY_printf(const char* fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+
+  int len = vsnprintf(workBuf_, TTY_SCREEN_WIDTH, fmt, args);
+  // Clamp length
+  len &= TTY_SCREEN_WIDTH;
+  TTY_write((uint8_t*)workBuf_, len);
+  return len > TTY_SCREEN_WIDTH ? -1 * len : len;
+}
+#endif
 
 int TTY_processCommand_()
 {

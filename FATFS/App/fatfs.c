@@ -59,9 +59,9 @@ int FATFS_free(__unused int argc, __unused char *argv[])
   if (ret == FR_OK) {
     DWORD totSect = (fs->n_fatent - 2) * fs->csize;
     DWORD freSect = freClstr * fs->csize;
-    char buf[128];
-    sprintf(buf, "%10lu MiB total drive space.\r\n%10lu MiB available.", totSect / 2 / 1024, freSect / 2 / 1024);
-    TTY_println(buf);
+
+    TTY_printf("%10lu MiB total drive space.\r\n", totSect / 2 / 1024);
+    TTY_printf("%10lu MiB available.\r\n", freSect / 2 / 1024);
   }
   else {
     // TODO: Handle FS err
