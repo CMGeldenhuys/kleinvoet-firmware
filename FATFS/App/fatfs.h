@@ -28,7 +28,9 @@
 #include "sd_diskio.h" /* defines SD_Driver as external */
 
 /* USER CODE BEGIN Includes */
-
+#include "tty.h"
+//TODO: Move out to serial lib
+#include <stdio.h>
 /* USER CODE END Includes */
 
 extern uint8_t retSD; /* Return value for SD */
@@ -39,7 +41,7 @@ extern FIL SDFile; /* File object for SD */
 void MX_FATFS_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+int FATFS_free(int argc, char *argv[]);
 /* USER CODE END Prototypes */
 #ifdef __cplusplus
 }

@@ -55,6 +55,7 @@ extern TTY_t tty;
 int TTY_init(UART_HandleTypeDef* uart);
 int TTY_yield();
 int TTY_registerCommand(const char* command, int (*func)(int argc, char *argv[]));
+int TTY_println(const char *str);
 
 #ifdef __cplusplus
 }

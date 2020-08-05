@@ -83,8 +83,13 @@ int TTY_yield()
 	}
 	return 1;
 }
+//TODO: Make inline
+int TTY_println(const char *str)
+{
+  return Serial_println(tty.serial, str);
+}
 
-int TTY_registerCommand(const char* command, int (*func)(int argc, char *argv[]))
+int TTY_registerCommand(const char *command, int (*func)(int argc, char *argv[]))
 {
 	static size_t idx = 0;
 	// Run out of command space

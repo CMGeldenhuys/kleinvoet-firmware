@@ -33,6 +33,8 @@ void MX_FATFS_Init(void)
   retSD = FATFS_LinkDriver(&SD_Driver, SDPath);
 
   /* USER CODE BEGIN Init */
+  //TODO: Remove!!
+  retSD = f_mount(&SDFatFS, SDPath, 1);
   /* additional user code for init */
   /* USER CODE END Init */
 }
@@ -50,7 +52,22 @@ DWORD get_fattime(void)
 }
 
 /* USER CODE BEGIN Application */
-
+int FATFS_free(int argc, char *argv[])
+{
+  DWORD freClstr; FATFS *fs;
+  FRESULT ret = f_getfree(SDPath, &freClstr, &fs);
+  if (ret == FR_OK) {
+    DWORD totSect = (fs->n_fatent - 2) * fs->csize;
+    DWORD freSect = freClstr * fs->csize;
+    char buf[128];
+    sprintf(buf, "%10lu MiB total drive space.\r\n%10lu MiB available.", totSect / 2 / 1024, freSect / 2 / 1024);
+    TTY_println(buf);
+  }
+  else {
+    // TODO: Handle FS err
+  }
+  return 1;
+}
 /* USER CODE END Application */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
