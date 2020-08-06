@@ -19,7 +19,7 @@ void TTY_clearCommandBuffer_();
 int TTY_processCommand_();
 int TTY_PS_();
 
-TTY_t tty;
+TTY_t tty = {0};
 
 int TTY_init(UART_HandleTypeDef* uart)
 {
@@ -89,6 +89,7 @@ int TTY_yield()
 	}
 	return 1;
 }
+
 //TODO: Make inline
 int TTY_println(const char *str)
 {
@@ -136,8 +137,8 @@ int TTY_printf(const char* fmt, ...)
 
   int len = vsnprintf(workBuf_, TTY_SCREEN_WIDTH, fmt, args);
   // Clamp length
-  len &= TTY_SCREEN_WIDTH;
-  TTY_write((uint8_t*)workBuf_, len);
+  TTY_write((uint8_t*)workBuf_,
+            len > TTY_SCREEN_WIDTH ?  TTY_SCREEN_WIDTH : len);
   return len > TTY_SCREEN_WIDTH ? -1 * len : len;
 }
 #endif
@@ -151,10 +152,12 @@ int TTY_processCommand_()
 
 		// Match command string
 		if(strcmp((char*) tty.command.buffer, cmd->command) == 0){
+		  // TODO: send args
 			return (*(cmd->func))(0, NULL);
 		}
 	}
 	// Failed to find command
+	// TODO: Report
 	return 0;
 }
 

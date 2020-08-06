@@ -24,9 +24,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "tty.h"
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -107,15 +104,13 @@ int main(void)
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
   TTY_init(&huart1);
-  TTY_registerCommand("free", &FATFS_free);
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-      TTY_yield();
+    TTY_yield();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

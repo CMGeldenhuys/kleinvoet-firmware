@@ -12,30 +12,27 @@
 extern "C" {
 #endif
 
-//TODO: REMOVE!!
-#define TTY_PRINTF
-
 #include "stm32f4xx_hal.h"
 #include "serial.h"
 
 #ifndef TTY_SERVICE_INTERVAL
-#define TTY_SERVICE_INTERVAL 1000
+  #define TTY_SERVICE_INTERVAL 1000
 #endif
 
 #ifndef TTY_GREETING
-#define TTY_GREETING "Hello, World!"
+  #define TTY_GREETING "Hello, World!"
 #endif
 
 #ifndef TTY_CMD_BUF
-#define TTY_CMD_BUF 128
+  #define TTY_CMD_BUF 128
 #endif
 
 #ifndef TTY_CMD_LST
-#define TTY_CMD_LST 8
+  #define TTY_CMD_LST 8
 #endif
 
 #ifndef TTY_SCREEN_WIDTH
-#define TTY_SCREEN_WIDTH 80
+  #define TTY_SCREEN_WIDTH 80
 #endif
 
 typedef struct {
@@ -67,6 +64,9 @@ int TTY_print(const char *str);
 int TTY_write(uint8_t *buf, size_t len);
 int TTY_available();
 uint8_t TTY_read();
+
+// TODO: Find fix for linker to pick up
+#define TTY_PRINTF
 #ifdef TTY_PRINTF
 int TTY_printf(const char* fmt, ...);
 #endif

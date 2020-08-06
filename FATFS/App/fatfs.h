@@ -41,6 +41,7 @@ void MX_FATFS_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 int FATFS_free(__unused int argc, char *argv[]);
+int FATFS_mount(__unused int argc, __unused char *argv[]);
 /* USER CODE END Prototypes */
 #ifdef __cplusplus
 }

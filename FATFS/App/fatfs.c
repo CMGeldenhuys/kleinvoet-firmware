@@ -24,7 +24,7 @@ FATFS SDFatFS;    /* File system object for SD logical drive */
 FIL SDFile;       /* File object for SD */
 
 /* USER CODE BEGIN Variables */
-
+int FATFS_errHandle_(FRESULT ret);
 /* USER CODE END Variables */
 
 void MX_FATFS_Init(void)
@@ -33,9 +33,10 @@ void MX_FATFS_Init(void)
   retSD = FATFS_LinkDriver(&SD_Driver, SDPath);
 
   /* USER CODE BEGIN Init */
-  //TODO: Remove!!
-  retSD = f_mount(&SDFatFS, SDPath, 1);
   /* additional user code for init */
+  TTY_registerCommand("free", &FATFS_free);
+  TTY_registerCommand("mount", &FATFS_mount);
+
   /* USER CODE END Init */
 }
 
@@ -64,8 +65,26 @@ int FATFS_free(__unused int argc, __unused char *argv[])
     TTY_printf("%10lu MiB available.\r\n", freSect / 2 / 1024);
   }
   else {
-    // TODO: Handle FS err
+    FATFS_errHandle_(ret);
   }
+  return 1;
+}
+
+int FATFS_mount(__unused int argc, __unused char *argv[])
+{
+  FRESULT  ret = f_mount(&SDFatFS, SDPath, 1);
+  if (ret == FR_OK) {
+    TTY_println("SD Card mounted successfully");
+    return 1;
+  }
+  else {
+    TTY_println("Failed to mount SD Card");
+    return FATFS_errHandle_(ret);
+  }
+}
+
+int FATFS_errHandle_(__unused FRESULT ret)
+{
   return 1;
 }
 
