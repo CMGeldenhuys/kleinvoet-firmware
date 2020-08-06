@@ -24,6 +24,8 @@ FATFS SDFatFS;    /* File system object for SD logical drive */
 FIL SDFile;       /* File object for SD */
 
 /* USER CODE BEGIN Variables */
+FIL LogFile;
+
 int FATFS_errHandle_(FRESULT ret);
 /* USER CODE END Variables */
 
@@ -35,8 +37,19 @@ void MX_FATFS_Init(void)
   /* USER CODE BEGIN Init */
   /* additional user code for init */
   TTY_registerCommand("free", &FATFS_free);
-  TTY_registerCommand("mount", &FATFS_mount);
-
+  FRESULT ret = f_mount(&SDFatFS, SDPath, 1);
+  if (ret == FR_OK) {
+    // Open all files
+    ret = f_open(&LogFile, "tmp.log", FA_WRITE|FA_CREATE_ALWAYS);
+    if (ret != FR_OK) {
+      //TODO: HANDLE FAIL TO OPEN
+      FATFS_errHandle_(ret);
+    }
+  }
+  else {
+    //TODO: HANDLE FAILED MOUNT!
+    FATFS_errHandle_(ret);
+  }
   /* USER CODE END Init */
 }
 
@@ -70,25 +83,33 @@ int FATFS_free(__unused int argc, __unused char *argv[])
   return 1;
 }
 
-int FATFS_mount(__unused int argc, __unused char *argv[])
-{
-  FRESULT  ret = f_mount(&SDFatFS, SDPath, 1);
-  if (ret == FR_OK) {
-    TTY_println("SD Card mounted successfully");
-    return 1;
-  }
-  else {
-    TTY_println("Failed to mount SD Card");
-    return FATFS_errHandle_(ret);
-  }
-}
-
 int FATFS_errHandle_(__unused FRESULT ret)
 {
-  return 1;
+  //TODO: Implement
+  for(;;);
+  return -1;
 }
 
+/* LOG CODE START Application */
+int LOG_write(uint8_t *buf, size_t len)
+{
+  UINT bytesWritten; FRESULT ret;
 
+  ret = f_write(&LogFile, buf, len, &bytesWritten);
+
+  if (ret != FR_OK) return FATFS_errHandle_(ret);
+  else return bytesWritten;
+}
+
+int LOG_flush()
+{
+  FRESULT ret;
+
+  ret = f_sync(&LogFile);
+  if(ret != FR_OK) return FATFS_errHandle_(ret);
+  else return 1;
+}
+/* LOG CODE END Application */
 /* USER CODE END Application */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -1,4 +1,3 @@
-#include <limits.h>
 /**
   ******************************************************************************
   * @file   fatfs.h
@@ -40,8 +39,8 @@ extern FIL SDFile; /* File object for SD */
 void MX_FATFS_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-int FATFS_free(__unused int argc, char *argv[]);
-int FATFS_mount(__unused int argc, __unused char *argv[]);
+int FATFS_free(int argc, char *argv[]);
+int FATFS_mount();
 /* USER CODE END Prototypes */
 #ifdef __cplusplus
 }
