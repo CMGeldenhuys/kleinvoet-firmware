@@ -29,6 +29,8 @@
 
 /* USER CODE BEGIN Includes */
 #include "tty.h"
+
+#define FATFS_EOL SERIAL_EOL
 /* USER CODE END Includes */
 
 extern uint8_t retSD; /* Return value for SD */

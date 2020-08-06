@@ -21,7 +21,7 @@ int LOG_log(const char *funcName, LOG_Lvl_e lvl, char *fmt, ...)
   va_start(args, fmt);
 
   // Create working buffer
-  char workBuf[LOG_MSG_INFO_LEN + LOG_MSG_LEN];
+  char workBuf[LOG_MSG_INFO_LEN + LOG_MSG_LEN + sizeof(LOG_EOL)];
   int infoLen = LOG_timestamp_(funcName, lvl, workBuf);
 
   if (infoLen <= 0) return infoLen;
@@ -36,8 +36,11 @@ int LOG_log(const char *funcName, LOG_Lvl_e lvl, char *fmt, ...)
   // Clamp msgLen to max
   if (msgLen > LOG_MSG_LEN) msgLen = LOG_MSG_LEN;
 
+  strcat(workBuf+msgLen, LOG_EOL);
+  // Remove NULL termination since now byte array
+  size_t len = msgLen + infoLen + sizeof(LOG_EOL) - 1;
   // Persist Log entry
-  int bytesWritten = LOG_write((uint8_t *) workBuf, (size_t) (msgLen + infoLen));
+  int bytesWritten = LOG_write((uint8_t *) workBuf, len);
   if ( bytesWritten > 0) {
     if (lvl == LOG_ERR){
       // Write out Log cache/buffer
@@ -51,15 +54,14 @@ int LOG_log(const char *funcName, LOG_Lvl_e lvl, char *fmt, ...)
 
 int LOG_timestamp_(const char* funcName, LOG_Lvl_e lvl, char *buf)
 {
-  // TODO: Get RTC time
   RTC_TimeTypeDef sTime = {0};
   RTC_DateTypeDef sDate = {0};
 
-  HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
   HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+  HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
 
   return snprintf(buf, LOG_MSG_INFO_LEN,
-                     "[%4s:%.9s] %02d-%02d-%02d %02d:%02d:%02d - ",
+                     "[%4s:%-16.16s] %02d-%02d-%02d %02d:%02d:%02d - ",
                      LOG_Lvl_str_[lvl], funcName,
                      sDate.Year, sDate.Month, sDate.Date,
                      sTime.Hours, sTime.Minutes, sTime.Seconds

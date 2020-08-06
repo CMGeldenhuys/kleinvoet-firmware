@@ -5,6 +5,7 @@
  *      Author: CM Geldenhuys
  */
 #include "tty.h"
+#include "logger.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -153,6 +154,7 @@ int TTY_processCommand_()
 		// Match command string
 		if(strcmp((char*) tty.command.buffer, cmd->command) == 0){
 		  // TODO: send args
+		  ERR("Command received '%s'", cmd->command);
 			return (*(cmd->func))(0, NULL);
 		}
 	}
