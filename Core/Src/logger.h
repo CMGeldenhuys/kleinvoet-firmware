@@ -10,10 +10,29 @@
 #include <string.h>
 #include "stm32f4xx_hal.h"
 
-#define DBUG(msg, ...) LOG_log(__func__, LOG_DEBUG, (msg), ##__VA_ARGS__)
-#define INFO(msg, ...) LOG_log(__func__, LOG_INFO, (msg), ##__VA_ARGS__)
-#define WARN(msg, ...) LOG_log(__func__, LOG_WARN, (msg), ##__VA_ARGS__)
-#define ERR(msg, ...) LOG_log(__func__, LOG_ERR, (msg), ##__VA_ARGS__)
+#if !defined(DEBUG) || !defined(LOG_LEVEL_INFO) || !defined(LOG_LEVEL_WARN)
+#define LOG_LEVEL_WARN
+#endif
+
+#if defined(DEBUG)
+#define DBUG(msg, ...) LOG_log(__func__, LOG_DEBUG, (msg), ##__VA_ARGS__);
+#else
+#define DBUG(msg, ...)
+#endif
+
+#if defined(DEBUG) || defined(LOG_LEVEL_INFO)
+#define INFO(msg, ...) LOG_log(__func__, LOG_INFO, (msg), ##__VA_ARGS__);
+#else
+#define INFO(msg, ...)
+#endif
+
+#if defined(DEBUG) || defined(LOG_LEVEL_INFO) || defined(LOG_LEVEL_WARN)
+#define WARN(msg, ...) LOG_log(__func__, LOG_WARN, (msg), ##__VA_ARGS__);
+#else
+#define WARN(msg, ...)
+#endif
+
+#define ERR(msg, ...) LOG_log(__func__, LOG_ERR, (msg), ##__VA_ARGS__);
 
 #ifndef LOG_BUF_LEN
   #define LOG_BUF_LEN 64
