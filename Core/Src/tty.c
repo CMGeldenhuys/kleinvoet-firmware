@@ -26,10 +26,11 @@ int TTY_init(UART_HandleTypeDef* uart)
 {
 	tty.serial = (Serial_t*) malloc(sizeof(Serial_t));
 	Serial_wrap(tty.serial, uart);
+  TTY_clearCommandBuffer_();
 #ifdef TTY_GREETING
   TTY_greet_();
+  TTY_registerCommand("greet", &TTY_greet_);
 #endif
-  TTY_clearCommandBuffer_();
 	if(!*tty.PS) tty.PS = SERIAL_EOL "> ";
   TTY_PS_();
 	return 1;
@@ -173,4 +174,9 @@ void TTY_clearCommandBuffer_()
 int TTY_PS_()
 {
 	return Serial_print(tty.serial, tty.PS);
+}
+
+int LOG_altWrite( uint8_t *buf,  size_t len)
+{
+  return Serial_write(tty.serial, buf, len);
 }
