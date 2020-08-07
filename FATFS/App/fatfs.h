@@ -29,6 +29,7 @@
 
 /* USER CODE BEGIN Includes */
 #include "tty.h"
+#include "logger.h"
 
 #define FATFS_EOL SERIAL_EOL
 /* USER CODE END Includes */

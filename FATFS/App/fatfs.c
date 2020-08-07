@@ -36,6 +36,7 @@ void MX_FATFS_Init(void)
 
   /* USER CODE BEGIN Init */
   /* additional user code for init */
+  // NB: CANT CALL LOGGING YET AS IT HAS NOT BEEN INIT.
   TTY_registerCommand("free", &FATFS_free);
   FRESULT ret = f_mount(&SDFatFS, SDPath, 1);
   if (ret == FR_OK) {
@@ -83,11 +84,91 @@ int FATFS_free(__unused int argc, __unused char *argv[])
   return 1;
 }
 
-int FATFS_errHandle_(__unused FRESULT ret)
+int FATFS_errHandle_(FRESULT ret)
 {
-  //TODO: Implement
-  for(;;);
-  return -1;
+  switch (ret){
+
+    case FR_OK:
+    {
+      DBUG("Error handler called on OK value")
+      break;
+    }
+    case FR_DISK_ERR:
+    case FR_INT_ERR:
+    {
+      ERR("Disk Error!")
+      break;
+    }
+
+    case FR_NOT_READY:
+    {
+      ERR("FS not ready!")
+      break;
+    }
+
+    case FR_INVALID_OBJECT:
+    case FR_NO_PATH:
+    case FR_NO_FILE:
+    case FR_INVALID_NAME:
+    {
+      WARN("No such file/path/obj")
+      break;
+    }
+
+    case FR_LOCKED:
+    case FR_WRITE_PROTECTED:
+    case FR_DENIED:
+    {
+      WARN("Access denied!")
+      break;
+    }
+
+    case FR_EXIST:
+    {
+      INFO("File exists")
+      break;
+    }
+
+    case FR_INVALID_DRIVE:
+    case FR_NOT_ENABLED:
+    case FR_NO_FILESYSTEM:
+    case FR_MKFS_ABORTED:
+    {
+      ERR("Invalid FS")
+      break;
+    }
+    case FR_TIMEOUT:
+    {
+      WARN("FS timed out")
+      break;
+    }
+
+    case FR_NOT_ENOUGH_CORE:
+    {
+      ERR("Out of memory")
+      break;
+    }
+
+    case FR_TOO_MANY_OPEN_FILES:
+    {
+      WARN("Too many files open")
+      break;
+    }
+
+    case FR_INVALID_PARAMETER:
+    {
+      DBUG("Invalid parameters")
+      break;
+    }
+
+    default:
+    {
+      DBUG("Unknown Err")
+      break;
+    }
+  }
+
+  return 0;
 }
 
 /* LOG CODE START Application */

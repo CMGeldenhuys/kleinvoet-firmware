@@ -111,8 +111,8 @@ int main(void)
   // Give time for RTC to init properly
   HAL_RTC_WaitForSynchro(&hrtc);
   TTY_init(&huart1);
+  // Run Logging test
   DBUG("Hello, World.")
-  HAL_Delay(2000);
   INFO("Hello, World!")
   WARN("HELLO, World!")
   ERR("HELLO, WORLD!")
