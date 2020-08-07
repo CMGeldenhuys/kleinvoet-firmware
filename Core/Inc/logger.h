@@ -46,7 +46,7 @@
   #define LOG_EOL "\r\n"
 #endif
 // -1 to account for NULL termination
-#define LOG_MSG_INFO_LEN (sizeof("[LEVL:function_name___] YYYY-MM-DD HH:mm:ss - ") - 1)
+#define LOG_MSG_INFO_LEN (sizeof("[LEVL:function_name___] YYYY-MM-DD HH:mm:ss.uuu - ") - 1)
 
 typedef enum {
     LOG_DEBUG,

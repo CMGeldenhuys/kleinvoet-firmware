@@ -57,15 +57,15 @@ int LOG_timestamp_(const char* funcName, LOG_Lvl_e lvl, char *buf)
   RTC_TimeTypeDef sTime = {0};
   RTC_DateTypeDef sDate = {0};
 
-  HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
-  HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+  HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BCD);
+  HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BCD);
 
   return snprintf(buf, LOG_MSG_INFO_LEN,
-                     "[%4s:%-16.16s] %02d-%02d-%02d %02d:%02d:%02d - ",
+                     "[%4s:%-16.16s] %02x-%02x-%02x %02x:%02x:%02x.%-3lu - ",
                      LOG_Lvl_str_[lvl], funcName,
                      sDate.Year, sDate.Month, sDate.Date,
-                     sTime.Hours, sTime.Minutes, sTime.Seconds
-           );
+                     sTime.Hours, sTime.Minutes, sTime.Seconds, sTime.SubSeconds
+                 );
 }
 
 __WEAK int LOG_write(__unused uint8_t *buf, __unused size_t len)
