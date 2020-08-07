@@ -154,7 +154,7 @@ int TTY_processCommand_()
 		// Match command string
 		if(strcmp((char*) tty.command.buffer, cmd->command) == 0){
 		  // TODO: send args
-		  ERR("Command received '%s'", cmd->command);
+		  DBUG("Command received '%s'", cmd->command)
 			return (*(cmd->func))(0, NULL);
 		}
 	}

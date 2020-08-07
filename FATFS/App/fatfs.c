@@ -185,7 +185,7 @@ int LOG_write(uint8_t *buf, size_t len)
 int LOG_flush()
 {
   FRESULT ret;
-
+  DBUG("Log cache flushed")
   ret = f_sync(&LogFile);
   if(ret != FR_OK) return FATFS_errHandle_(ret);
   else return 1;
