@@ -15,14 +15,6 @@ static const char * LOG_Lvl_str_[] = {
 
 int LOG_timestamp_(const char* funcName, LOG_Lvl_e lvl, char *buf);
 
-int Log_state = 0;
-
-int LOG_init()
-{
-  DBUG("Logger inited")
-  return Log_state = 1;
-}
-
 int LOG_log(const char *funcName, LOG_Lvl_e lvl, char *fmt, ...)
 {
   va_list args;
@@ -48,15 +40,14 @@ int LOG_log(const char *funcName, LOG_Lvl_e lvl, char *fmt, ...)
   // Remove NULL termination since now byte array
   size_t len = msgLen + infoLen + sizeof(LOG_EOL) - 1;
   // Persist Log entry
-  int bw; //BytesWritten
-  if (Log_state) bw = LOG_write((uint8_t *) workBuf, len);
-  else bw = LOG_altWrite((uint8_t *) workBuf, len);
+  int bytesWritten = LOG_write((uint8_t *) workBuf, len);
 
-  if (Log_state && bw > 0 && lvl == LOG_ERR) {
+  if (bytesWritten > 0 && lvl == LOG_ERR) {
+    // On Err force Log cache to be written
     // Write out Log cache/buffer
     LOG_flush();
   }
-  return bw;
+  return bytesWritten;
 }
 
 int LOG_timestamp_(const char* funcName, LOG_Lvl_e lvl, char *buf)
@@ -81,12 +72,6 @@ __WEAK int LOG_write(__unused uint8_t *buf, __unused size_t len)
 }
 
 __WEAK int LOG_flush()
-{
-  return -1;
-}
-// TODO: Replace function overrides with registered callbacks
-// This way one can switch between logging to SD and Serial easily
-__WEAK int LOG_altWrite(__unused uint8_t *buf, __unused size_t len)
 {
   return -1;
 }

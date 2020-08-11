@@ -60,7 +60,6 @@ int LOG_init();
 int LOG_log(const char *funcName, LOG_Lvl_e lvl, char *format, ...);
 int LOG_write(uint8_t *buf, size_t len);
 int LOG_flush();
-int LOG_altWrite( uint8_t *buf,  size_t len);
 
 
 #endif //FIRMWARE_LOGGER_H

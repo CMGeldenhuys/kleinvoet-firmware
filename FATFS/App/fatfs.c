@@ -172,6 +172,7 @@ int FATFS_errHandle_(FRESULT ret)
 }
 
 /* LOG CODE START Application */
+#ifndef DEBUG
 int LOG_write(uint8_t *buf, size_t len)
 {
   UINT bytesWritten; FRESULT ret;
@@ -190,6 +191,7 @@ int LOG_flush()
   if(ret != FR_OK) return FATFS_errHandle_(ret);
   else return 1;
 }
+#endif
 /* LOG CODE END Application */
 /* USER CODE END Application */
 
