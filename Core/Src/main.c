@@ -25,6 +25,7 @@
 /* USER CODE BEGIN Includes */
 #include "tty.h"
 #include "logger.h"
+#include "wave.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -119,6 +120,8 @@ int main(void)
   WARN("HELLO, World!")
   HAL_Delay(1000);
   ERR("HELLO, WORLD!")
+
+  WAVE_header();
   /* USER CODE END 2 */
 
   /* Infinite loop */
