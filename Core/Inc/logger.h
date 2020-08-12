@@ -39,7 +39,7 @@
 #endif
 
 #ifndef LOG_MSG_LEN
-  #define LOG_MSG_LEN 40
+  #define LOG_MSG_LEN 1024
 #endif
 
 #ifndef LOG_EOL
