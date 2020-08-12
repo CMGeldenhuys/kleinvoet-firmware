@@ -2,89 +2,86 @@
 // Created by CM Geldenhuys on 2020/08/11.
 //
 #include "wave.h"
-#include "fatfs.h"
 
-const static DWORD WAVE_CID_RIFF = 0x46464952; // "RIFF"
-const static DWORD WAVE_CID_FMT  = 0x20746d66; // "fmt "
-const static DWORD WAVE_CID_DATA = 0x61746164; // "data"
-
-const static DWORD WAVE_RIFF_FORMAT = 0x45564157; // "WAVE"
-
-const static WORD WAVE_AUDIO_PCM = 1u;
+int WAVE_header_ (WAVE_t *wav);
 
 
-typedef struct {
-    DWORD ChunkID;
-    DWORD ChunkSize;
-    DWORD Format;
-}                 WAVE_RIFF_chunk_t;
-
-typedef struct {
-    DWORD SubchunkID;
-    DWORD SubchunkSize;
-    WORD  AudioFormat;
-    WORD  NumChannels;
-    DWORD SampleRate;
-    DWORD ByteRate;
-    WORD  BlockAlign;
-    WORD  BitsPerSample;
-}                 WAVE_fmt_subchunk_t;
-
-//TODO: remove
-#define nSamples  64
-#define nChannels 2
-
-typedef struct {
-    DWORD SubchunkID;
-    DWORD SubchunkSize;
-    BYTE  Data[nSamples][nChannels];
-}                 WAVE_data_subchunk_t;
-
-typedef struct {
-    WAVE_RIFF_chunk_t    RIFF_chunk;
-    WAVE_fmt_subchunk_t  fmt_chunk;
-    WAVE_data_subchunk_t data_chunk;
-}                 WAVE_file_t;
-
-
-void WAVE_genData_ (BYTE data[nSamples][nChannels])
+int WAVE_createFile (WAVE_t *wav, const char *fname)
 {
-  for (size_t sample = 0; sample < nSamples; sample++) {
-    for (size_t channel = 0; channel < nChannels; channel++) {
-      data[sample][channel] = (BYTE) sample;
-    }
-  }
+  //TODO: Handle errors
+
+  if (wav->fp) WAVE_close(wav);
+
+  DBUG("Allocating memory to WAVE file");
+  wav->fp = (FIL *) malloc(sizeof(FIL));
+
+  WAVE_header_(wav);
+
+  FATFS_open(wav->fp, fname, FA_WRITE | FA_CREATE_ALWAYS);
+  // TODO: Expand file to 4GB
+  // Need to check for space
+
+  FATFS_write(wav->fp, wav->header, sizeof(WAVE_header_t), 1);
+  return 1;
 }
 
-WAVE_file_t wav;
-FIL         file;
-
-int WAVE_header ()
+int WAVE_header_ (WAVE_t *wav)
 {
-  WAVE_genData_(wav.data_chunk.Data);
+
+  // Prevent memory leak if file already exists, otherwise reuse header
+  if (!wav->header) {
+    DBUG("Allocating memory to WAVE file header");
+    wav->header = (WAVE_header_t *) malloc(sizeof(WAVE_header_t));
+  }
+
 
   // RIFF Chunk
-  wav.RIFF_chunk.ChunkID   = WAVE_CID_RIFF;
-  wav.RIFF_chunk.ChunkSize = 36 + nSamples * nChannels;
-  wav.RIFF_chunk.Format    = WAVE_RIFF_FORMAT;
+  WAVE_RIFF_chunk_t *RIFF_chunk = &wav->header->RIFF_chunk;
+  RIFF_chunk->ChunkID   = WAVE_CID_RIFF;
+  RIFF_chunk->ChunkSize = 36; //TODO: Update with number of samples
+  RIFF_chunk->Format    = WAVE_RIFF_FORMAT;
+
+
 
   // fmt Subchunk
-  wav.fmt_chunk.SubchunkID    = WAVE_CID_FMT;
-  wav.fmt_chunk.SubchunkSize  = 16;
-  wav.fmt_chunk.AudioFormat   = WAVE_AUDIO_PCM;
-  wav.fmt_chunk.NumChannels   = nChannels;
-  wav.fmt_chunk.SampleRate    = 16;
-  wav.fmt_chunk.ByteRate      = 16 * nChannels * 8 / 8;
-  wav.fmt_chunk.BlockAlign    = nChannels;
-  wav.fmt_chunk.BitsPerSample = 8;
+  WAVE_fmt_subchunk_t *fmt_chunk = &wav->header->fmt_chunk;
+  fmt_chunk->SubchunkID    = WAVE_CID_FMT;
+  fmt_chunk->SubchunkSize  = 16;
+  fmt_chunk->AudioFormat   = WAVE_AUDIO_PCM;
+  fmt_chunk->NumChannels   = WAVE_NCHANNELS;
+  fmt_chunk->SampleRate    = WAVE_SAMPLE_RATE;
+  fmt_chunk->ByteRate      = 16 / 8 * WAVE_NCHANNELS * WAVE_BPS;
+  fmt_chunk->BlockAlign    = WAVE_NCHANNELS;
+  fmt_chunk->BitsPerSample = WAVE_BPS;
+
+
 
   // data Subchunk
-  wav.data_chunk.SubchunkID   = WAVE_CID_DATA;
-  wav.data_chunk.SubchunkSize = nSamples * nChannels * 8 / 8;
+  WAVE_data_subchunk_t *data_chunk = &wav->header->data_chunk;
+  data_chunk->SubchunkID   = WAVE_CID_DATA;
+  data_chunk->SubchunkSize = 0; //TODO: Update with data size
 
-  DBUG("WAVE Header created")
-  FATFS_open(&file, "test.wav", FA_WRITE | FA_CREATE_ALWAYS);
-  FATFS_write(&file, &wav, sizeof(wav), 1);
+  DBUG("WAVE Header created");
+//  FATFS_open(wav->fp, "test.wav", FA_WRITE | FA_CREATE_ALWAYS);
+//  FATFS_write(wav->fp, &wav, sizeof(wav), 1);
   return 1;
+}
+
+int WAVE_close (WAVE_t *wav)
+{
+  if (FATFS_close(wav->fp) > 0) {
+    INFO("Freeing WAV File resources");
+
+    // Prevent memory leak
+    free(wav->header);
+    free(wav->fp);
+
+    // Clear references
+    wav->header = NULL;
+    wav->fp     = NULL;
+
+    return 1;
+  }
+  else return 0;
 }
 

@@ -90,11 +90,11 @@ int FATFS_open (FIL *fp, const TCHAR *path, BYTE mode)
 {
   FRESULT res = f_open(fp, path, mode);
   if (res == FR_OK) {
-    DBUG("Successfully opened '%s'", path)
+    DBUG("Successfully opened '%s'", path);
     return 1;
   }
   else {
-    WARN("Failed to open '%s'", path)
+    WARN("Failed to open '%s'", path);
     return FATFS_errHandle_(res);
   }
 }
@@ -107,14 +107,14 @@ int FATFS_write (FIL *fp, const void *buff, size_t len, int sync)
   res = f_write(fp, buff, len, &bw);
 
   if (res == FR_OK) {
-    DBUG("Wrote %u bytes to file", bw)
-    if (sync > 1) {
-      DBUG("Forcing cache to flush to card")
+    DBUG("Wrote %u bytes to file", bw);
+    if (sync > 0) {
+      DBUG("Forcing cache to flush to card");
       res = f_sync(fp);
       if (res != FR_OK) return FATFS_errHandle_(res);
     }
     else {
-      DBUG("Unsafe write operation, changes not persisted")
+      DBUG("Unsafe write operation, changes not persisted");
     }
     return bw;
   }
@@ -130,7 +130,7 @@ int FATFS_close (FIL *fp)
   res = f_close(fp);
 
   if (res == FR_OK) {
-    DBUG("File closed successfully")
+    DBUG("File closed successfully");
     return 1;
   }
   else
@@ -143,17 +143,17 @@ int FATFS_errHandle_ (FRESULT res)
   switch (res) {
 
     case FR_OK: {
-      DBUG("Error handler called on OK value")
+      DBUG("Error handler called on OK value");
       break;
     }
     case FR_DISK_ERR:
     case FR_INT_ERR: {
-      ERR("Disk Error!")
+      ERR("Disk Error!");
       break;
     }
 
     case FR_NOT_READY: {
-      ERR("FS not ready!")
+      ERR("FS not ready!");
       break;
     }
 
@@ -161,19 +161,19 @@ int FATFS_errHandle_ (FRESULT res)
     case FR_NO_PATH:
     case FR_NO_FILE:
     case FR_INVALID_NAME: {
-      WARN("No such file/path/obj")
+      WARN("No such file/path/obj");
       break;
     }
 
     case FR_LOCKED:
     case FR_WRITE_PROTECTED:
     case FR_DENIED: {
-      WARN("Access denied!")
+      WARN("Access denied!");
       break;
     }
 
     case FR_EXIST: {
-      INFO("File exists")
+      INFO("File exists");
       break;
     }
 
@@ -181,31 +181,31 @@ int FATFS_errHandle_ (FRESULT res)
     case FR_NOT_ENABLED:
     case FR_NO_FILESYSTEM:
     case FR_MKFS_ABORTED: {
-      ERR("Invalid FS")
+      ERR("Invalid FS");
       break;
     }
     case FR_TIMEOUT: {
-      WARN("FS timed out")
+      WARN("FS timed out");
       break;
     }
 
     case FR_NOT_ENOUGH_CORE: {
-      ERR("Out of memory")
+      ERR("Out of memory");
       break;
     }
 
     case FR_TOO_MANY_OPEN_FILES: {
-      WARN("Too many files open")
+      WARN("Too many files open");
       break;
     }
 
     case FR_INVALID_PARAMETER: {
-      DBUG("Invalid parameters")
+      DBUG("Invalid parameters");
       break;
     }
 
     default: {
-      DBUG("Unknown Err")
+      DBUG("Unknown Err");
       break;
     }
   }

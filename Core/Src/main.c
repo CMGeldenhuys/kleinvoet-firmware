@@ -113,15 +113,17 @@ int main(void)
   TTY_init(&huart1);
   TTY_registerCommand("sync", &LOG_flush);
   // Run Logging test
-  DBUG("Hello, World.")
+  DBUG("Hello, World.");
   HAL_Delay(10);
-  INFO("Hello, World!")
+  INFO("Hello, World!");
   HAL_Delay(100);
-  WARN("HELLO, World!")
+  WARN("HELLO, World!");
   HAL_Delay(1000);
-  ERR("HELLO, WORLD!")
+  ERR("HELLO, WORLD!");
 
-  WAVE_header();
+  WAVE_t wav = {0};
+  WAVE_createFile(&wav, "test.wav");
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
