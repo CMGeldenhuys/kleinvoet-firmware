@@ -19,17 +19,18 @@
 #include "fatfs.h"
 
 uint8_t retSD;    /* Return value for SD */
-char SDPath[4];   /* SD logical drive path */
-FATFS SDFatFS;    /* File system object for SD logical drive */
-FIL SDFile;       /* File object for SD */
+char    SDPath[4];   /* SD logical drive path */
+FATFS   SDFatFS;    /* File system object for SD logical drive */
+FIL     SDFile;       /* File object for SD */
 
 /* USER CODE BEGIN Variables */
 FIL LogFile;
 
-int FATFS_errHandle_(FRESULT ret);
+int FATFS_errHandle_ (FRESULT res);
+
 /* USER CODE END Variables */
 
-void MX_FATFS_Init(void)
+void MX_FATFS_Init (void)
 {
   /*## FatFS: Link the SD driver ###########################*/
   retSD = FATFS_LinkDriver(&SD_Driver, SDPath);
@@ -41,7 +42,7 @@ void MX_FATFS_Init(void)
   FRESULT ret = f_mount(&SDFatFS, SDPath, 1);
   if (ret == FR_OK) {
     // Open all files
-    ret = f_open(&LogFile, "tmp.log", FA_WRITE|FA_CREATE_ALWAYS);
+    ret = f_open(&LogFile, "tmp.log", FA_WRITE | FA_CREATE_ALWAYS);
     if (ret != FR_OK) {
       //TODO: HANDLE FAIL TO OPEN
       FATFS_errHandle_(ret);
@@ -59,7 +60,7 @@ void MX_FATFS_Init(void)
   * @param  None
   * @retval Time in DWORD
   */
-DWORD get_fattime(void)
+DWORD get_fattime (void)
 {
   /* USER CODE BEGIN get_fattime */
   return 0;
@@ -67,9 +68,10 @@ DWORD get_fattime(void)
 }
 
 /* USER CODE BEGIN Application */
-int FATFS_free(__unused int argc, __unused char *argv[])
+int FATFS_free (__unused int argc, __unused char *argv[])
 {
-  DWORD freClstr; FATFS *fs;
+  DWORD   freClstr;
+  FATFS   *fs;
   FRESULT ret = f_getfree(SDPath, &freClstr, &fs);
   if (ret == FR_OK) {
     DWORD totSect = (fs->n_fatent - 2) * fs->csize;
@@ -84,24 +86,73 @@ int FATFS_free(__unused int argc, __unused char *argv[])
   return 1;
 }
 
-int FATFS_errHandle_(FRESULT ret)
+int FATFS_open (FIL *fp, const TCHAR *path, BYTE mode)
 {
-  switch (ret){
+  FRESULT res = f_open(fp, path, mode);
+  if (res == FR_OK) {
+    DBUG("Successfully opened '%s'", path)
+    return 1;
+  }
+  else {
+    WARN("Failed to open '%s'", path)
+    return FATFS_errHandle_(res);
+  }
+}
 
-    case FR_OK:
-    {
+int FATFS_write (FIL *fp, const void *buff, size_t len, int sync)
+{
+  UINT    bw;
+  FRESULT res;
+
+  res = f_write(fp, buff, len, &bw);
+
+  if (res == FR_OK) {
+    DBUG("Wrote %u bytes to file", bw)
+    if (sync > 1) {
+      DBUG("Forcing cache to flush to card")
+      res = f_sync(fp);
+      if (res != FR_OK) return FATFS_errHandle_(res);
+    }
+    else {
+      DBUG("Unsafe write operation, changes not persisted")
+    }
+    return bw;
+  }
+  else
+    return FATFS_errHandle_(res);
+
+}
+
+int FATFS_close (FIL *fp)
+{
+  FRESULT res;
+
+  res = f_close(fp);
+
+  if (res == FR_OK) {
+    DBUG("File closed successfully")
+    return 1;
+  }
+  else
+    return FATFS_errHandle_(res);
+
+}
+
+int FATFS_errHandle_ (FRESULT res)
+{
+  switch (res) {
+
+    case FR_OK: {
       DBUG("Error handler called on OK value")
       break;
     }
     case FR_DISK_ERR:
-    case FR_INT_ERR:
-    {
+    case FR_INT_ERR: {
       ERR("Disk Error!")
       break;
     }
 
-    case FR_NOT_READY:
-    {
+    case FR_NOT_READY: {
       ERR("FS not ready!")
       break;
     }
@@ -109,22 +160,19 @@ int FATFS_errHandle_(FRESULT ret)
     case FR_INVALID_OBJECT:
     case FR_NO_PATH:
     case FR_NO_FILE:
-    case FR_INVALID_NAME:
-    {
+    case FR_INVALID_NAME: {
       WARN("No such file/path/obj")
       break;
     }
 
     case FR_LOCKED:
     case FR_WRITE_PROTECTED:
-    case FR_DENIED:
-    {
+    case FR_DENIED: {
       WARN("Access denied!")
       break;
     }
 
-    case FR_EXIST:
-    {
+    case FR_EXIST: {
       INFO("File exists")
       break;
     }
@@ -132,37 +180,31 @@ int FATFS_errHandle_(FRESULT ret)
     case FR_INVALID_DRIVE:
     case FR_NOT_ENABLED:
     case FR_NO_FILESYSTEM:
-    case FR_MKFS_ABORTED:
-    {
+    case FR_MKFS_ABORTED: {
       ERR("Invalid FS")
       break;
     }
-    case FR_TIMEOUT:
-    {
+    case FR_TIMEOUT: {
       WARN("FS timed out")
       break;
     }
 
-    case FR_NOT_ENOUGH_CORE:
-    {
+    case FR_NOT_ENOUGH_CORE: {
       ERR("Out of memory")
       break;
     }
 
-    case FR_TOO_MANY_OPEN_FILES:
-    {
+    case FR_TOO_MANY_OPEN_FILES: {
       WARN("Too many files open")
       break;
     }
 
-    case FR_INVALID_PARAMETER:
-    {
+    case FR_INVALID_PARAMETER: {
       DBUG("Invalid parameters")
       break;
     }
 
-    default:
-    {
+    default: {
       DBUG("Unknown Err")
       break;
     }
