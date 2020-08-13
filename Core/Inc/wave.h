@@ -15,17 +15,22 @@ extern "C" {
 #endif
 
 #ifndef WAVE_BLOCK_SIZE
-#define WAVE_BLOCK_SIZE 32
+#define WAVE_BLOCK_SIZE 8
 #endif
 
 #ifndef WAVE_BPS
-#define WAVE_BPS 24
+#define WAVE_BPS 8
 #endif
 
 #ifndef WAVE_NCHANNELS
-#define WAVE_NCHANNELS 4
+#define WAVE_NCHANNELS 2
 #endif
 
+
+#ifndef WAVE_FILE_SPLIT
+  //TODO: Change to 4GiB
+#define WAVE_FILE_SPILT 100000
+#endif
 
 const static DWORD WAVE_CID_RIFF = 0x46464952; // "RIFF"
 const static DWORD WAVE_CID_FMT  = 0x20746d66; // "fmt "

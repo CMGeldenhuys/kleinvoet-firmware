@@ -22,52 +22,37 @@ int WAVE_createFile (WAVE_t *wav, const char *fname)
   // TODO: Expand file to 4GB
   // Need to check for space
 
-
- // TODO: This is just test code
-  uint8_t tmp[128] = {0};
-
-  WAVE_appendData(wav, tmp, sizeof(tmp), 0);
-  WAVE_appendData(wav, tmp, sizeof(tmp), 1);
-
   return 1;
 }
 
 int WAVE_writeHeader_ (WAVE_t *wav)
 {
-  FRESULT ret;
-  FSIZE_t tail;
-  // TODO: Wrap in FATFS class
-  DBUG("Getting current file pointer tail");
-  tail = f_tell(wav->fp);
-  DBUG("Setting tail to 0 (HEAD)");
-  ret = f_lseek(wav->fp, 0);
-  if (ret != FR_OK) ERR("f_lseek failed");
   DBUG("Writing file header");
-  FATFS_write(wav->fp, wav->header, sizeof(WAVE_header_t), 0);
-  if (tail) {
-    DBUG("Restoring file pointer to tail (%u)", tail);
-    ret = f_lseek(wav->fp, tail);
-    if (ret != FR_OK) ERR("f_lseek failed");
-  } else {
-    DBUG("Not restoring fp since first write");
-  }
-  return 1;
+  return FATFS_lwrite(wav->fp, wav->header, sizeof(WAVE_header_t), 0);
 }
 
 int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
 {
-  // TODO: Check if 4 GB file size!!!
-  // Create new file .wav .w01 .w02 .w03
-  wav->header->RIFF_chunk.ChunkSize += len;
-  wav->header->data_chunk.SubchunkSize += len;
+  if (wav->header->RIFF_chunk.ChunkSize + len < WAVE_FILE_SPILT) {
+    wav->header->RIFF_chunk.ChunkSize += len;
+    wav->header->data_chunk.SubchunkSize += len;
 
-  // TODO: Rather adjust header than rewriting header each time
-  WAVE_writeHeader_(wav);
+    // TODO: Rather adjust header than rewriting header each time
+    WAVE_writeHeader_(wav);
 
-  DBUG("Appending WAVE data");
-  FATFS_write(wav->fp, buff, len, sync);
+    DBUG("Appending WAVE data");
+    // TODO: Handle errs
+    return FATFS_swrite(wav->fp, buff, len, sync);
+  }
+  else {
+    // TOOD: Check return
+    // Spilt Files
+    DBUG("Slitting WAVE file");
+    WAVE_createFile(wav, "TEST.W01");
+    return 0;
+    WAVE_appendData(wav, buff, len, sync);
+  }
 
-  return 1;
 }
 
 int WAVE_createHeader_ (WAVE_t *wav)
@@ -108,14 +93,14 @@ int WAVE_createHeader_ (WAVE_t *wav)
 
   DBUG("WAVE Header created");
 //  FATFS_open(wav->fp, "test.wav", FA_WRITE | FA_CREATE_ALWAYS);
-//  FATFS_write(wav->fp, &wav, sizeof(wav), 1);
+//  FATFS_swrite(wav->fp, &wav, sizeof(wav), 1);
   return 1;
 }
 
 int WAVE_close (WAVE_t *wav)
 {
   if (FATFS_close(wav->fp) > 0) {
-    INFO("Freeing WAV resources");
+    INFO("Freeing WAV file resources");
 
     // Prevent memory leak
     free(wav->header);

@@ -19,9 +19,9 @@
 #include "fatfs.h"
 
 uint8_t retSD;    /* Return value for SD */
-char    SDPath[4];   /* SD logical drive path */
-FATFS   SDFatFS;    /* File system object for SD logical drive */
-FIL     SDFile;       /* File object for SD */
+char SDPath[4];   /* SD logical drive path */
+FATFS SDFatFS;    /* File system object for SD logical drive */
+FIL SDFile;       /* File object for SD */
 
 /* USER CODE BEGIN Variables */
 FIL LogFile;
@@ -30,7 +30,7 @@ int FATFS_errHandle_ (FRESULT res);
 
 /* USER CODE END Variables */
 
-void MX_FATFS_Init (void)
+void MX_FATFS_Init(void)
 {
   /*## FatFS: Link the SD driver ###########################*/
   retSD = FATFS_LinkDriver(&SD_Driver, SDPath);
@@ -42,6 +42,7 @@ void MX_FATFS_Init (void)
   FRESULT ret = f_mount(&SDFatFS, SDPath, 1);
   if (ret == FR_OK) {
     // Open all files
+    // TODO: Move log handling out to own file
     ret = f_open(&LogFile, "tmp.log", FA_WRITE | FA_CREATE_ALWAYS);
     if (ret != FR_OK) {
       //TODO: HANDLE FAIL TO OPEN
@@ -60,7 +61,7 @@ void MX_FATFS_Init (void)
   * @param  None
   * @retval Time in DWORD
   */
-DWORD get_fattime (void)
+DWORD get_fattime(void)
 {
   /* USER CODE BEGIN get_fattime */
   return 0;
@@ -99,27 +100,50 @@ int FATFS_open (FIL *fp, const TCHAR *path, BYTE mode)
   }
 }
 
-int FATFS_write (FIL *fp, const void *buff, size_t len, int sync)
+
+int FATFS_slwrite (FIL *fp, const void *buff, size_t len, int sync, int pos)
 {
   UINT    bw;
   FRESULT res;
+  FSIZE_t tail;
+
+  // Move file pointer tail pos
+  if(pos >= 0) {
+    DBUG("Storing current file pointer tail");
+    tail = f_tell(fp);
+    DBUG("Setting tail to %u", pos);
+    res = f_lseek(fp, pos);
+    if (res != FR_OK) ERR("Failed to move file pointer tail");
+  }
+
 
   res = f_write(fp, buff, len, &bw);
 
   if (res == FR_OK) {
     if (sync > 0) {
-      INFO("Wrote %u bytes to file (SAFE)", bw);
+      DBUG("Wrote %u bytes to file (SAFE)", bw);
       res = f_sync(fp);
       if (res != FR_OK) return FATFS_errHandle_(res);
     }
     else {
-      INFO("Wrote %u bytes to file (UNSAFE)", bw);
+      DBUG("Wrote %u bytes to file (UNSAFE)", bw);
     }
-    return bw;
   }
   else
     return FATFS_errHandle_(res);
 
+  // Restore file pointer tail
+  if (pos >= 0) {
+    if (tail) {
+      DBUG("Restoring file pointer to tail (%u)", tail);
+      res = f_lseek(fp, tail);
+      if (res != FR_OK) ERR("Failed to restore file pointer tail");
+    } else {
+      DBUG("Not restoring fp since first write");
+    }
+  }
+
+  return bw;
 }
 
 int FATFS_close (FIL *fp)

@@ -20,7 +20,7 @@
 #ifndef __fatfs_H
 #define __fatfs_H
 #ifdef __cplusplus
-extern "C" {
+ extern "C" {
 #endif
 
 #include "ff.h"
@@ -34,19 +34,25 @@ extern "C" {
 #define FATFS_EOL SERIAL_EOL
 /* USER CODE END Includes */
 
-extern uint8_t retSD;     /* Return value for SD */
-extern char    SDPath[4]; /* SD logical drive path */
-extern FATFS   SDFatFS;   /* File system object for SD logical drive */
-extern FIL     SDFile;    /* File object for SD */
+extern uint8_t retSD; /* Return value for SD */
+extern char SDPath[4]; /* SD logical drive path */
+extern FATFS SDFatFS; /* File system object for SD logical drive */
+extern FIL SDFile; /* File object for SD */
 
-void MX_FATFS_Init (void);
+void MX_FATFS_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 int FATFS_free (int argc, char *argv[]);
 
 int FATFS_open (FIL *fp, const TCHAR *path, BYTE mode);
 
-int FATFS_write (FIL *fp, const void *buff, size_t len, int sync);
+#define FATFS_write(fp, buff, len) FATFS_slwrite((fp), (buff), (len), 0, -1)
+
+#define FATFS_swrite(fp, buff, len, sync) FATFS_slwrite((fp), (buff), (len), (sync), -1)
+
+#define FATFS_lwrite(fp, buff, len, pos) FATFS_slwrite((fp), (buff), (len), 0, (pos))
+
+int FATFS_slwrite (FIL *fp, const void *buff, size_t len, int sync, int pos);
 
 int FATFS_close (FIL *fp);
 
