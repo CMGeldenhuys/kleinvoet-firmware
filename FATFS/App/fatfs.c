@@ -107,14 +107,13 @@ int FATFS_write (FIL *fp, const void *buff, size_t len, int sync)
   res = f_write(fp, buff, len, &bw);
 
   if (res == FR_OK) {
-    DBUG("Wrote %u bytes to file", bw);
     if (sync > 0) {
-      DBUG("Forcing cache to flush to card");
+      INFO("Wrote %u bytes to file (SAFE)", bw);
       res = f_sync(fp);
       if (res != FR_OK) return FATFS_errHandle_(res);
     }
     else {
-      DBUG("Unsafe write operation, changes not persisted");
+      INFO("Wrote %u bytes to file (UNSAFE)", bw);
     }
     return bw;
   }

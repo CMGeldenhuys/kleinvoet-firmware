@@ -72,6 +72,8 @@ typedef struct {
 
 int WAVE_createFile (WAVE_t *wav, const char * fname);
 
+int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync);
+
 int WAVE_close (WAVE_t *wav);
 
 #ifdef __cplusplus

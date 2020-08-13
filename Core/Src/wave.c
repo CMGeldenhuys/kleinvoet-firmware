@@ -3,8 +3,9 @@
 //
 #include "wave.h"
 
-int WAVE_header_ (WAVE_t *wav);
+int WAVE_createHeader_ (WAVE_t *wav);
 
+int WAVE_writeHeader_ (WAVE_t *wav);
 
 int WAVE_createFile (WAVE_t *wav, const char *fname)
 {
@@ -14,18 +15,62 @@ int WAVE_createFile (WAVE_t *wav, const char *fname)
 
   DBUG("Allocating memory to WAVE file");
   wav->fp = (FIL *) malloc(sizeof(FIL));
+  FATFS_open(wav->fp, fname, FA_CREATE_ALWAYS | FA_WRITE);
 
-  WAVE_header_(wav);
-
-  FATFS_open(wav->fp, fname, FA_WRITE | FA_CREATE_ALWAYS);
+  WAVE_createHeader_(wav);
+  WAVE_writeHeader_(wav);
   // TODO: Expand file to 4GB
   // Need to check for space
 
-  FATFS_write(wav->fp, wav->header, sizeof(WAVE_header_t), 1);
+
+ // TODO: This is just test code
+  uint8_t tmp[128] = {0};
+
+  WAVE_appendData(wav, tmp, sizeof(tmp), 0);
+  WAVE_appendData(wav, tmp, sizeof(tmp), 1);
+
   return 1;
 }
 
-int WAVE_header_ (WAVE_t *wav)
+int WAVE_writeHeader_ (WAVE_t *wav)
+{
+  FRESULT ret;
+  FSIZE_t tail;
+  // TODO: Wrap in FATFS class
+  DBUG("Getting current file pointer tail");
+  tail = f_tell(wav->fp);
+  DBUG("Setting tail to 0 (HEAD)");
+  ret = f_lseek(wav->fp, 0);
+  if (ret != FR_OK) ERR("f_lseek failed");
+  DBUG("Writing file header");
+  FATFS_write(wav->fp, wav->header, sizeof(WAVE_header_t), 0);
+  if (tail) {
+    DBUG("Restoring file pointer to tail (%u)", tail);
+    ret = f_lseek(wav->fp, tail);
+    if (ret != FR_OK) ERR("f_lseek failed");
+  } else {
+    DBUG("Not restoring fp since first write");
+  }
+  return 1;
+}
+
+int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
+{
+  // TODO: Check if 4 GB file size!!!
+  // Create new file .wav .w01 .w02 .w03
+  wav->header->RIFF_chunk.ChunkSize += len;
+  wav->header->data_chunk.SubchunkSize += len;
+
+  // TODO: Rather adjust header than rewriting header each time
+  WAVE_writeHeader_(wav);
+
+  DBUG("Appending WAVE data");
+  FATFS_write(wav->fp, buff, len, sync);
+
+  return 1;
+}
+
+int WAVE_createHeader_ (WAVE_t *wav)
 {
 
   // Prevent memory leak if file already exists, otherwise reuse header
@@ -46,12 +91,12 @@ int WAVE_header_ (WAVE_t *wav)
   // fmt Subchunk
   WAVE_fmt_subchunk_t *fmt_chunk = &wav->header->fmt_chunk;
   fmt_chunk->SubchunkID    = WAVE_CID_FMT;
-  fmt_chunk->SubchunkSize  = 16;
+  fmt_chunk->SubchunkSize  = 16; // TODO: Don't use magic number
   fmt_chunk->AudioFormat   = WAVE_AUDIO_PCM;
   fmt_chunk->NumChannels   = WAVE_NCHANNELS;
   fmt_chunk->SampleRate    = WAVE_SAMPLE_RATE;
-  fmt_chunk->ByteRate      = 16 / 8 * WAVE_NCHANNELS * WAVE_BPS;
-  fmt_chunk->BlockAlign    = WAVE_NCHANNELS;
+  fmt_chunk->ByteRate      = WAVE_SAMPLE_RATE * WAVE_NCHANNELS * WAVE_BPS / 8;
+  fmt_chunk->BlockAlign    = WAVE_NCHANNELS * WAVE_BLOCK_SIZE / 8;
   fmt_chunk->BitsPerSample = WAVE_BPS;
 
 
@@ -70,7 +115,7 @@ int WAVE_header_ (WAVE_t *wav)
 int WAVE_close (WAVE_t *wav)
 {
   if (FATFS_close(wav->fp) > 0) {
-    INFO("Freeing WAV File resources");
+    INFO("Freeing WAV resources");
 
     // Prevent memory leak
     free(wav->header);
