@@ -15,15 +15,15 @@ extern "C" {
 #endif
 
 #ifndef WAVE_BLOCK_SIZE
-#define WAVE_BLOCK_SIZE 8
+#define WAVE_BLOCK_SIZE 16
 #endif
 
 #ifndef WAVE_BPS
-#define WAVE_BPS 8
+#define WAVE_BPS 16
 #endif
 
 #ifndef WAVE_NCHANNELS
-#define WAVE_NCHANNELS 2
+#define WAVE_NCHANNELS 1
 #endif
 
 
