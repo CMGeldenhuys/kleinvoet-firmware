@@ -28,8 +28,7 @@ extern "C" {
 
 
 #ifndef WAVE_FILE_SPLIT
-  //TODO: Change to 4GiB
-#define WAVE_FILE_SPILT 100000
+#define WAVE_FILE_SPILT (-1u)
 #endif
 
 const static DWORD WAVE_CID_RIFF = 0x46464952; // "RIFF"
