@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 #ifndef WAVE_BPS
-#define WAVE_BPS 16
+#define WAVE_BPS 12
 #endif
 
 #ifndef WAVE_NCHANNELS

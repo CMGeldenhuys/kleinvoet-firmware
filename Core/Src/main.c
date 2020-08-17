@@ -386,9 +386,9 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 19;
+  htim2.Init.Prescaler = 11;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 549;
+  htim2.Init.Period = 249;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -547,11 +547,13 @@ static void MX_GPIO_Init(void)
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
   if (writeAdc > 0) Error_Handler();
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
   writeAdc = 2;
 }
 void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
 {
   if (writeAdc > 0) Error_Handler();
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
   writeAdc = 1;
 }
 /* USER CODE END 4 */
