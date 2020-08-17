@@ -7,7 +7,6 @@
 
 int ADC_init(ADC_t *self, SPI_TypeDef interface)
 {
-  HAL_SPI_TransmitReceive()
 }
 
 int ADC_sendCommand_(ADC_t *self, uint8_t *cmd, size_t cmdLen, uint8_t *recBuf, size_t recLen);

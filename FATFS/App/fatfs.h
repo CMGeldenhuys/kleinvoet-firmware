@@ -20,7 +20,7 @@
 #ifndef __fatfs_H
 #define __fatfs_H
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
 #include "ff.h"
@@ -39,10 +39,12 @@ extern char SDPath[4]; /* SD logical drive path */
 extern FATFS SDFatFS; /* File system object for SD logical drive */
 extern FIL SDFile; /* File object for SD */
 
-void MX_FATFS_Init(void);
+void MX_FATFS_Init (void);
 
 /* USER CODE BEGIN Prototypes */
-int FATFS_free (int argc, char *argv[]);
+int FATFS_free (uint32_t *free, uint32_t *total);
+
+int CMD_free (__unused int argc, __unused char *argv[]);
 
 int FATFS_open (FIL *fp, const TCHAR *path, BYTE mode);
 

@@ -177,7 +177,6 @@ int TTY_PS_()
 }
 
 #ifdef DEBUG
-
 int LOG_write(uint8_t *buf, size_t len)
 {
   return Serial_write(tty.serial, buf, len);
@@ -188,5 +187,4 @@ int LOG_flush()
   // TODO: Fix once buffred writer is implemented
   return 1;
 }
-
 #endif

@@ -30,15 +30,16 @@ int FATFS_errHandle_ (FRESULT res);
 
 /* USER CODE END Variables */
 
-void MX_FATFS_Init(void)
-{
+void MX_FATFS_Init (void) {
   /*## FatFS: Link the SD driver ###########################*/
   retSD = FATFS_LinkDriver(&SD_Driver, SDPath);
 
   /* USER CODE BEGIN Init */
   /* additional user code for init */
   // NB: CANT CALL LOGGING YET AS IT HAS NOT BEEN INIT.
-  TTY_registerCommand("free", &FATFS_free);
+  TTY_registerCommand("free", &CMD_free);
+  // TODO: Make it so that it flushes all files
+  TTY_registerCommand("sync", &LOG_flush);
   FRESULT ret = f_mount(&SDFatFS, SDPath, 1);
   if (ret == FR_OK) {
     // Open all files
@@ -48,8 +49,7 @@ void MX_FATFS_Init(void)
       //TODO: HANDLE FAIL TO OPEN
       FATFS_errHandle_(ret);
     }
-  }
-  else {
+  } else {
     //TODO: HANDLE FAILED MOUNT!
     FATFS_errHandle_(ret);
   }
@@ -61,54 +61,60 @@ void MX_FATFS_Init(void)
   * @param  None
   * @retval Time in DWORD
   */
-DWORD get_fattime(void)
-{
+DWORD get_fattime (void) {
   /* USER CODE BEGIN get_fattime */
   return 0;
   /* USER CODE END get_fattime */
 }
 
 /* USER CODE BEGIN Application */
-int FATFS_free (__unused int argc, __unused char *argv[])
-{
-  DWORD   freClstr;
-  FATFS   *fs;
+int FATFS_free (uint32_t *free, uint32_t *total) {
+  DWORD freClstr;
+  FATFS *fs;
   FRESULT ret = f_getfree(SDPath, &freClstr, &fs);
   if (ret == FR_OK) {
-    DWORD totSect = (fs->n_fatent - 2) * fs->csize;
-    DWORD freSect = freClstr * fs->csize;
+    *total = (fs->n_fatent - 2) * fs->csize / 2;
+    *free = freClstr * fs->csize / 2;
 
-    TTY_printf("%10lu MiB total drive space.\r\n", totSect / 2 / 1024);
-    TTY_printf("%10lu MiB available.\r\n", freSect / 2 / 1024);
+    return *free;
+  } else {
+    return FATFS_errHandle_(ret);
   }
-  else {
-    FATFS_errHandle_(ret);
-  }
-  return 1;
 }
 
-int FATFS_open (FIL *fp, const TCHAR *path, BYTE mode)
-{
+int CMD_free (__unused int argc, __unused char *argv[]) {
+  uint32_t free, tot;
+
+  if (FATFS_free(&free, &tot) > 0) {
+    TTY_printf("%10u MiB total drive space%s", tot / 1024, SERIAL_EOL);
+    TTY_printf("%10u MiB free drive space%s", free / 1024, SERIAL_EOL);
+    return 1;
+  } else {
+    TTY_println("Failed to get free space");
+    return 0;
+  }
+}
+
+
+int FATFS_open (FIL *fp, const TCHAR *path, BYTE mode) {
   FRESULT res = f_open(fp, path, mode);
   if (res == FR_OK) {
     DBUG("Successfully opened '%s'", path);
     return 1;
-  }
-  else {
+  } else {
     WARN("Failed to open '%s'", path);
     return FATFS_errHandle_(res);
   }
 }
 
 
-int FATFS_slwrite (FIL *fp, const void *buff, size_t len, int sync, int pos)
-{
-  UINT    bw;
+int FATFS_slwrite (FIL *fp, const void *buff, size_t len, int sync, int pos) {
+  UINT bw;
   FRESULT res;
   FSIZE_t tail;
 
   // Move file pointer tail pos
-  if(pos >= 0) {
+  if (pos >= 0) {
     DBUG("Storing current file pointer tail");
     tail = f_tell(fp);
     DBUG("Setting tail to %u", pos);
@@ -124,12 +130,10 @@ int FATFS_slwrite (FIL *fp, const void *buff, size_t len, int sync, int pos)
       DBUG("Wrote %u bytes to file (SAFE)", bw);
       res = f_sync(fp);
       if (res != FR_OK) return FATFS_errHandle_(res);
-    }
-    else {
+    } else {
       DBUG("Wrote %u bytes to file (UNSAFE)", bw);
     }
-  }
-  else
+  } else
     return FATFS_errHandle_(res);
 
   // Restore file pointer tail
@@ -146,8 +150,7 @@ int FATFS_slwrite (FIL *fp, const void *buff, size_t len, int sync, int pos)
   return bw;
 }
 
-int FATFS_close (FIL *fp)
-{
+int FATFS_close (FIL *fp) {
   FRESULT res;
 
   res = f_close(fp);
@@ -155,14 +158,12 @@ int FATFS_close (FIL *fp)
   if (res == FR_OK) {
     DBUG("File closed successfully");
     return 1;
-  }
-  else
+  } else
     return FATFS_errHandle_(res);
 
 }
 
-int FATFS_errHandle_ (FRESULT res)
-{
+int FATFS_errHandle_ (FRESULT res) {
   switch (res) {
 
     case FR_OK: {
