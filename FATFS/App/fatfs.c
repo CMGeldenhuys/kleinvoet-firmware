@@ -68,12 +68,12 @@ DWORD get_fattime (void) {
 }
 
 /* USER CODE BEGIN Application */
-int FATFS_free (uint32_t *free, uint32_t *total) {
+int FATFS_pfree (uint32_t *free, uint32_t *total) {
   DWORD freClstr;
   FATFS *fs;
   FRESULT ret = f_getfree(SDPath, &freClstr, &fs);
   if (ret == FR_OK) {
-    *total = (fs->n_fatent - 2) * fs->csize / 2;
+    if (total) *total = (fs->n_fatent - 2) * fs->csize / 2;
     *free = freClstr * fs->csize / 2;
 
     return *free;
@@ -82,10 +82,16 @@ int FATFS_free (uint32_t *free, uint32_t *total) {
   }
 }
 
+int FATFS_free()
+{
+  uint32_t free;
+  return FATFS_pfree(&free, NULL);
+}
+
 int CMD_free (__unused int argc, __unused char *argv[]) {
   uint32_t free, tot;
 
-  if (FATFS_free(&free, &tot) > 0) {
+  if (FATFS_pfree(&free, &tot) > 0) {
     TTY_printf("%10u MiB total drive space%s", tot / 1024, SERIAL_EOL);
     TTY_printf("%10u MiB free drive space%s", free / 1024, SERIAL_EOL);
     return 1;

@@ -33,26 +33,30 @@ int WAVE_writeHeader_ (WAVE_t *wav)
 
 int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
 {
-  if (wav->header->RIFF_chunk.ChunkSize + len < WAVE_FILE_SPILT) {
-    wav->header->RIFF_chunk.ChunkSize += len;
-    wav->header->data_chunk.SubchunkSize += len;
+  if(len < FATFS_free()){
+    if (wav->header->RIFF_chunk.ChunkSize + len < WAVE_FILE_SPILT) {
+      wav->header->RIFF_chunk.ChunkSize += len;
+      wav->header->data_chunk.SubchunkSize += len;
 
-    // TODO: Rather adjust header than rewriting header each time
-    WAVE_writeHeader_(wav);
+      // TODO: Rather adjust header than rewriting header each time
+      WAVE_writeHeader_(wav);
 
-    DBUG("Appending WAVE data");
-    // TODO: Handle errs
-    return FATFS_swrite(wav->fp, buff, len, sync);
+      DBUG("Appending WAVE data");
+      // TODO: Handle errs
+      return FATFS_swrite(wav->fp, buff, len, sync);
+    }
+    else {
+      // TOOD: Check return
+      // Spilt Files
+      DBUG("Slitting WAVE file");
+      WAVE_createFile(wav, "TEST.W01");
+      return WAVE_appendData(wav, buff, len, sync);
+    }
   }
   else {
-    // TOOD: Check return
-    // Spilt Files
-    DBUG("Slitting WAVE file");
-    WAVE_createFile(wav, "TEST.W01");
+    ERR("SD Card full!");
     return 0;
-    WAVE_appendData(wav, buff, len, sync);
   }
-
 }
 
 int WAVE_createHeader_ (WAVE_t *wav)

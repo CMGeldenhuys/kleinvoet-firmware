@@ -42,7 +42,9 @@ extern FIL SDFile; /* File object for SD */
 void MX_FATFS_Init (void);
 
 /* USER CODE BEGIN Prototypes */
-int FATFS_free (uint32_t *free, uint32_t *total);
+int FATFS_pfree (uint32_t *free, uint32_t *total);
+
+int FATFS_free();
 
 int CMD_free (__unused int argc, __unused char *argv[]);
 
