@@ -39,6 +39,7 @@ const static DWORD WAVE_RIFF_FORMAT = 0x45564157; // "WAVE"
 
 const static WORD WAVE_AUDIO_PCM = 1u;
 
+// Very helpful: http://soundfile.sapp.org/doc/WaveFormat/
 
 typedef struct {
     DWORD ChunkID;

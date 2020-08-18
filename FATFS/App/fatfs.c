@@ -30,7 +30,8 @@ int FATFS_errHandle_ (FRESULT res);
 
 /* USER CODE END Variables */
 
-void MX_FATFS_Init (void) {
+void MX_FATFS_Init(void)
+{
   /*## FatFS: Link the SD driver ###########################*/
   retSD = FATFS_LinkDriver(&SD_Driver, SDPath);
 
@@ -61,7 +62,8 @@ void MX_FATFS_Init (void) {
   * @param  None
   * @retval Time in DWORD
   */
-DWORD get_fattime (void) {
+DWORD get_fattime(void)
+{
   /* USER CODE BEGIN get_fattime */
   return 0;
   /* USER CODE END get_fattime */

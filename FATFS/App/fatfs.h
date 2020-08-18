@@ -20,7 +20,7 @@
 #ifndef __fatfs_H
 #define __fatfs_H
 #ifdef __cplusplus
-extern "C" {
+ extern "C" {
 #endif
 
 #include "ff.h"
@@ -28,6 +28,7 @@ extern "C" {
 #include "sd_diskio.h" /* defines SD_Driver as external */
 
 /* USER CODE BEGIN Includes */
+// Link to FatFS: http://elm-chan.org/fsw/ff/00index_e.html
 #include "tty.h"
 #include "logger.h"
 
@@ -39,12 +40,12 @@ extern char SDPath[4]; /* SD logical drive path */
 extern FATFS SDFatFS; /* File system object for SD logical drive */
 extern FIL SDFile; /* File object for SD */
 
-void MX_FATFS_Init (void);
+void MX_FATFS_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 int FATFS_pfree (uint32_t *free, uint32_t *total);
 
-int FATFS_free();
+int FATFS_free ();
 
 int CMD_free (__unused int argc, __unused char *argv[]);
 
