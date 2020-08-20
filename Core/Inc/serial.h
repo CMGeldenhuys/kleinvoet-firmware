@@ -48,16 +48,16 @@
 typedef struct {
 	struct {
 		UART_HandleTypeDef *uart;
-	} __config;
+	} config_;
 
 	struct {
-		uint8_t __buf[SERIAL_RX_LEN];
-		size_t idx;
+		uint8_t buf_[SERIAL_RX_LEN];
+		size_t  idx;
 	} rx;
 
 	struct {
-		uint8_t __buf[SERIAL_TX_LEN];
-		size_t idx;
+		uint8_t buf_[SERIAL_TX_LEN];
+		size_t  idx;
 	} tx;
 
 } Serial_t;
