@@ -1,6 +1,12 @@
-//
-// Created by CM Geldenhuys on 2020/08/06.
-//
+/**
+ *
+ * @file logger.c
+ * @author CM Geldenhuys
+ * @date 6 Aug. 2020
+ *
+ * @headerfile logger.h "logger.h"
+ *
+ */
 
 #include "logger.h"
 
