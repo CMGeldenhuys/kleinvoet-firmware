@@ -37,23 +37,6 @@ void MX_FATFS_Init(void)
 
   /* USER CODE BEGIN Init */
   /* additional user code for init */
-  // NB: CANT CALL LOGGING YET AS IT HAS NOT BEEN INIT.
-  TTY_registerCommand("free", &CMD_free);
-  // TODO: Make it so that it flushes all files
-  TTY_registerCommand("sync", &LOG_flush);
-  FRESULT ret = f_mount(&SDFatFS, SDPath, 1);
-  if (ret == FR_OK) {
-    // Open all files
-    // TODO: Move log handling out to own file
-    ret = f_open(&LogFile, "tmp.log", FA_WRITE | FA_CREATE_ALWAYS);
-    if (ret != FR_OK) {
-      //TODO: HANDLE FAIL TO OPEN
-      FATFS_errHandle_(ret);
-    }
-  } else {
-    //TODO: HANDLE FAILED MOUNT!
-    FATFS_errHandle_(ret);
-  }
   /* USER CODE END Init */
 }
 
@@ -70,6 +53,29 @@ DWORD get_fattime(void)
 }
 
 /* USER CODE BEGIN Application */
+int FATFS_mount()
+{
+  // NB: CANT CALL LOGGING YET AS IT HAS NOT BEEN INIT.
+  TTY_registerCommand("free", &CMD_free);
+  // TODO: Make it so that it flushes all files
+  TTY_registerCommand("sync", &LOG_flush);
+  FRESULT ret = f_mount(&SDFatFS, SDPath, 1);
+  if (ret == FR_OK) {
+    // Open all files
+    // TODO: Move log handling out to own file
+    ret = f_open(&LogFile, "tmp.log", FA_WRITE | FA_CREATE_ALWAYS);
+    if (ret != FR_OK) {
+      //TODO: HANDLE FAIL TO OPEN
+      return FATFS_errHandle_(ret);
+    }
+  } else {
+    //TODO: HANDLE FAILED MOUNT!
+    return FATFS_errHandle_(ret);
+  }
+
+  return 1;
+}
+
 int FATFS_pfree (uint32_t *free, uint32_t *total) {
   DWORD freClstr;
   FATFS *fs;

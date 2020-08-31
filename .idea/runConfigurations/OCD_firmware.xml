@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration name="OCD firmware" type="com.jetbrains.cidr.embedded.openocd.conf.type" factoryName="com.jetbrains.cidr.embedded.openocd.conf.factory" REDIRECT_INPUT="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="firmware" TARGET_NAME="firmware.elf" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="firmware" RUN_TARGET_NAME="firmware.elf">
-    <openocd gdb-port="3333" telnet-port="4444" board-config="$PROJECT_DIR$/st_nucleo_f4.cfg" reset-type="INIT" download-type="ALWAYS" />
+  <configuration default="false" name="OCD firmware" type="com.jetbrains.cidr.embedded.openocd.conf.type" factoryName="com.jetbrains.cidr.embedded.openocd.conf.factory" REDIRECT_INPUT="false" PASS_PARENT_ENVS_2="true" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="firmware" RUN_TARGET_NAME="firmware.elf" EXPLICIT_BUILD_TARGET_NAME="all">
+    <openocd gdb-port="3333" telnet-port="4444" board-config="$PROJECT_DIR$/OCD_firmware.cfg" reset-type="INIT" download-type="ALWAYS" />
     <method v="2">
       <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
     </method>
