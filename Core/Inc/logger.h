@@ -30,19 +30,19 @@
 #if defined(DEBUG)
 #define DBUG(msg, ...) LOG_log(__func__, LOG_DEBUG, (msg), ##__VA_ARGS__)
 #else
-#define DBUG(msg, ...)
+#define DBUG(cmd, ...)
 #endif
 
 #if defined(DEBUG) || defined(LOG_LEVEL_INFO)
 #define INFO(msg, ...) LOG_log(__func__, LOG_INFO, (msg), ##__VA_ARGS__)
 #else
-#define INFO(msg, ...)
+#define INFO(cmd, ...)
 #endif
 
 #if defined(DEBUG) || defined(LOG_LEVEL_INFO) || defined(LOG_LEVEL_WARN)
 #define WARN(msg, ...) LOG_log(__func__, LOG_WARN, (msg), ##__VA_ARGS__)
 #else
-#define WARN(msg, ...)
+#define WARN(cmd, ...)
 #endif
 
 #define ERR(msg, ...) LOG_log(__func__, LOG_ERR, (msg), ##__VA_ARGS__)

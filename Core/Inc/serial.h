@@ -26,7 +26,7 @@
 #endif
 
 #ifndef SERIAL_BUF_LEN
-#define SERIAL_BUF_LEN 128
+#define SERIAL_BUF_LEN 512
 #endif
 
 #ifndef SERIAL_RX_LEN

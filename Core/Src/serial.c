@@ -38,8 +38,12 @@ int Serial_available(Serial_t* self)
 uint8_t Serial_read(Serial_t* self)
 {
 #ifdef SERIAL_RX_DMA
+  // Get current val form buffer
 	uint8_t* ret = self->rx.buf_ + self->rx.idx;
+	// Mark as read
 	self->rx.idx++;
+	// Wrap index if command len reached
+	// TODO: Cheap fix for cir buf
 	self->rx.idx -= self->rx.idx != SERIAL_RX_LEN ? 0 : SERIAL_RX_LEN;
 	return *ret;
 #else
