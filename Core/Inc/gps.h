@@ -29,7 +29,7 @@ typedef struct {
         char buf[GPS_CMD_LEN];
         char *pos;
         int  started;
-    }        cmd;
+    }        rxCmd;
 } GPS_t;
 
 typedef enum __attribute__ ((packed)) {
@@ -46,12 +46,36 @@ typedef enum __attribute__ ((packed)) {
     UBX_MGA = 0x13,
     UBX_LOG = 0x21,
     UBX_SEC = 0x27,
-    UBX_HNR = 0x28
+    UBX_HNR = 0x28,
+
+    NMEA_STD = 0xF0,
+    NMEA_PBX = 0xF1
 } GPS_UBX_Class_e;
 
+typedef enum __attribute__ ((packed)) {
+    NMEA_DTM = 0x0A,
+    NMEA_GBQ = 0x44,
+    NMEA_GBS = 0x09,
+    NMEA_GGA = 0x00,
+    NMEA_GLL = 0x01,
+    NMEA_GLQ = 0x43,
+    NMEA_GNQ = 0x42,
+    NMEA_GNS = 0x0D,
+    NMEA_GPQ = 0x40,
+    NMEA_GRS = 0x06,
+    NMEA_GSA = 0x02,
+    NMEA_GST = 0x07,
+    NMEA_GSV = 0x03,
+    NMEA_RMC = 0x04,
+    NMEA_TXT = 0x41,
+    NMEA_VLW = 0x0F,
+    NMEA_VTG = 0x05,
+    NMEA_ZDA = 0x08
+} NMEA_Msg_id_e;
+
 typedef struct {
-    GPS_UBX_Class_e class;
-    uint8_t         ID;
+    GPS_UBX_Class_e cls;
+    uint8_t         id;
     uint16_t        len;
     uint8_t         payload[];
 } GPS_UBX_cmd_t;
@@ -67,8 +91,8 @@ typedef struct {
 typedef union {
     GPS_UBX_cmd_t generic;
     struct {
-        GPS_UBX_Class_e class;
-        uint8_t         ID;
+        GPS_UBX_Class_e cls;
+        uint8_t         id;
         uint16_t        len;
 
         uint8_t  portID;
@@ -81,7 +105,21 @@ typedef union {
         uint16_t flags;
         uint8_t  reserved2[2];
     };
-} UBX_CFG_PRT;
+} UBX_CFG_PRT_t;
+
+typedef union {
+    GPS_UBX_cmd_t generic;
+    struct {
+        GPS_UBX_Class_e cls;
+        uint8_t         id;
+        uint16_t        len;
+
+        uint8_t msgClass;
+        uint8_t msgID;
+        uint8_t rate;
+    };
+} UBX_CFG_MSG_t;
+
 
 // Magic Numbers
 #define GPS_SYNC_1_ 0xB5
@@ -113,26 +151,232 @@ typedef union {
 #define UBX_CFG_PRT_PROTO_NMEA          (0x0002)
 
 // UBX Commands
-static const UBX_CFG_PRT GPS_DEFAULT_PORT_CONFIG = {
-        .class          = UBX_CFG,
-        .ID             = 0x00,
+static const UBX_CFG_PRT_t GPS_DEFAULT_PORT_CONFIG = {
+        .cls            = UBX_CFG,
+        .id             = 0x00,
         .len            = 20,
         .portID         = UBX_PORT_UART1,
         .txReady        = UBX_CFG_PRT_TXREADY_DISABLE,
         .mode           = UBX_CFG_PRT_MODE_CHARLEN_8
-                        | UBX_CFG_PRT_MODE_PARTIY_NO
-                        | UBX_CFG_PRT_MODE_NSTOPBITS_1_0,
+                          | UBX_CFG_PRT_MODE_PARTIY_NO
+                          | UBX_CFG_PRT_MODE_NSTOPBITS_1_0,
         .baudRate       = 115200ul,
         .inProtoMask    = UBX_CFG_PRT_PROTO_UBX,
         .outProtoMask   = UBX_CFG_PRT_PROTO_UBX
 };
 
-static const UBX_CFG_PRT GPS_GET_PORT_CONFIG = {
-        .class          = UBX_CFG,
-        .ID             = 0x00,
+static const UBX_CFG_PRT_t GPS_GET_PORT_CONFIG = {
+        .cls            = UBX_CFG,
+        .id             = 0x00,
         .len            = 1,
         .portID         = UBX_PORT_UART1
 };
+
+static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_DTM = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = NMEA_STD,
+        .msgID    = NMEA_DTM,
+        .rate     = 0
+};
+
+static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GBQ = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = NMEA_STD,
+        .msgID    = NMEA_GBQ,
+        .rate     = 0
+};
+
+static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GBS = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = NMEA_STD,
+        .msgID    = NMEA_GBS,
+        .rate     = 0
+};
+
+static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GGA = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = NMEA_STD,
+        .msgID    = NMEA_GGA,
+        .rate     = 0
+};
+
+static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GLL = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = NMEA_STD,
+        .msgID    = NMEA_GLL,
+        .rate     = 0
+};
+
+static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GLQ = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = NMEA_STD,
+        .msgID    = NMEA_GLQ,
+        .rate     = 0
+};
+
+static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GNQ = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = NMEA_STD,
+        .msgID    = NMEA_GNQ,
+        .rate     = 0
+};
+
+static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GNS = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = NMEA_STD,
+        .msgID    = NMEA_GNS,
+        .rate     = 0
+};
+
+static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GPQ = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = NMEA_STD,
+        .msgID    = NMEA_GPQ,
+        .rate     = 0
+};
+
+static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GRS = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = NMEA_STD,
+        .msgID    = NMEA_GRS,
+        .rate     = 0
+};
+
+static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GSA = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = NMEA_STD,
+        .msgID    = NMEA_GSA,
+        .rate     = 0
+};
+
+static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GST = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = NMEA_STD,
+        .msgID    = NMEA_GST,
+        .rate     = 0
+};
+
+static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GSV = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = NMEA_STD,
+        .msgID    = NMEA_GSV,
+        .rate     = 0
+};
+
+static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_RMC = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = NMEA_STD,
+        .msgID    = NMEA_RMC,
+        .rate     = 0
+};
+
+static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_TXT = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = NMEA_STD,
+        .msgID    = NMEA_TXT,
+        .rate     = 0
+};
+
+static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_VLW = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = NMEA_STD,
+        .msgID    = NMEA_VLW,
+        .rate     = 0
+};
+
+static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_VTG = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = NMEA_STD,
+        .msgID    = NMEA_VTG,
+        .rate     = 0
+};
+
+static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_ZDA = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = NMEA_STD,
+        .msgID    = NMEA_ZDA,
+        .rate     = 0
+};
+
+#define GPS_LEN_DEFAULT_CONFIG (sizeof(GPS_DEFAULT_CONFIG)/sizeof(GPS_UBX_cmd_t))
+
+static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {
+        // Disable all NMEA messages
+        &GPS_DISABLE_NMEA_DTM.generic,
+        &GPS_DISABLE_NMEA_GBQ.generic,
+        &GPS_DISABLE_NMEA_GBS.generic,
+        &GPS_DISABLE_NMEA_GGA.generic,
+        &GPS_DISABLE_NMEA_GLL.generic,
+        &GPS_DISABLE_NMEA_GLQ.generic,
+        &GPS_DISABLE_NMEA_GNQ.generic,
+        &GPS_DISABLE_NMEA_GNS.generic,
+        &GPS_DISABLE_NMEA_GPQ.generic,
+        &GPS_DISABLE_NMEA_GRS.generic,
+        &GPS_DISABLE_NMEA_GSA.generic,
+        &GPS_DISABLE_NMEA_GST.generic,
+        &GPS_DISABLE_NMEA_GSV.generic,
+        &GPS_DISABLE_NMEA_RMC.generic,
+        &GPS_DISABLE_NMEA_TXT.generic,
+        &GPS_DISABLE_NMEA_VLW.generic,
+        &GPS_DISABLE_NMEA_VTG.generic,
+        &GPS_DISABLE_NMEA_ZDA.generic
+};
+
+
 //static const GPS_UBX_cmd_t UBX_CFG_MSG = {
 //        .class   = 0x06,
 //        .ID      = 0x01,
