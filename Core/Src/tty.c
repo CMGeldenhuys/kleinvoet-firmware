@@ -41,7 +41,7 @@ int TTY_init(UART_HandleTypeDef* uart)
 	return 1;
 }
 
-void TTY_deinit()
+void TTY_deint()
 {
 	free(tty.serial);
 }
