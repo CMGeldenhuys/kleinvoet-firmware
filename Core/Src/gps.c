@@ -15,9 +15,9 @@
 
 static GPS_t gps = {0};
 
-void GPS_packMsg_ (GPS_UBX_t *ubx);
+void GPS_packMsg_ (GPS_UBX_msg_t *ubx);
 
-int GPS_checksum_ (GPS_UBX_t *ubx);
+int GPS_checksum_ (GPS_UBX_msg_t *ubx);
 
 size_t GPS_cmdLen_ (const GPS_UBX_cmd_t *cmd);
 
@@ -27,6 +27,10 @@ int GPS_configureUBX_ ();
 
 int GPS_init (UART_HandleTypeDef *uart) {
   Serial_wrap(&gps.serial, uart);
+
+  // TODO: Move to clear buffer method
+  gps.rx.idx = 0;
+
   GPS_configureUBX_();
   return 1;
 }
@@ -42,7 +46,7 @@ int GPS_configureUBX_ () {
 
 int GPS_sendCommand (const GPS_UBX_cmd_t *cmd) {
   // TODO: Implement ACk & NACK to retry
-  GPS_UBX_t msg = {0};
+  GPS_UBX_msg_t msg = {0};
   msg.cmd = cmd;
   DBUG("Sending UBX command 0x%02x - 0x%02x (%u bytes)", cmd->cls, cmd->id, cmd->len);
   GPS_packMsg_(&msg);
@@ -59,81 +63,72 @@ inline size_t GPS_cmdLen_ (const GPS_UBX_cmd_t *cmd) {
   return GPS_PREAMBLE_LEN_ + cmd->len;
 }
 
-typedef union {
-    uint8_t mem[64];
-    GPS_UBX_cmd_t t;
-}GPS_UBX_t_mem;
-GPS_UBX_t_mem buf = {0};
-
 int GPS_yield () {
-  static size_t idx = 0;
-  static uint8_t sync_1, sync_2, ck_a, ck_b;
+    // Process data received over serial
   while (Serial_available(&gps.serial) > 0) {
     uint8_t c = Serial_read(&gps.serial);
+
     DBUG("recv: 0x%02X", c);
 
-    if(gps.rxState == 0 && c == GPS_SYNC_1_) gps.rxState = 1;
-
-    switch(gps.rxState) {
+    switch(gps.rx.state) {
 
         // Sync 1
-      case 1: {
-        DBUG("recv sync1");
-        sync_1 = c;
-        gps.rxState = 2;
+      case GPS_IDLE: {
+        // Received start byte
+        if (c == GPS_SYNC_1_) gps.rx.state = GPS_RX_SYNC_2;
         break;
       }
 
       // Sync 2
-      case 2: {
-        DBUG("recv sync2");
-        sync_2 = c;
-        gps.rxState = 3;
-        break;
+      case GPS_RX_SYNC_2: {
+          DBUG("New command recv");
+          // Received second byte
+          if (c == GPS_SYNC_2_) gps.rx.state = GPS_RX_PREAMBLE;
+          break;
       }
         // Preable
-      case 3: {
-        DBUG("recv preamble byte");
-        buf.mem[idx++] = c;
-        if(idx >= GPS_PREAMBLE_LEN_){
-            DBUG("CMD Len: %u", buf.t.len);
-            gps.rxState = 4;
-            idx = 0;
+      case GPS_RX_PREAMBLE: {
+          DBUG("Recv preamble [%u]", gps.rx.idx);
+        gps.rx.cmd.mem[gps.rx.idx++] = c;
+
+        // Finished getting preamble
+        if(gps.rx.idx >= GPS_PREAMBLE_LEN_) {
+            DBUG("CMD Len: %u", gps.rx.cmd._t.len);
+            gps.rx.state = GPS_RX_PAYLOAD;
+            gps.rx.idx = 0;
         }
         break;
       }
 
-      case 4: {
-          DBUG("recv payload byte");
-          buf.t.payload[idx++] = c;
-          if(idx >= buf.t.len ) gps.rxState = 5;
+      case GPS_RX_PAYLOAD: {
+          DBUG("Recv payload [%u]", gps.rx.idx);
+          gps.rx.cmd._t.payload[gps.rx.idx++] = c;
+          if(gps.rx.idx >= gps.rx.cmd._t.len ) gps.rx.state = GPS_RX_CK_A;
           break;
       }
         // Ck_a
-      case 5: {
-        DBUG("recv ck_a");
-        ck_a = c;
-        gps.rxState = 6;
+      case GPS_RX_CK_A: {
+        DBUG("Recv CK_A");
+        gps.rx.CK_A = c;
+        gps.rx.state = GPS_RX_CK_B;
         break;
       }
         // Ck_b
-      case 6: {
-        DBUG("recv ck_b");
-        ck_b = c;
-        gps.rxState = 7;
+      case GPS_RX_CK_B: {
+        DBUG("Recv CK_B");
+        gps.rx.CK_B = c;
+        gps.rx.state = GPS_RX_DONE;
         break;
       }
         // FUll cmd
-      case 7: {
+      case GPS_RX_DONE: {
           DBUG("---- Full Command Recv ----");
-          GPS_UBX_t tmp = {0};
-          tmp.cmd = &buf.t;
-          tmp.sync_1 = sync_1;
-          tmp.sync_2 = sync_2;
-          tmp.CK_A = ck_a;
-          tmp.CK_B = ck_b;
+          GPS_UBX_msg_t tmp = {0};
+          tmp.cmd = &gps.rx.cmd._t;
+          tmp.CK_A = gps.rx.CK_A;
+          tmp.CK_B = gps.rx.CK_B;
           DBUG("Checksum status: %d",GPS_checksum_(&tmp));
-          gps.rxState = 0;
+          gps.rx.state = GPS_IDLE;
           break;
       }
 
@@ -143,7 +138,7 @@ int GPS_yield () {
   }
 }
 
-void GPS_packMsg_ (GPS_UBX_t *ubx) {
+void GPS_packMsg_ (GPS_UBX_msg_t *ubx) {
   // Place synchronisation characters for bus speed
   ubx->sync_1 = GPS_SYNC_1_;
   ubx->sync_2 = GPS_SYNC_2_;
@@ -151,7 +146,7 @@ void GPS_packMsg_ (GPS_UBX_t *ubx) {
   GPS_checksum_(ubx);
 }
 
-int GPS_checksum_ (GPS_UBX_t *ubx) {
+int GPS_checksum_ (GPS_UBX_msg_t *ubx) {
   uint8_t CK_A = 0;
   uint8_t CK_B = 0;
 

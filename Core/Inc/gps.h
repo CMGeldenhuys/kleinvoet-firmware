@@ -19,8 +19,8 @@ extern "C" {
 
 #include "serial.h"
 
-#ifndef GPS_CMD_LEN
-#define GPS_CMD_LEN 256
+#ifndef GPS_BUF_LEN
+#define GPS_BUF_LEN 32
 #endif
 
 typedef enum __attribute__ ((packed)) {
@@ -77,12 +77,32 @@ typedef struct {
     const GPS_UBX_cmd_t *cmd;
     uint8_t             CK_A;
     uint8_t             CK_B;
-} GPS_UBX_t;
+} GPS_UBX_msg_t;
+
+typedef enum {
+    GPS_IDLE,
+
+    GPS_RX_SYNC_2,
+    GPS_RX_PREAMBLE,
+    GPS_RX_PAYLOAD,
+    GPS_RX_CK_A,
+    GPS_RX_CK_B,
+    GPS_RX_DONE
+} GPS_state_e;
 
 typedef struct {
     Serial_t serial;
-    GPS_UBX_t rxMsg;
-    int rxState;
+    struct {
+        union {
+            uint8_t mem[GPS_BUF_LEN];
+            GPS_UBX_cmd_t _t;
+        } cmd;
+        size_t idx;
+        uint8_t CK_A;
+        uint8_t CK_B;
+
+        GPS_state_e state;
+    } rx;
 } GPS_t;
 
 typedef union {
