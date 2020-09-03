@@ -27,16 +27,21 @@ int TTY_init(UART_HandleTypeDef* uart)
 	tty.serial = (Serial_t*) malloc(sizeof(Serial_t));
 	Serial_wrap(tty.serial, uart);
   TTY_clearCommandBuffer_();
+
 #ifdef TTY_GREETING
   TTY_greet_();
   TTY_registerCommand("greet", &TTY_greet_);
 #endif
+
+  // Register TTY default commands
+  TTY_registerCommand("reset", &TTY_resetDevice);
+
 	if(!*tty.PS) tty.PS = SERIAL_EOL "> ";
   TTY_PS_();
 	return 1;
 }
 
-void TTY_deint()
+void TTY_deinit()
 {
 	free(tty.serial);
 }
@@ -118,7 +123,7 @@ uint8_t TTY_read()
   return Serial_read(tty.serial);
 }
 
-int TTY_registerCommand(const char *command, int (*func)(int argc, char *argv[]))
+int TTY_registerCommand(const char *command, int (*func)(__unused int argc, __unused char *argv[]))
 {
 	static size_t idx = 0;
 	// Run out of command space
@@ -176,6 +181,13 @@ int TTY_PS_()
 	return Serial_print(tty.serial, tty.PS);
 }
 
+int TTY_resetDevice(__unused int argc, __unused char *argv[])
+{
+  TTY_println("System is being reset!");
+  HAL_NVIC_SystemReset();
+  return 1;
+}
+
 #ifdef DEBUG
 int LOG_write(uint8_t *buf, size_t len)
 {
@@ -184,7 +196,7 @@ int LOG_write(uint8_t *buf, size_t len)
 
 int LOG_flush()
 {
-  // TODO: Fix once buffred writer is implemented
+  // TODO: Fix once buffered writer is implemented
   return 1;
 }
 #endif

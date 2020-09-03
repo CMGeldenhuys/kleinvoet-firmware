@@ -15,10 +15,6 @@
 
 static GPS_t gps = {0};
 
-void GPS_clearCMDBuf_ ();
-
-int GPS_appendCMD_ (char c);
-
 void GPS_packMsg_ (GPS_UBX_t *ubx);
 
 void GPS_checksum_ (GPS_UBX_t *ubx);
@@ -54,7 +50,7 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *cmd)
   // TODO: Implement ACk & NACK to retry
   GPS_UBX_t msg = {0};
   msg.cmd = cmd;
-  DBUG("Sending UBX command 0x%02x - 0x%02x", cmd->cls, cmd->id);
+  DBUG("Sending UBX command 0x%02x - 0x%02x (%u bytes)", cmd->cls, cmd->id, cmd->len);
   GPS_packMsg_(&msg);
 
   // Send sync header
