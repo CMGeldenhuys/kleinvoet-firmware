@@ -144,7 +144,7 @@ int main(void)
 #pragma ide diagnostic ignored "EndlessLoop"
   while (1) {
     TTY_yield();
-    //GPS_yield();
+    GPS_yield();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

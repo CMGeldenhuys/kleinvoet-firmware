@@ -23,15 +23,6 @@ extern "C" {
 #define GPS_CMD_LEN 256
 #endif
 
-typedef struct {
-    Serial_t serial;
-    struct {
-        char buf[GPS_CMD_LEN];
-        char *pos;
-        int  started;
-    }        rxCmd;
-} GPS_t;
-
 typedef enum __attribute__ ((packed)) {
     UBX_NAV = 0x01,
     UBX_RXM = 0x02,
@@ -87,6 +78,12 @@ typedef struct {
     uint8_t             CK_A;
     uint8_t             CK_B;
 } GPS_UBX_t;
+
+typedef struct {
+    Serial_t serial;
+    GPS_UBX_t rxMsg;
+    int rxState;
+} GPS_t;
 
 typedef union {
     GPS_UBX_cmd_t generic;
