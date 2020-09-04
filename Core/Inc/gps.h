@@ -455,6 +455,16 @@ static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_SAT = {
         .rate     = 10
 };
 
+static const UBX_CFG_MSG_t GPS_DISABLE_UBX_NAV_SAT = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = UBX_NAV,
+        .msgID    = 0x35,
+        .rate     = 0
+};
+
 #define GPS_LEN_DEFAULT_CONFIG (sizeof(GPS_DEFAULT_CONFIG)/sizeof(GPS_UBX_cmd_t))
 
 static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {

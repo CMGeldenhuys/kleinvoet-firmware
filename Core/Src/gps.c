@@ -176,6 +176,10 @@ int GPS_yield () {
                           DBUG("\tflags2: 0x%02X", cmd->flags2);
                           DBUG("\tttff: %lu", cmd->ttff);
                           DBUG("\tmsss: %lu", cmd->msss);
+                          if(cmd->gpsFix != 0x00) {
+                              GPS_sendCommand(&GPS_DISABLE_UBX_NAV_SAT.generic);
+                              GPS_sendCommand(&GPS_ENABLE_UBX_NAV_CLK.generic);
+                          }
                           break;
                       }
 
