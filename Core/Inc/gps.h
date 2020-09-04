@@ -137,6 +137,20 @@ typedef union {
     };
 } UBX_CFG_MSG_t;
 
+typedef union {
+    GPS_UBX_cmd_t generic;
+    struct {
+        GPS_UBX_Class_e cls;
+        uint8_t         id;
+        uint16_t        len;
+
+        uint32_t        iTOW;
+        int32_t          clkB;
+        int32_t          clkD;
+        uint32_t        tAcc;
+        uint32_t        fAcc;
+    };
+} UBX_NAV_CLK_t;
 
 // Magic Numbers
 #define GPS_SYNC_1_ 0xB5
@@ -369,6 +383,16 @@ static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_ZDA = {
         .rate     = 0
 };
 
+static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_CLK = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = UBX_NAV,
+        .msgID    = 0x22,
+        .rate     = 5
+};
+
 #define GPS_LEN_DEFAULT_CONFIG (sizeof(GPS_DEFAULT_CONFIG)/sizeof(GPS_UBX_cmd_t))
 
 static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {
@@ -390,7 +414,10 @@ static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {
         &GPS_DISABLE_NMEA_TXT.generic,
         &GPS_DISABLE_NMEA_VLW.generic,
         &GPS_DISABLE_NMEA_VTG.generic,
-        &GPS_DISABLE_NMEA_ZDA.generic
+        &GPS_DISABLE_NMEA_ZDA.generic,
+
+        // Enable GPS time
+        &GPS_ENABLE_UBX_NAV_CLK.generic
 };
 
 

@@ -81,9 +81,17 @@ int GPS_yield () {
 
       // Sync 2
       case GPS_RX_SYNC_2: {
-          DBUG("New command recv");
           // Received second byte
-          if (c == GPS_SYNC_2_) gps.rx.state = GPS_RX_PREAMBLE;
+          if (c == GPS_SYNC_2_){
+              DBUG("New command recv");
+
+              // Reset internal state
+              gps.rx.idx = 0;
+              memset(gps.rx.cmd.mem, 0, GPS_BUF_LEN);
+
+              gps.rx.state = GPS_RX_PREAMBLE;
+          }
+          else gps.rx.state = GPS_IDLE;
           break;
       }
         // Preable
@@ -118,7 +126,7 @@ int GPS_yield () {
         DBUG("Recv CK_B");
         gps.rx.CK_B = c;
         gps.rx.state = GPS_RX_DONE;
-        break;
+        // Run into next state
       }
         // FUll cmd
       case GPS_RX_DONE: {
