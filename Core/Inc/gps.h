@@ -87,7 +87,8 @@ typedef enum {
     GPS_RX_PAYLOAD,
     GPS_RX_CK_A,
     GPS_RX_CK_B,
-    GPS_RX_DONE
+    GPS_RX_CHECKSUM,
+    GPS_RX_PROCESS_CMD
 } GPS_state_e;
 
 typedef struct {
@@ -151,6 +152,47 @@ typedef union {
         uint32_t        fAcc;
     };
 } UBX_NAV_CLK_t;
+
+typedef union {
+    GPS_UBX_cmd_t generic;
+    struct {
+        GPS_UBX_Class_e cls;
+        uint8_t         id;
+        uint16_t        len;
+
+        uint32_t        iTOW;
+        uint8_t         gpsFix;
+        uint8_t         flags;
+        uint8_t         fixStat;
+        uint8_t         flags2;
+        uint32_t         ttff;
+        uint32_t        msss;
+    };
+} UBX_NAV_STATUS_t;
+
+typedef union {
+    GPS_UBX_cmd_t generic;
+    struct {
+        GPS_UBX_Class_e cls;
+        uint8_t         id;
+        uint16_t        len;
+
+        uint32_t        iTOW;
+        uint8_t          version;
+        uint8_t         numSvs;
+        uint8_t         reserved[2];
+
+        struct {
+            uint8_t     gnssId;
+            uint8_t     svId;
+            uint8_t     cno;
+            int8_t      elev;
+            int16_t     azim;
+            int16_t     prRes;
+            uint32_t    flags;
+        } svs[];
+    };
+} UBX_NAV_SAT_t;
 
 // Magic Numbers
 #define GPS_SYNC_1_ 0xB5
@@ -390,7 +432,27 @@ static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_CLK = {
 
         .msgClass = UBX_NAV,
         .msgID    = 0x22,
-        .rate     = 5
+        .rate     = 10
+};
+
+static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_STATUS = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = UBX_NAV,
+        .msgID    = 0x03,
+        .rate     = 10
+};
+
+static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_SAT = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = UBX_NAV,
+        .msgID    = 0x35,
+        .rate     = 10
 };
 
 #define GPS_LEN_DEFAULT_CONFIG (sizeof(GPS_DEFAULT_CONFIG)/sizeof(GPS_UBX_cmd_t))
@@ -417,7 +479,8 @@ static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {
         &GPS_DISABLE_NMEA_ZDA.generic,
 
         // Enable GPS time
-        &GPS_ENABLE_UBX_NAV_CLK.generic
+        &GPS_ENABLE_UBX_NAV_SAT.generic,
+        &GPS_ENABLE_UBX_NAV_STATUS.generic
 };
 
 

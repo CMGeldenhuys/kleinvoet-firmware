@@ -76,6 +76,7 @@ int GPS_yield () {
       case GPS_IDLE: {
         // Received start byte
         if (c == GPS_SYNC_1_) gps.rx.state = GPS_RX_SYNC_2;
+        else if (c == '$') DBUG("NMEA Msg recv");
         break;
       }
 
@@ -125,19 +126,100 @@ int GPS_yield () {
       case GPS_RX_CK_B: {
         DBUG("Recv CK_B");
         gps.rx.CK_B = c;
-        gps.rx.state = GPS_RX_DONE;
+
+        gps.rx.state = GPS_RX_CHECKSUM;
         // Run into next state
       }
         // FUll cmd
-      case GPS_RX_DONE: {
+      case GPS_RX_CHECKSUM: {
           DBUG("---- Full Command Recv ----");
           GPS_UBX_msg_t tmp = {0};
           tmp.cmd = &gps.rx.cmd._t;
           tmp.CK_A = gps.rx.CK_A;
           tmp.CK_B = gps.rx.CK_B;
-          DBUG("Checksum status: %d",GPS_checksum_(&tmp));
+          if(GPS_checksum_(&tmp) > 0) {
+              DBUG("Checksum status: PASSED");
+              gps.rx.state = GPS_RX_PROCESS_CMD;
+              // Run into next state
+          }
+          else {
+              DBUG("Checksum status: FAILED");
+              gps.rx.state = GPS_IDLE;
+              return 0;
+          }
+
+      }
+
+      case GPS_RX_PROCESS_CMD: {
+          switch(gps.rx.cmd._t.cls) {
+              case UBX_NAV:{
+                  INFO("NAV Msg recv");
+                  switch(gps.rx.cmd._t.id) {
+                      // UBX-NAV-CLK
+                      case 0x22:{
+                          UBX_NAV_CLK_t *cmd = (UBX_NAV_CLK_t *) &gps.rx.cmd._t;
+                          DBUG("\tiTOW: %lu", cmd->iTOW);
+                          DBUG("\tclkB: %l", cmd->clkB);
+                          DBUG("\tclkD: %l", cmd->clkD);
+                          DBUG("\ttAcc: %lu", cmd->tAcc);
+                          DBUG("\tfAcc: %lu", cmd->fAcc);
+                        break;
+                      }
+
+                      // UBX-NAV-STATUS
+                      case 0x03:{
+                          UBX_NAV_STATUS_t *cmd = (UBX_NAV_STATUS_t *) &gps.rx.cmd._t;
+                          DBUG("\tiTOW: %lu", cmd->iTOW);
+                          DBUG("\tgpsFix: 0x%02X", cmd->gpsFix);
+                          DBUG("\tflags: 0x%02X", cmd->flags);
+                          DBUG("\tfixStat: 0x%02x", cmd->fixStat);
+                          DBUG("\tflags2: 0x%02X", cmd->flags2);
+                          DBUG("\tttff: %lu", cmd->ttff);
+                          DBUG("\tmsss: %lu", cmd->msss);
+                          break;
+                      }
+
+                      // UBX-NAV-SAT
+                      case 0x35: {
+                          UBX_NAV_SAT_t *cmd = (UBX_NAV_SAT_t *) &gps.rx.cmd._t;
+                          DBUG("\tiTOW: %lu", cmd->iTOW);
+                          DBUG("\tversion: %u", cmd->version);
+                          DBUG("\tnumSvs: %u", cmd->numSvs);
+
+                          for(uint8_t i = 0; i < cmd->numSvs; i++){
+                              DBUG("\t---- Svs %u ----", i);
+                              DBUG("\t\tgnssId: %u", cmd->svs[i].gnssId);
+                              DBUG("\t\tsvId: %u", cmd->svs[i].svId);
+                              DBUG("\t\tcno: %u", cmd->svs[i].cno);
+                              DBUG("\t\telev: %d", cmd->svs[i].elev);
+                              DBUG("\t\tazim: %d", cmd->svs[i].azim);
+                              DBUG("\t\tprRes: %d", cmd->svs[i].prRes);
+                              DBUG("\t\tflags: %lu", cmd->svs[i].flags);
+
+                          }
+                          break;
+                      }
+
+                      default:{
+                          DBUG("Unknown Msg id");
+                          break;
+                      }
+
+                  }
+                  break;
+              }
+
+              default: {
+                  INFO("GPS Msg ignored (0x%02X | 0x%02X)", gps.rx.cmd._t.cls, gps.rx.cmd._t.id);
+                  break;
+              }
+
+          }
+
           gps.rx.state = GPS_IDLE;
-          break;
+          return 1;
+          // Yield end of command
+          // Allow time for other commands
       }
 
       default:
