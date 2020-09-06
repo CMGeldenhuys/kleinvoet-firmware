@@ -48,7 +48,7 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *cmd) {
   // TODO: Implement ACk & NACK to retry
   GPS_UBX_msg_t msg = {0};
   msg.cmd = cmd;
-  DBUG("Sending UBX command 0x%02x - 0x%02x (%u bytes)", cmd->cls, cmd->id, cmd->len);
+  DBUG("Sending UBX command 0x%02X - 0x%02X (%u bytes)", cmd->cls, cmd->id, cmd->len);
   GPS_packMsg_(&msg);
 
   // Send sync header
@@ -67,9 +67,6 @@ int GPS_yield () {
     // Process data received over serial
   while (Serial_available(&gps.serial) > 0) {
     uint8_t c = Serial_read(&gps.serial);
-
-    DBUG("recv: 0x%02X", c);
-
     switch(gps.rx.state) {
 
         // Sync 1
@@ -84,7 +81,7 @@ int GPS_yield () {
       case GPS_RX_SYNC_2: {
           // Received second byte
           if (c == GPS_SYNC_2_){
-              DBUG("New command recv");
+              DBUG("New UBX command recv");
 
               // Reset internal state
               gps.rx.idx = 0;
@@ -97,7 +94,7 @@ int GPS_yield () {
       }
         // Preable
       case GPS_RX_PREAMBLE: {
-          DBUG("Recv preamble [%u]", gps.rx.idx);
+          DBUG("Recv preamble [%u] <- 0x%02X", gps.rx.idx, c);
         gps.rx.cmd.mem[gps.rx.idx++] = c;
 
         // Finished getting preamble
@@ -110,21 +107,25 @@ int GPS_yield () {
       }
 
       case GPS_RX_PAYLOAD: {
-          DBUG("Recv payload [%u]", gps.rx.idx);
+          DBUG("Recv payload [%u] <- 0x%02X", gps.rx.idx, c);
           gps.rx.cmd._t.payload[gps.rx.idx++] = c;
           if(gps.rx.idx >= gps.rx.cmd._t.len ) gps.rx.state = GPS_RX_CK_A;
+          if(gps.rx.idx >= GPS_BUF_LEN - GPS_PREAMBLE_LEN_) {
+            ERR("Command buffer overflow!");
+            gps.rx.state = GPS_IDLE;
+          }
           break;
       }
         // Ck_a
       case GPS_RX_CK_A: {
-        DBUG("Recv CK_A");
+        DBUG("Recv CK_A (0x%02X)", c);
         gps.rx.CK_A = c;
         gps.rx.state = GPS_RX_CK_B;
         break;
       }
         // Ck_b
       case GPS_RX_CK_B: {
-        DBUG("Recv CK_B");
+        DBUG("Recv CK_B (0x%02X)", c);
         gps.rx.CK_B = c;
 
         gps.rx.state = GPS_RX_CHECKSUM;
