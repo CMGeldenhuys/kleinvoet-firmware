@@ -20,8 +20,10 @@ extern "C" {
 #include "serial.h"
 
 #ifndef GPS_BUF_LEN
-#define GPS_BUF_LEN 32
+#define GPS_BUF_LEN 64
 #endif
+
+
 
 typedef enum __attribute__ ((packed)) {
     UBX_NAV = 0x01,
@@ -95,15 +97,15 @@ typedef struct {
     Serial_t serial;
     struct {
         union {
-            uint8_t mem[GPS_BUF_LEN];
+            uint8_t       mem[GPS_BUF_LEN];
             GPS_UBX_cmd_t _t;
-        } cmd;
-        size_t idx;
+        }       cmd;
+        size_t  idx;
         uint8_t CK_A;
         uint8_t CK_B;
 
         GPS_state_e state;
-    } rx;
+    }        rx;
 } GPS_t;
 
 typedef union {
@@ -145,13 +147,35 @@ typedef union {
         uint8_t         id;
         uint16_t        len;
 
-        uint32_t        iTOW;
-        int32_t          clkB;
-        int32_t          clkD;
-        uint32_t        tAcc;
-        uint32_t        fAcc;
+        uint32_t iTOW;
+        int32_t  clkB;
+        int32_t  clkD;
+        uint32_t tAcc;
+        uint32_t fAcc;
     };
 } UBX_NAV_CLK_t;
+
+typedef union {
+    GPS_UBX_cmd_t generic;
+    struct {
+        GPS_UBX_Class_e cls;
+        uint8_t         id;   //0x21
+        uint16_t        len;  // 20u
+
+        uint32_t iTOW;
+        uint32_t tAcc;
+        int32_t  nano;
+        uint16_t year;
+        uint8_t  month;
+        uint8_t  day;
+        uint8_t  hour;
+        uint8_t  min;
+        uint8_t  sec;
+        uint8_t  valid;
+    };
+} UBX_NAV_TIMEUTC_t;
+
+#define UBX_NAV_TIMEUTC_VALID_UTC 0b00000100
 
 typedef union {
     GPS_UBX_cmd_t generic;
@@ -160,13 +184,13 @@ typedef union {
         uint8_t         id;
         uint16_t        len;
 
-        uint32_t        iTOW;
-        uint8_t         gpsFix;
-        uint8_t         flags;
-        uint8_t         fixStat;
-        uint8_t         flags2;
-        uint32_t         ttff;
-        uint32_t        msss;
+        uint32_t iTOW;
+        uint8_t  gpsFix;
+        uint8_t  flags;
+        uint8_t  fixStat;
+        uint8_t  flags2;
+        uint32_t ttff;
+        uint32_t msss;
     };
 } UBX_NAV_STATUS_t;
 
@@ -177,20 +201,20 @@ typedef union {
         uint8_t         id;
         uint16_t        len;
 
-        uint32_t        iTOW;
-        uint8_t          version;
-        uint8_t         numSvs;
-        uint8_t         reserved[2];
+        uint32_t iTOW;
+        uint8_t  version;
+        uint8_t  numSvs;
+        uint8_t  reserved[2];
 
         struct {
-            uint8_t     gnssId;
-            uint8_t     svId;
-            uint8_t     cno;
-            int8_t      elev;
-            int16_t     azim;
-            int16_t     prRes;
-            uint32_t    flags;
-        } svs[];
+            uint8_t  gnssId;
+            uint8_t  svId;
+            uint8_t  cno;
+            int8_t   elev;
+            int16_t  azim;
+            int16_t  prRes;
+            uint32_t flags;
+        }        svs[];
     };
 } UBX_NAV_SAT_t;
 
@@ -425,15 +449,15 @@ static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_ZDA = {
         .rate     = 0
 };
 
-static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_CLK = {
-        .cls      = UBX_CFG,
-        .id       = 0x01,
-        .len      = 3,
-
-        .msgClass = UBX_NAV,
-        .msgID    = 0x22,
-        .rate     = 10
-};
+//static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_CLK = {
+//        .cls      = UBX_CFG,
+//        .id       = 0x01,
+//        .len      = 3,
+//
+//        .msgClass = UBX_NAV,
+//        .msgID    = 0x22,
+//        .rate     = 10
+//};
 
 static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_STATUS = {
         .cls      = UBX_CFG,
@@ -452,6 +476,16 @@ static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_SAT = {
 
         .msgClass = UBX_NAV,
         .msgID    = 0x35,
+        .rate     = 10
+};
+
+static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_TIMEUTC = {
+        .cls      = UBX_CFG,
+        .id       = 0x01,
+        .len      = 3,
+
+        .msgClass = UBX_NAV,
+        .msgID    = 0x21,
         .rate     = 10
 };
 
@@ -490,7 +524,8 @@ static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {
 
         // Enable GPS time
         &GPS_ENABLE_UBX_NAV_SAT.generic,
-        &GPS_ENABLE_UBX_NAV_STATUS.generic
+        &GPS_ENABLE_UBX_NAV_STATUS.generic,
+        &GPS_ENABLE_UBX_NAV_TIMEUTC.generic
 };
 
 
