@@ -90,9 +90,9 @@ int GPS_yield ()
   return 1;
 }
 
-int GPS_rxByte_ (uint8_t c)
+GPS_state_e GPS_rxByte_ (const GPS_state_e state, const uint8_t c)
 {
-  switch (gps.rx.state) {
+  switch (state) {
 
     // Sync 1
     case GPS_IDLE: {
@@ -112,7 +112,7 @@ int GPS_rxByte_ (uint8_t c)
         gps.rx.idx = 0;
         memset(gps.rx.cmd.mem, 0, GPS_BUF_LEN);
 
-        gps.rx.state = GPS_RX_PREAMBLE;
+        return GPS_RX_PREAMBLE;
       }
       else gps.rx.state = GPS_IDLE;
       break;
