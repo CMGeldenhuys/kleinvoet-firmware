@@ -121,12 +121,8 @@ int main(void)
   // Give time for RTC to init properly
   HAL_RTC_WaitForSynchro(&hrtc);
   TTY_init(&huart2);
-  INFO("Waiting for GPS to finish starting up..");
-  HAL_Delay(5000);
-  INFO("Done waiting for GPS");
-  GPS_init(&huart4);
-  FATFS_mount();
-  // Run Logging test
+
+  // Test Logging
   DBUG("Hello, World.");
   HAL_Delay(10);
   INFO("Hello, World!");
@@ -134,7 +130,13 @@ int main(void)
   WARN("HELLO, World!");
   HAL_Delay(1000);
   ERR("HELLO, WORLD!");
-// TODO: SD card doing stange things
+
+  INFO("Waiting for GPS to finish starting up..");
+  HAL_Delay(5000);
+  INFO("Done waiting for GPS");
+  GPS_init(&huart4);
+  FATFS_mount();
+// TODO: SD card doing strange things
 //  WAVE_createFile(&wav, "test.wav");
   /* USER CODE END 2 */
 

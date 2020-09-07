@@ -92,15 +92,18 @@ typedef struct {
 } GPS_UBX_msg_t;
 
 typedef enum {
-    GPS_IDLE,
+    GPS_UNDEF  = 0x000000,
+    GPS_IDLE   = 0x010000,
+    GPS_CONFIG = 0x800000,
+    GPS_RX     = 0x040000,
 
-    GPS_RX_SYNC_2,
-    GPS_RX_PREAMBLE,
-    GPS_RX_PAYLOAD,
-    GPS_RX_CK_A,
-    GPS_RX_CK_B,
-    GPS_RX_CHECKSUM,
-    GPS_RX_PROCESS_CMD
+    GPS_RX_SYNC_2      = 0x040001,
+    GPS_RX_PREAMBLE    = 0x040002,
+    GPS_RX_PAYLOAD     = 0x040004,
+    GPS_RX_CK_A        = 0x040008,
+    GPS_RX_CK_B        = 0x040010,
+    GPS_RX_CHECKSUM    = 0x040020,
+    GPS_RX_PROCESS_CMD = 0x040040
 } GPS_state_e;
 
 typedef struct {
@@ -116,6 +119,8 @@ typedef struct {
 
         GPS_state_e state;
     }        rx;
+
+    GPS_state_e state;
 } GPS_t;
 
 typedef union {
@@ -543,7 +548,7 @@ int GPS_init (UART_HandleTypeDef *uart);
 
 int GPS_yield ();
 
-int GPS_sendCommand (const GPS_UBX_cmd_t *cmd);
+int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck);
 
 #ifdef __cplusplus
 }
