@@ -40,13 +40,13 @@ int GPS_configureUBX_ ()
 {
   DBUG("Size of DEFAULT_CONFIG: %u", GPS_LEN_DEFAULT_CONFIG);
   for (size_t i = 0; i < GPS_LEN_DEFAULT_CONFIG; i++) {
-    GPS_sendCommand(GPS_DEFAULT_CONFIG[i], 0);
+    GPS_sendCommand(GPS_DEFAULT_CONFIG[i], 0, 0);
   }
 
   return 1;
 }
 
-int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck)
+int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, __unused int waitAck, __unused int retryOnNack)
 {
   // TODO: Implement ACk & NACK to retry
   GPS_UBX_msg_t msg = {0};

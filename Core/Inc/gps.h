@@ -548,7 +548,7 @@ int GPS_init (UART_HandleTypeDef *uart);
 
 int GPS_yield ();
 
-int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck);
+int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck, int retryOnNack);
 
 #ifdef __cplusplus
 }
