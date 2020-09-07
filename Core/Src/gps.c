@@ -21,9 +21,11 @@ int GPS_checksum_ (GPS_UBX_msg_t *ubx);
 
 size_t GPS_cmdLen_ (const GPS_UBX_cmd_t *cmd);
 
-int GPS_sendCommand (const GPS_UBX_cmd_t *cmd);
-
 int GPS_configureUBX_ ();
+
+int GPS_processCmd_ (GPS_UBX_cmd_t *cmd);
+
+int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd);
 
 int GPS_init (UART_HandleTypeDef *uart)
 {
@@ -78,7 +80,7 @@ int GPS_yield ()
       case GPS_IDLE: {
         // Received start byte
         if (c == GPS_SYNC_1_) gps.rx.state = GPS_RX_SYNC_2;
-        else if (c == '$') DBUG("NMEA Msg recv");
+        else if (c == '$') DBUG("NMEA Msg recv (ignoring)");
         break;
       }
 
@@ -97,14 +99,18 @@ int GPS_yield ()
         else gps.rx.state = GPS_IDLE;
         break;
       }
-        // Preable
+        // Preamble
       case GPS_RX_PREAMBLE: {
-        DBUG("Recv preamble [%u] <- 0x%02X", gps.rx.idx, c);
+#ifdef GPS_DEBUG_SERIAL
+        DBUG("Recv preamble \t[%03u] <- 0x%02X", gps.rx.idx, c);
+#endif
         gps.rx.cmd.mem[gps.rx.idx++] = c;
 
         // Finished getting preamble
         if (gps.rx.idx >= GPS_PREAMBLE_LEN_) {
+#ifdef GPS_DEBUG_SERIAL
           DBUG("CMD Len: %u", gps.rx.cmd._t.len);
+#endif
           gps.rx.state = GPS_RX_PAYLOAD;
           gps.rx.idx   = 0;
         }
@@ -112,25 +118,31 @@ int GPS_yield ()
       }
 
       case GPS_RX_PAYLOAD: {
-        DBUG("Recv payload [%u] <- 0x%02X", gps.rx.idx, c);
+#ifdef GPS_DEBUG_SERIAL
+        DBUG("Recv payload \t[%03u] <- 0x%02X", gps.rx.idx, c);
+#endif
         gps.rx.cmd._t.payload[gps.rx.idx++] = c;
         if (gps.rx.idx >= gps.rx.cmd._t.len) gps.rx.state = GPS_RX_CK_A;
         if (gps.rx.idx >= GPS_BUF_LEN - GPS_PREAMBLE_LEN_) {
-          ERR("Command buffer overflow!");
+          WARN("Command buffer overflow!");
           gps.rx.state = GPS_IDLE;
         }
         break;
       }
         // Ck_a
       case GPS_RX_CK_A: {
+#ifdef GPS_DEBUG_SERIAL
         DBUG("Recv CK_A (0x%02X)", c);
+#endif
         gps.rx.CK_A  = c;
         gps.rx.state = GPS_RX_CK_B;
         break;
       }
         // Ck_b
       case GPS_RX_CK_B: {
+#ifdef GPS_DEBUG_SERIAL
         DBUG("Recv CK_B (0x%02X)", c);
+#endif
         gps.rx.CK_B = c;
 
         gps.rx.state = GPS_RX_CHECKSUM;
@@ -157,103 +169,122 @@ int GPS_yield ()
       }
 
       case GPS_RX_PROCESS_CMD: {
-        switch (gps.rx.cmd._t.cls) {
-          case UBX_NAV: {
-            INFO("NAV Msg recv");
-            switch (gps.rx.cmd._t.id) {
-              // UBX-NAV-CLK
-              case 0x22: {
-                UBX_NAV_CLK_t *cmd = (UBX_NAV_CLK_t *) &gps.rx.cmd._t;
-                DBUG("\tiTOW: %lu", cmd->iTOW);
-                DBUG("\tclkB: %l", cmd->clkB);
-                DBUG("\tclkD: %l", cmd->clkD);
-                DBUG("\ttAcc: %lu", cmd->tAcc);
-                DBUG("\tfAcc: %lu", cmd->fAcc);
-                break;
-              }
-
-                // UBX-NAV-TIMEUTC
-              case 0x21: {
-                UBX_NAV_TIMEUTC_t *cmd = (UBX_NAV_TIMEUTC_t *) &gps.rx.cmd._t;
-                DBUG("\tiTOW: %lu", cmd->iTOW);
-                DBUG("\ttAcc: %lu", cmd->tAcc);
-                DBUG("\tnano: %0l", cmd->nano);
-                DBUG("\tyear: %u", cmd->year);
-                DBUG("\tmonth: %02u", cmd->month);
-                DBUG("\tday: %02u", cmd->day);
-                DBUG("\thour: %02u", cmd->hour);
-                DBUG("\tmin: %02u", cmd->min);
-                DBUG("\tsec: %02u", cmd->sec);
-                DBUG("\tvalid: 0x%02X", cmd->valid);
-                if (cmd->valid & UBX_NAV_TIMEUTC_VALID_UTC)
-                  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-
-                break;
-              }
-
-                // UBX-NAV-STATUS
-              case 0x03: {
-                UBX_NAV_STATUS_t *cmd = (UBX_NAV_STATUS_t *) &gps.rx.cmd._t;
-                DBUG("\tiTOW: %lu", cmd->iTOW);
-                DBUG("\tgpsFix: 0x%02X", cmd->gpsFix);
-                DBUG("\tflags: 0x%02X", cmd->flags);
-                DBUG("\tfixStat: 0x%02x", cmd->fixStat);
-                DBUG("\tflags2: 0x%02X", cmd->flags2);
-                DBUG("\tttff: %lu", cmd->ttff);
-                DBUG("\tmsss: %lu", cmd->msss);
-                break;
-              }
-
-                // UBX-NAV-SAT
-              case 0x35: {
-                UBX_NAV_SAT_t *cmd = (UBX_NAV_SAT_t *) &gps.rx.cmd._t;
-                DBUG("\tiTOW: %lu", cmd->iTOW);
-                DBUG("\tversion: %u", cmd->version);
-                DBUG("\tnumSvs: %u", cmd->numSvs);
-
-                for (uint8_t i = 0; i < cmd->numSvs; i++) {
-                  DBUG("\t---- Svs %u ----", i);
-                  DBUG("\t\tgnssId: %u", cmd->svs[i].gnssId);
-                  DBUG("\t\tsvId: %u", cmd->svs[i].svId);
-                  DBUG("\t\tcno: %u", cmd->svs[i].cno);
-                  DBUG("\t\telev: %d", cmd->svs[i].elev);
-                  DBUG("\t\tazim: %d", cmd->svs[i].azim);
-                  DBUG("\t\tprRes: %d", cmd->svs[i].prRes);
-                  DBUG("\t\tflags: %lu", cmd->svs[i].flags);
-                  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-                  HAL_Delay(100);
-                  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-                }
-                break;
-              }
-
-              default: {
-                DBUG("Unknown Msg id");
-                break;
-              }
-
-            }
-            break;
-          }
-
-          default: {
-            INFO("GPS Msg ignored (0x%02X | 0x%02X)", gps.rx.cmd._t.cls, gps.rx.cmd._t.id);
-            break;
-          }
-
-        }
-
         gps.rx.state = GPS_IDLE;
-        return 1;
+        return GPS_processCmd_(&gps.rx.cmd._t);
         // Yield end of command
         // Allow time for other commands
       }
 
-      default:
+      default: {
+        gps.rx.state = GPS_IDLE;
+        WARN("Unkown state (placing into idle)");
         break;
+      }
     }
   }
 }
+
+int GPS_processCmd_ (GPS_UBX_cmd_t *cmd)
+{
+  switch (cmd->cls) {
+    case UBX_NAV: {
+      INFO("NAV Msg recv (0x%02X | 0x%02X)", cmd->cls, cmd->id);
+      return GPS_processCmdNav_(cmd);
+    }
+
+    default: {
+      INFO("GPS Msg ignored (0x%02X | 0x%02X)", cmd->cls, cmd->id);
+      return 0;
+    }
+  }
+}
+
+int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
+{
+  if (cmd->cls != UBX_NAV) {
+    WARN("Not Nav cmd");
+    return 0;
+  }
+
+  switch (cmd->id.UBX) {
+
+    case UBX_NAV_CLK: {
+      INFO("UBX-NAV-CLK");
+      const UBX_NAV_CLK_t *cmd_t = (UBX_NAV_CLK_t *) &gps.rx.cmd._t;
+      DBUG("  iTOW: %lu", cmd_t->iTOW);
+      DBUG("  clkB: %l", cmd_t->clkB);
+      DBUG("  clkD: %l", cmd_t->clkD);
+      DBUG("  tAcc: %lu", cmd_t->tAcc);
+      DBUG("  fAcc: %lu", cmd_t->fAcc);
+      return UBX_NAV_CLK;
+    }
+
+    case UBX_NAV_TIMEUTC: {
+      INFO("UBX-NAV-TIMEUTC");
+      const UBX_NAV_TIMEUTC_t *cmd_t = (UBX_NAV_TIMEUTC_t *) &gps.rx.cmd._t;
+      DBUG("  iTOW: %lu", cmd_t->iTOW);
+      DBUG("  tAcc: %lu", cmd_t->tAcc);
+      DBUG("  nano: %0l", cmd_t->nano);
+      DBUG("  year: %u", cmd_t->year);
+      DBUG("  month: %02u", cmd_t->month);
+      DBUG("  day: %02u", cmd_t->day);
+      DBUG("  hour: %02u", cmd_t->hour);
+      DBUG("  min: %02u", cmd_t->min);
+      DBUG("  sec: %02u", cmd_t->sec);
+      DBUG("  valid: 0x%02X", cmd_t->valid);
+
+      // TODO: Replace with constant blip
+      if (cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC)
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+
+      return UBX_NAV_TIMEUTC;
+    }
+
+    case UBX_NAV_STATUS: {
+      INFO("UBX-NAV-STATUS");
+      const UBX_NAV_STATUS_t *cmd_t = (UBX_NAV_STATUS_t *) &gps.rx.cmd._t;
+      DBUG("  iTOW: %lu", cmd_t->iTOW);
+      DBUG("  gpsFix: 0x%02X", cmd_t->gpsFix);
+      DBUG("  flags: 0x%02X", cmd_t->flags);
+      DBUG("  fixStat: 0x%02x", cmd_t->fixStat);
+      DBUG("  flags2: 0x%02X", cmd_t->flags2);
+      DBUG("  ttff: %lu", cmd_t->ttff);
+      DBUG("  msss: %lu", cmd_t->msss);
+      return UBX_NAV_STATUS;
+    }
+
+    case UBX_NAV_SAT: {
+      INFO("UBX-NAV-SAT");
+      const UBX_NAV_SAT_t *cmd_t = (UBX_NAV_SAT_t *) &gps.rx.cmd._t;
+      DBUG("  iTOW: %lu", cmd_t->iTOW);
+      DBUG("  version: %u", cmd_t->version);
+      DBUG("  numSvs: %u", cmd_t->numSvs);
+
+      for (uint8_t i = 0; i < cmd_t->numSvs; i++) {
+        DBUG("  ---- Svs %u ----", i);
+        DBUG("    gnssId: %u", cmd_t->svs[i].gnssId);
+        DBUG("    svId: %u", cmd_t->svs[i].svId);
+        DBUG("    cno: %u", cmd_t->svs[i].cno);
+        DBUG("    elev: %d", cmd_t->svs[i].elev);
+        DBUG("    azim: %d", cmd_t->svs[i].azim);
+        DBUG("    prRes: %d", cmd_t->svs[i].prRes);
+        DBUG("    flags: %lu", cmd_t->svs[i].flags);
+        // TODO: Make this non blocking??
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+        HAL_Delay(100);
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+      }
+      return UBX_NAV_SAT;
+    }
+
+    default: {
+      INFO("NAV Msg ignored (0x%02X)", cmd->id);
+      return 0;
+    }
+
+  }
+}
+
 
 void GPS_packMsg_ (GPS_UBX_msg_t *ubx)
 {
