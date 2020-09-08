@@ -13,7 +13,8 @@
 #include "gps.h"
 #include "logger.h"
 
-static GPS_t gps = {0};
+static GPS_t             gps = {0};
+extern RTC_HandleTypeDef hrtc;
 
 void GPS_packMsg_ (GPS_UBX_msg_t *ubx);
 
@@ -28,6 +29,14 @@ int GPS_processCmd_ (GPS_UBX_cmd_t *cmd);
 int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd);
 
 int GPS_rxByte_ (uint8_t c);
+
+int GPS_updateRTC_ (RTC_HandleTypeDef *rtc, UBX_NAV_TIMEUTC_t *cmd);
+
+int leap (int year);
+
+int zeller (int year, int month, int day);
+
+int dow (int year, int month, int day);
 
 int GPS_init (UART_HandleTypeDef *uart)
 {
@@ -252,6 +261,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
       DBUG("  sec: %02u", cmd_t->sec);
       DBUG("  valid: 0x%02X", cmd_t->valid);
 
+      GPS_updateRTC_(&hrtc, cmd);
       // TODO: Replace with constant blip
       if (cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC)
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
@@ -341,4 +351,68 @@ int GPS_checksum_ (GPS_UBX_msg_t *ubx)
   else if (ubx->CK_A != CK_A) return -1;
   else if (ubx->CK_B != CK_B) return -2;
   else return 2;
+}
+
+int GPS_updateRTC_ (RTC_HandleTypeDef *rtc, UBX_NAV_TIMEUTC_t *cmd)
+{
+  RTC_TimeTypeDef sTime = {0};
+  RTC_DateTypeDef sDate = {0};
+
+  sTime.Hours          = cmd->hour;
+  sTime.Minutes        = cmd->min;
+  sTime.Seconds        = cmd->sec;
+  sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+  sTime.StoreOperation = RTC_STOREOPERATION_RESET;
+
+  if (HAL_RTC_SetTime(rtc, &sTime, RTC_FORMAT_BIN) != HAL_OK) {
+    return -1;
+  }
+
+  sDate.Year    = cmd->year % 2000; // Will probably break but not now...
+  sDate.Month   = RTC_ByteToBcd2(cmd->month);
+  sDate.Date    = cmd->day;
+  sDate.WeekDay = dow(cmd->year, cmd->month, cmd->day);
+
+  if (HAL_RTC_SetDate(rtc, &sDate, RTC_FORMAT_BIN) != HAL_OK) {
+    return -2;
+  }
+
+  INFO("Successfully update RTC with GPS time");
+
+  return 1;
+
+
+}
+
+// Taken from https://electronics.stackexchange.com/questions/66285/how-to-calculate-day-of-the-week-for-rtc
+// Author: Dave Tweed
+
+/* Returns the number of days to the start of the specified year, taking leap
+ * years into account, but not the shift from the Julian calendar to the
+ * Gregorian calendar. Instead, it is as though the Gregorian calendar is
+ * extrapolated back in time to a hypothetical "year zero".
+ */
+int leap (int year)
+{
+  return year * 365 + (year / 4) - (year / 100) + (year / 400);
+}
+
+/* Returns a number representing the number of days since March 1 in the
+ * hypothetical year 0, not counting the change from the Julian calendar
+ * to the Gregorian calendar that occured in the 16th century. This
+ * algorithm is loosely based on a function known as "Zeller's Congruence".
+ * This number MOD 7 gives the day of week, where 0 = Monday and 6 = Sunday.
+ */
+int zeller (int year, int month, int day)
+{
+  year += ((month + 9) / 12) - 1;
+  month = (month + 9) % 12;
+  return leap(year) + month * 30 + ((6 * month + 5) / 10) + day + 1;
+}
+
+/* Returns the day of week (1=Monday, 7=Sunday) for a given date.
+ */
+int dow (int year, int month, int day)
+{
+  return (zeller(year, month, day) % 7) + 1;
 }
