@@ -107,20 +107,22 @@ typedef enum {
 } GPS_state_e;
 
 typedef struct {
-    Serial_t serial;
-    struct {
-        union {
-            uint8_t       mem[GPS_BUF_LEN];
-            GPS_UBX_cmd_t _t;
-        }       cmd;
-        size_t  idx;
-        uint8_t CK_A;
-        uint8_t CK_B;
-
-        GPS_state_e state;
-    }        rx;
-
+    size_t  idx;
     GPS_state_e state;
+
+    uint8_t CK_A;
+    uint8_t CK_B;
+
+    union {
+        uint8_t       mem[GPS_BUF_LEN];
+        GPS_UBX_cmd_t _t;
+    }       cmd;
+} GPS_UBX_msg_sm_;
+
+typedef struct {
+    GPS_state_e state;
+    Serial_t serial;
+    GPS_UBX_msg_sm_ rx;
 } GPS_t;
 
 typedef union {
