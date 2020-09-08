@@ -14,90 +14,100 @@
 
 /** Functions ----------------------------------------------------------------*/
 // Private Function Defs.
-int Serial_initRx_(Serial_t* self, UART_HandleTypeDef* uart);
-int Serial_initTx_(Serial_t* self, UART_HandleTypeDef* uart);
+int Serial_initRx_ (Serial_t *self, UART_HandleTypeDef *uart);
 
-int Serial_wrap(Serial_t* self, UART_HandleTypeDef* uart)
+int Serial_initTx_ (Serial_t *self, UART_HandleTypeDef *uart);
+
+int Serial_wrap (Serial_t *self, UART_HandleTypeDef *uart)
 {
-	self->config_.uart = uart;
+  self->config_.uart = uart;
 
-	if(Serial_initRx_(self, uart) > 0
-     && Serial_initTx_(self, uart) > 0 ) {
-		return 1;
-	}
-	else {
-		return 0;
-	}
+  if (Serial_initRx_(self, uart) > 0
+      && Serial_initTx_(self, uart) > 0) {
+    return 1;
+  }
+  else {
+    return 0;
+  }
 }
 
-int Serial_available(Serial_t* self)
+size_t Serial_available (Serial_t *self)
 {
-	return SERIAL_RX_LEN - self->rx.idx - self->config_.uart->hdmarx->Instance->NDTR;
+  // TODO: Implement UART IDLE detection
+  uint32_t dmaHead        = self->config_.uart->hdmarx->Instance->NDTR;
+  uint32_t readHead       = self->rx.idx;
+  uint32_t bytesAvailable = SERIAL_RX_LEN - readHead - dmaHead;
+
+  return bytesAvailable >= 0 ? bytesAvailable : bytesAvailable + SERIAL_RX_LEN;
 }
 
-uint8_t Serial_read(Serial_t* self)
+uint8_t Serial_read (Serial_t *self)
 {
 #ifdef SERIAL_RX_DMA
-	uint8_t* ret = self->rx.buf_ + self->rx.idx;
-	self->rx.idx++;
-	self->rx.idx -= self->rx.idx != SERIAL_RX_LEN ? 0 : SERIAL_RX_LEN;
-	return *ret;
+  // Get current val form buffer
+  uint8_t *ret = self->rx.buf_ + self->rx.idx;
+  // Mark as read
+  self->rx.idx++;
+  // Wrap index if command len reached
+  // TODO: Cheap fix for cir buf
+  self->rx.idx -= self->rx.idx != SERIAL_RX_LEN ? 0 : SERIAL_RX_LEN;
+  return *ret;
 #else
 #error Operation not supported
 #endif
 }
 
-uint8_t Serial_peek(Serial_t* self)
+uint8_t Serial_peek (Serial_t *self)
 {
 #ifdef SERIAL_RX_DMA
-	return *(self->rx.buf_ + self->rx.idx);
+  return *(self->rx.buf_ + self->rx.idx);
 #else
 #error Operation not supported
 #endif
 
 }
 
-int Serial_write(Serial_t* self, uint8_t* buf, const size_t len)
+int Serial_write (Serial_t *self, uint8_t *buf, const size_t len)
 {
 #ifdef SERIAL_TX_BLOCKING
-	if(HAL_UART_Transmit(self->config_.uart, buf, len, SERIAL_MAX_DELAY) == HAL_OK)
-		return 1;
-	else
-		return 0;
+  if (HAL_UART_Transmit(self->config_.uart, buf, len, SERIAL_MAX_DELAY) == HAL_OK)
+    return 1;
+  else
+    return 0;
 #else
 #error Operation not supported
 #endif
 }
 
-int Serial_println(Serial_t* self, const char* str)
+int Serial_println (Serial_t *self, const char *str)
 {
-	int n = Serial_print(self, str);
-	n += Serial_print(self, SERIAL_EOL);
-	return n;
+  int n = Serial_print(self, str);
+  n += Serial_print(self, SERIAL_EOL);
+  return n;
 }
 
-int Serial_print(Serial_t* self, const char* str)
+int Serial_print (Serial_t *self, const char *str)
 {
-	return Serial_write(self, (uint8_t*)str, strlen(str));
+  return Serial_write(self, (uint8_t *) str, strlen(str));
 }
 
-int Serial_initRx_(Serial_t* self, UART_HandleTypeDef* uart)
+int Serial_initRx_ (Serial_t *self, UART_HandleTypeDef *uart)
 {
 #ifdef SERIAL_RX_DMA
-	self->rx.idx = 0;
-	if(HAL_UART_Receive_DMA(uart, self->rx.buf_, SERIAL_RX_LEN) == HAL_OK)
-		return 1;
-	else
-		return 0;
+  self->rx.idx = 0;
+  if (HAL_UART_Receive_DMA(uart, self->rx.buf_, SERIAL_RX_LEN) == HAL_OK)
+    return 1;
+  else
+    return 0;
 #else
 #error Operation not supported
 #endif
 }
 
-int Serial_initTx_(Serial_t* self, UART_HandleTypeDef* uart)
+int Serial_initTx_ (Serial_t *self, UART_HandleTypeDef *uart)
 {
 #ifdef SERIAL_TX_BLOCKING
-	return 1;
+  return 1;
 #else
 #error Operation not supported
 #endif

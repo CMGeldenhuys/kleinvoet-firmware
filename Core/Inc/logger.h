@@ -30,39 +30,56 @@
 #if defined(DEBUG)
 #define DBUG(msg, ...) LOG_log(__func__, LOG_DEBUG, (msg), ##__VA_ARGS__)
 #else
-#define DBUG(msg, ...)
+#define DBUG(cmd, ...)
 #endif
 
 #if defined(DEBUG) || defined(LOG_LEVEL_INFO)
 #define INFO(msg, ...) LOG_log(__func__, LOG_INFO, (msg), ##__VA_ARGS__)
 #else
-#define INFO(msg, ...)
+#define INFO(cmd, ...)
 #endif
 
 #if defined(DEBUG) || defined(LOG_LEVEL_INFO) || defined(LOG_LEVEL_WARN)
 #define WARN(msg, ...) LOG_log(__func__, LOG_WARN, (msg), ##__VA_ARGS__)
 #else
-#define WARN(msg, ...)
+#define WARN(cmd, ...)
 #endif
 
 #define ERR(msg, ...) LOG_log(__func__, LOG_ERR, (msg), ##__VA_ARGS__)
 
 #ifndef LOG_BUF_LEN
-  #define LOG_BUF_LEN 64
+#define LOG_BUF_LEN 64
 #endif
 
 /// Maximum user log message length.
 #ifndef LOG_MSG_LEN
-  #define LOG_MSG_LEN 1024
+#define LOG_MSG_LEN 1024
 #endif
 
 #ifndef LOG_EOL
-  #define LOG_EOL "\r\n"
+#define LOG_EOL "\r\n"
+#endif
+
+#ifdef DEBUG
+#define LOG_COLOR
+#endif
+
+#ifdef LOG_COLOR
+#define LOG_COLOR_FG_DEFAULT "\e[39m"
+#define LOG_COLOR_FG_BLUE "\e[34m"
+#define LOG_COLOR_FG_YELLOW "\e[33m"
+#define LOG_COLOR_FG_RED "\e[31m"
+#define LOG_COLOR_RESET "\e[0m"
+
+#define LOG_COLOR_LEN (sizeof(LOG_COLOR_FG_DEFAULT) + sizeof(LOG_COLOR_RESET) - 2)
+
+#else
+#define LOG_COLOR_LEN 0
 #endif
 
 // -1 to account for NULL termination
 #define LOG_MSG_INFO_LEN \
-    (sizeof("[LEVL:function_name___] YYYY-MM-DD HH:mm:ss.uuu - ") - 1)
+    (sizeof("[LEVL:function_name___] YYYY-MM-DD HH:mm:ss.uuu - ") - 1 + LOG_COLOR_LEN)
 
 /**
  * @brief Enumeration of Log severity levels
@@ -87,7 +104,7 @@ typedef enum {
  *
  * @return Returns status code based on function success
  */
-int LOG_log(const char *funcName, LOG_Lvl_e lvl, char *format, ...);
+int LOG_log (const char *funcName, LOG_Lvl_e lvl, char *format, ...);
 
 /**
  * @brief Persist raw log message data.
@@ -102,7 +119,7 @@ int LOG_log(const char *funcName, LOG_Lvl_e lvl, char *format, ...);
  *
  * @return Returns number of bytes written or negative value no fail.
  */
-int LOG_write(uint8_t *buf, size_t len);
+int LOG_write (uint8_t *buf, size_t len);
 
 /**
  * @brief Force write cached/buffered writes.
@@ -117,7 +134,7 @@ int LOG_write(uint8_t *buf, size_t len);
  *
  * @return Returns number of bytes written or negative value no fail.
  */
-int LOG_flush();
+int LOG_flush ();
 
 
 #endif //FIRMWARE_LOGGER_H

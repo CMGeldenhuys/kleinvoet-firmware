@@ -64,6 +64,7 @@ int TTY_print(const char *str);
 int TTY_write(uint8_t *buf, size_t len);
 int TTY_available();
 uint8_t TTY_read();
+int TTY_resetDevice(int argc, char *argv[]);
 
 // TODO: Find fix for linker to pick up
 #define TTY_PRINTF

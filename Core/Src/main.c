@@ -26,6 +26,7 @@
 #include "tty.h"
 #include "logger.h"
 #include "wave.h"
+#include "gps.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,7 +52,9 @@ SD_HandleTypeDef hsd;
 DMA_HandleTypeDef hdma_sdio_rx;
 DMA_HandleTypeDef hdma_sdio_tx;
 
+UART_HandleTypeDef huart4;
 UART_HandleTypeDef huart2;
+DMA_HandleTypeDef hdma_uart4_rx;
 DMA_HandleTypeDef hdma_usart2_rx;
 
 /* USER CODE BEGIN PV */
@@ -71,6 +74,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_CRC_Init(void);
 static void MX_SDIO_SD_Init(void);
 static void MX_RTC_Init(void);
+static void MX_UART4_Init(void);
 /* USER CODE BEGIN PFP */
 int toggleAdcWrite_ (__unused int argc, __unused char *argv[]);
 /* USER CODE END PFP */
@@ -112,12 +116,13 @@ int main(void)
   MX_SDIO_SD_Init();
   MX_FATFS_Init();
   MX_RTC_Init();
+  MX_UART4_Init();
   /* USER CODE BEGIN 2 */
   // Give time for RTC to init properly
   HAL_RTC_WaitForSynchro(&hrtc);
   TTY_init(&huart2);
-  FATFS_mount();
-  // Run Logging test
+
+  // Test Logging
   DBUG("Hello, World.");
   HAL_Delay(10);
   INFO("Hello, World!");
@@ -125,7 +130,13 @@ int main(void)
   WARN("HELLO, World!");
   HAL_Delay(1000);
   ERR("HELLO, WORLD!");
-// TODO: SD card doing stange things
+
+  INFO("Waiting for GPS to finish starting up..");
+  HAL_Delay(5000);
+  INFO("Done waiting for GPS");
+  GPS_init(&huart4);
+  FATFS_mount();
+// TODO: SD card doing strange things
 //  WAVE_createFile(&wav, "test.wav");
   /* USER CODE END 2 */
 
@@ -135,6 +146,7 @@ int main(void)
 #pragma ide diagnostic ignored "EndlessLoop"
   while (1) {
     TTY_yield();
+    GPS_yield();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -325,6 +337,39 @@ static void MX_SDIO_SD_Init(void)
 }
 
 /**
+  * @brief UART4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_UART4_Init(void)
+{
+
+  /* USER CODE BEGIN UART4_Init 0 */
+
+  /* USER CODE END UART4_Init 0 */
+
+  /* USER CODE BEGIN UART4_Init 1 */
+
+  /* USER CODE END UART4_Init 1 */
+  huart4.Instance = UART4;
+  huart4.Init.BaudRate = 9600;
+  huart4.Init.WordLength = UART_WORDLENGTH_8B;
+  huart4.Init.StopBits = UART_STOPBITS_1;
+  huart4.Init.Parity = UART_PARITY_NONE;
+  huart4.Init.Mode = UART_MODE_TX_RX;
+  huart4.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart4.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN UART4_Init 2 */
+
+  /* USER CODE END UART4_Init 2 */
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -368,6 +413,9 @@ static void MX_DMA_Init(void)
   __HAL_RCC_DMA2_CLK_ENABLE();
 
   /* DMA interrupt init */
+  /* DMA1_Stream2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream2_IRQn);
   /* DMA1_Stream5_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
@@ -398,14 +446,6 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pins : GPS_TX_Pin GPS_RX_Pin */
-  GPIO_InitStruct.Pin = GPS_TX_Pin|GPS_RX_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStruct.Alternate = GPIO_AF8_UART4;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : CAL_SIG_Pin */
   GPIO_InitStruct.Pin = CAL_SIG_Pin;
