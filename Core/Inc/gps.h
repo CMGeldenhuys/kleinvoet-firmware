@@ -51,7 +51,8 @@ typedef union {
         UBX_NAV_STATUS  = 0x03,
         UBX_NAV_SAT     = 0x35,
         UBX_CFG_PRT     = 0x00,
-        UBX_CFG_MSG     = 0x01
+        UBX_CFG_MSG     = 0x01,
+        UBX_CFG_TP5     = 0x31
     } UBX;
 
     enum __attribute__ ((packed)) {
@@ -149,6 +150,27 @@ typedef union {
         uint8_t   id;
         uint16_t  len;
 
+        uint8_t  tpIdx;
+        uint8_t  version;
+        uint8_t  reserved1[2];
+        int16_t  antCableDelay;
+        int16_t  rfGroupDelay;
+        uint32_t freqPeriod;
+        uint32_t freqPeriodLock;
+        uint32_t pulseLenRatio;
+        uint32_t pulseLenRatioLock;
+        int32_t  userConfigDelay;
+        uint32_t flags;
+    };
+} UBX_CFG_TP5_t;
+
+typedef union {
+    GPS_UBX_cmd_t generic;
+    struct {
+        GPS_cls_e cls;
+        uint8_t   id;
+        uint16_t  len;
+
         uint8_t msgClass;
         uint8_t msgID;
         uint8_t rate;
@@ -236,31 +258,42 @@ typedef union {
 #define GPS_SYNC_2_ 0x62
 #define GPS_PREAMBLE_LEN_ sizeof(GPS_UBX_cmd_t)
 
-#define UBX_PORT_DDC    (0u)
-#define UBX_PORT_UART1  (1u)
-#define UBX_PORT_USB    (3u)
-#define UBX_PORT_SPI    (4u)
+#define UBX_PORT_DDC    (0U)
+#define UBX_PORT_UART1  (1U)
+#define UBX_PORT_USB    (3U)
+#define UBX_PORT_SPI    (4U)
 
-#define UBX_CFG_PRT_TXREADY_DISABLE     (0x0000)
+#define UBX_CFG_PRT_TXREADY_DISABLE     (0x0000U)
 
-#define UBX_CFG_PRT_MODE_CHARLEN_5      (0b00 << 6u)
-#define UBX_CFG_PRT_MODE_CHARLEN_6      (0b01 << 6u)
-#define UBX_CFG_PRT_MODE_CHARLEN_7      (0b10 << 6u)
-#define UBX_CFG_PRT_MODE_CHARLEN_8      (0b11 << 6u)
+#define UBX_CFG_PRT_MODE_CHARLEN_5      (0b00U << 6U)
+#define UBX_CFG_PRT_MODE_CHARLEN_6      (0b01U << 6U)
+#define UBX_CFG_PRT_MODE_CHARLEN_7      (0b10U << 6U)
+#define UBX_CFG_PRT_MODE_CHARLEN_8      (0b11U << 6U)
 
-#define UBX_CFG_PRT_MODE_PARTIY_EVEN    (0b000 << 9u)
-#define UBX_CFG_PRT_MODE_PARTIY_ODD     (0b001 << 9u)
-#define UBX_CFG_PRT_MODE_PARTIY_NO      (0b100 << 9u)
+#define UBX_CFG_PRT_MODE_PARTIY_EVEN    (0b000U << 9U)
+#define UBX_CFG_PRT_MODE_PARTIY_ODD     (0b001U << 9U)
+#define UBX_CFG_PRT_MODE_PARTIY_NO      (0b100U << 9U)
 
-#define UBX_CFG_PRT_MODE_NSTOPBITS_1_0  (0b00 << 12u)
-#define UBX_CFG_PRT_MODE_NSTOPBITS_1_5  (0b01 << 12u)
-#define UBX_CFG_PRT_MODE_NSTOPBITS_2_0  (0b10 << 12u)
-#define UBX_CFG_PRT_MODE_NSTOPBITS_0_5  (0b11 << 12u)
+#define UBX_CFG_PRT_MODE_NSTOPBITS_1_0  (0b00U << 12U)
+#define UBX_CFG_PRT_MODE_NSTOPBITS_1_5  (0b01U << 12U)
+#define UBX_CFG_PRT_MODE_NSTOPBITS_2_0  (0b10U << 12U)
+#define UBX_CFG_PRT_MODE_NSTOPBITS_0_5  (0b11U << 12U)
 
-#define UBX_CFG_PRT_PROTO_UBX           (0x0001)
-#define UBX_CFG_PRT_PROTO_NMEA          (0x0002)
+#define UBX_CFG_PRT_PROTO_UBX           (0x0001U)
+#define UBX_CFG_PRT_PROTO_NMEA          (0x0002U)
 
-#define UBX_NAV_TIMEUTC_VALIDUTC        (0b00000100)
+#define UBX_NAV_TIMEUTC_VALIDUTC        (0b00000100U)
+
+#define UBX_CFG_TP5_FLAGS_ACTIVE          (0b00000001U)
+#define UBX_CFG_TP5_FLAGS_LOCK_GPS_FREQ   (0b00000010U)
+#define UBX_CFG_TP5_FLAGS_LOCK_OTHER_SET  (0b00000100U)
+#define UBX_CFG_TP5_FLAGS_IS_FREQ         (0b00001000U)
+#define UBX_CFG_TP5_FLAGS_IS_LENGTH       (0b00010000U)
+#define UBX_CFG_TP5_FLAGS_ALIGN_TO_TOW    (0b00100000U)
+#define UBX_CFG_TP5_FLAGS_POLARITY_RISING        (0b01000000U)
+#define UBX_CFG_TP5_FLAGS_GRID_UTC_GPS    (0b10000000U)
+#define UBX_CFG_TP5_TIMEPULSE             (0U)
+#define UBX_CFG_TP5_TIMEPULSE2            (1U)
 
 // UBX Commands
 static const UBX_CFG_PRT_t GPS_DEFAULT_PORT_CONFIG = {
@@ -514,6 +547,25 @@ static const UBX_CFG_MSG_t GPS_DISABLE_UBX_NAV_SAT = {
         .rate     = 0u
 };
 
+static const UBX_CFG_TP5_t GPS_CONFIGURE_TIMEPULSE = {
+        .cls      = UBX_CFG,
+        .id       = UBX_CFG_TP5,
+        .len      = 32u,
+
+        .tpIdx              = UBX_CFG_TP5_TIMEPULSE,
+        .antCableDelay      = 50, // ns
+        .freqPeriod         = 4, // Hz
+        .pulseLenRatio      = 100, // us
+        .userConfigDelay    = 0, // ns
+        .flags              = UBX_CFG_TP5_FLAGS_ACTIVE
+                              | UBX_CFG_TP5_FLAGS_LOCK_GPS_FREQ
+                              | UBX_CFG_TP5_FLAGS_IS_FREQ
+                              | UBX_CFG_TP5_FLAGS_IS_LENGTH
+                              | UBX_CFG_TP5_FLAGS_ALIGN_TO_TOW
+                              | UBX_CFG_TP5_FLAGS_POLARITY_RISING
+};
+
+
 #define GPS_LEN_DEFAULT_CONFIG (sizeof(GPS_DEFAULT_CONFIG)/sizeof(GPS_UBX_cmd_t))
 
 static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {
@@ -537,10 +589,13 @@ static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {
         &GPS_DISABLE_NMEA_VTG.generic,
         &GPS_DISABLE_NMEA_ZDA.generic,
 
-        // Enable GPS time
+        // Enable GPS messages
         &GPS_ENABLE_UBX_NAV_SAT.generic,
         &GPS_ENABLE_UBX_NAV_STATUS.generic,
-        &GPS_ENABLE_UBX_NAV_TIMEUTC.generic
+        &GPS_ENABLE_UBX_NAV_TIMEUTC.generic,
+
+        // Setup time pulse
+        &GPS_CONFIGURE_TIMEPULSE.generic
 };
 
 
