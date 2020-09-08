@@ -30,7 +30,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd);
 
 int GPS_rxByte_ (uint8_t c);
 
-int GPS_updateRTC_ (RTC_HandleTypeDef *rtc, UBX_NAV_TIMEUTC_t *cmd);
+int GPS_updateRTC_ (RTC_HandleTypeDef *rtc, const UBX_NAV_TIMEUTC_t *cmd);
 
 int leap (int year);
 
@@ -261,10 +261,12 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
       DBUG("  sec: %02u", cmd_t->sec);
       DBUG("  valid: 0x%02X", cmd_t->valid);
 
-      GPS_updateRTC_(&hrtc, cmd);
+
       // TODO: Replace with constant blip
-      if (cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC)
+      if (cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC) {
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+        GPS_updateRTC_(&hrtc, cmd_t);
+      }
       else
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
 
@@ -353,7 +355,7 @@ int GPS_checksum_ (GPS_UBX_msg_t *ubx)
   else return 2;
 }
 
-int GPS_updateRTC_ (RTC_HandleTypeDef *rtc, UBX_NAV_TIMEUTC_t *cmd)
+int GPS_updateRTC_ (RTC_HandleTypeDef *rtc, const UBX_NAV_TIMEUTC_t *cmd)
 {
   RTC_TimeTypeDef sTime = {0};
   RTC_DateTypeDef sDate = {0};
