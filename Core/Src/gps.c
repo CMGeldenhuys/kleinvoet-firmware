@@ -41,7 +41,9 @@ int dow (int year, int month, int day);
 int GPS_init (UART_HandleTypeDef *uart)
 {
   Serial_wrap(&gps.serial, uart);
-  gps.state = GPS_CONFIG;
+//  gps.state = GPS_CONFIG;
+  GPS_configureUBX_();
+  gps.state = GPS_IDLE;
   return 1;
 }
 

@@ -90,12 +90,17 @@ void Error_Handler(void);
 #define GPS_WAKE_GPIO_Port GPIOB
 #define ADC_nDRDY_Pin GPIO_PIN_12
 #define ADC_nDRDY_GPIO_Port GPIOB
+#define ADC_nDRDY_EXTI_IRQn EXTI15_10_IRQn
 #define ADC_SCK_Pin GPIO_PIN_13
 #define ADC_SCK_GPIO_Port GPIOB
 #define ADC_MISO_Pin GPIO_PIN_14
 #define ADC_MISO_GPIO_Port GPIOB
 #define ADC_MOSI_Pin GPIO_PIN_15
 #define ADC_MOSI_GPIO_Port GPIOB
+#define ADC_nCS_Pin GPIO_PIN_6
+#define ADC_nCS_GPIO_Port GPIOC
+#define ADC_CLK_Pin GPIO_PIN_7
+#define ADC_CLK_GPIO_Port GPIOC
 #define SDIO_CD_Pin GPIO_PIN_8
 #define SDIO_CD_GPIO_Port GPIOA
 #define SDIO_WP_Pin GPIO_PIN_9
