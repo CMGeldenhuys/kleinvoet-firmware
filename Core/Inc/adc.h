@@ -149,7 +149,9 @@
 #define ADC_CLOCK_PWR_LP      (0x0001U)
 #define ADC_CLOCK_PWR_HR      (0x0002U)
 
-
+//#if !__has_builtin(__builtin_bswap32) && !defined(__builtin_bswap32)
+//#warning "Missing '__builtin_bswap32' macro (gcc >= 4.3 required)"
+//#endif
 
 
 //                             3333222211110000
@@ -161,9 +163,6 @@
 #define ADC_BYTE_0(op) ((op) & 0x00FFU)
 #define ADC_BYTE_1(op) (ADC_BYTE_0 ((unsigned)(op) >> 8U))
 #define ADC_BYTE_CAT(msb, lsb) ((ADC_BYTE_0(msb) << 8U) | ADC_BYTE_0(lsb))
-#define ADC_LE_2_BE(byte) ((((byte) && 0x00FFU) << 8U) | (((byte) && 0xFF00U) >> 8U))
-
-// https://stackoverflow.com/questions/19275955/convert-little-endian-to-big-endian/19276193
 #define ADC_EXTRACT_RESPONSE_16(rx) (ADC_BYTE_CAT(rx*, (rx+1)*))
 
 #define ADC_FRAME_SIZE  (3) // bytes (24-bit)

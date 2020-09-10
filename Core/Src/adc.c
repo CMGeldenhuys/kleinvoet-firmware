@@ -66,24 +66,22 @@ int ADC_writeRegister(uint16_t addr, uint16_t* val, uint16_t len)
 
 int ADC_Tx_LE_pad_(uint32_t data)
 {
-  DBUG("%x", data);
+  DBUG("%08x", data);
   uint8_t *tmp = (uint8_t*) &data;
+  DBUG("LE:");
   for(int i = 0; i < 4; i++) {
-    DBUG("LE:");
     DBUG("%d: 0x%02X", i, tmp[i]);
   }
 
-  DBUG("BE: 0x%02X%02X%02X", tmp[2], tmp[1], tmp[0]);
+  uint32_t data_bs = __builtin_bswap32(data);
+  DBUG("%08x", data_bs);
+  tmp = (uint8_t*) &data_bs;
 
-  // flipped
-
-  data = (tmp[0]<<16) | (tmp[1]<<8) | tmp[2];
-  DBUG("%x", data);
-  tmp = (uint8_t*) &data;
+  DBUG("Flipped:");
   for(int i = 0; i < 4; i++) {
-    DBUG("flipped:");
     DBUG("%d: 0x%02X", i, tmp[i]);
   }
+  DBUG("DONE!");
 
 }
 
