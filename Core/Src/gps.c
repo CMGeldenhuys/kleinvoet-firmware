@@ -41,9 +41,7 @@ int dow (int year, int month, int day);
 int GPS_init (UART_HandleTypeDef *uart)
 {
   Serial_wrap(&gps.serial, uart);
-//  gps.state = GPS_CONFIG;
   GPS_configureUBX_();
-  gps.state = GPS_IDLE;
   return 1;
 }
 
@@ -53,7 +51,8 @@ int GPS_configureUBX_ ()
   for (size_t i = 0; i < GPS_LEN_DEFAULT_CONFIG; i++) {
     GPS_sendCommand(GPS_DEFAULT_CONFIG[i], 0, 0);
   }
-
+  gps.rx.state = GPS_IDLE;
+  gps.state = GPS_IDLE;
   return 1;
 }
 
@@ -93,7 +92,9 @@ int GPS_yield ()
   // Check if byte ready for RX
   gps.state |= Serial_available(&gps.serial) > 0 ? GPS_RX : 0u;
   if (gps.state & GPS_RX) {
+    // Remove RX flag
     gps.state &= ~GPS_RX;
+    // Place device in idle
     gps.state |= GPS_IDLE;
     return GPS_rxByte_(Serial_read(&gps.serial));
   }

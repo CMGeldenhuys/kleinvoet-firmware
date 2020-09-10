@@ -123,6 +123,7 @@ int main(void)
   MX_UART4_Init();
   MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
+  HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
   // Give time for RTC to init properly
   HAL_RTC_WaitForSynchro(&hrtc);
   TTY_init(&huart2);
@@ -147,6 +148,8 @@ int main(void)
   HAL_Delay(2000);
 // TODO: SD card doing strange things
 //  WAVE_createFile(&wav, "test.wav");
+
+  HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_RESET);
   /* USER CODE END 2 */
 
   /* Infinite loop */

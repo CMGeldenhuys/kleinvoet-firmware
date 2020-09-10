@@ -70,28 +70,30 @@
 
 #define ADC_BYTE_0(op) ((op) & 0x00FFU)
 #define ADC_BYTE_1(op) (ADC_BYTE_0 ((unsigned)(op) >> 8U))
+#define ADC_BYTE_CAT(msb, lsb) ((ADC_BYTE_0(msb) << 8U) & ADC_BYTE_0(lsb))
 
-#define ADC_FRAME_LENGTH  (6) // frames
+#define ADC_FRAME_SIZE  (3) // bytes (24-bit)
+#define ADC_FRAME_NUM  (6) // frames
+#define ADC_FRAME_LEN (ADC_FRAME_SIZE * ADC_FRAME_NUM) // duration of whole frame
 #define ADC_SPS (4000)
-#define ADC_BUF_LEN (ADC_FRAME_LENGTH * ADC_SPS) // Store 1 sec.
 
 typedef enum {
-    ADC_READY = 0x00000002U,
+    ADC_READY      = 0x00000002U,
     ADC_FIRST_READ = 0x00000001U,
-    ADC_IDLE = 0x00000000U,
+    ADC_IDLE       = 0x00000000U,
     ADC_RESET
 } ADC_state_e;
 
 typedef struct {
     SPI_HandleTypeDef *spi;
     ADC_state_e       state;
-//    uint16_t          buf[ADC_SPS][ADC_FRAME_LENGTH];
+    uint8_t           rx[ADC_FRAME_NUM][ADC_FRAME_SIZE];
 } ADC_t;
 
 
 int ADC_init (SPI_HandleTypeDef *interface);
 
-int32_t ADC_sendCommand (uint16_t cmd);
+int ADC_sendCommand (uint16_t cmd, uint8_t rx[ADC_FRAME_NUM][ADC_FRAME_SIZE]);
 
 void ADC_callbackDRDY ();
 
