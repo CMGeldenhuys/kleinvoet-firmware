@@ -62,6 +62,96 @@
 #define ADC_CMD_OP_RREG     (0b1010000000000000U)
 #define ADC_CMD_OP_WREG     (0b0110000000000000U)
 
+#define ADC_ADR_ID            ADC_ADR(0x00U)
+#define ADC_ADR_STATUS        ADC_ADR(0x01U)
+#define ADC_ADR_MODE          ADC_ADR(0x02U)
+#define ADC_ADR_CLOCK         ADC_ADR(0x03U)
+#define ADC_ADR_GAIN          ADC_ADR(0x04U)
+#define ADC_ADR_CFG           ADC_ADR(0x06U)
+#define ADC_ADR_THRSHLD_MSB   ADC_ADR(0x07U)
+#define ADC_ADR_IHRSHLD_LSB   ADC_ADR(0x08U)
+
+#define ADC_ADR_CH0_CFG       ADC_ADR(0x09U)
+#define ADC_ADR_CH0_OCAL_MSB  ADC_ADR(0x0AU)
+#define ADC_ADR_CH0_OCAL_LSB  ADC_ADR(0x0BU)
+#define ADC_ADR_CH0_GCAL_MSG  ADC_ADR(0x0CU)
+#define ADC_ADR_CH0_GCAL_LSB  ADC_ADR(0x0DU)
+
+#define ADC_ADR_CH1_CFG       ADC_ADR(0x0EU)
+#define ADC_ADR_CH1_OCAL_MSB  ADC_ADR(0x0FU)
+#define ADC_ADR_CH1_OCAL_LSB  ADC_ADR(0x10U)
+#define ADC_ADR_CH1_GCAL_MSG  ADC_ADR(0x11U)
+#define ADC_ADR_CH1_GCAL_LSB  ADC_ADR(0x12U)
+
+#define ADC_ADR_CH2_CFG       ADC_ADR(0x13U)
+#define ADC_ADR_CH2_OCAL_MSB  ADC_ADR(0x14U)
+#define ADC_ADR_CH2_OCAL_LSB  ADC_ADR(0x15U)
+#define ADC_ADR_CH2_GCAL_MSG  ADC_ADR(0x16U)
+#define ADC_ADR_CH2_GCAL_LSB  ADC_ADR(0x17U)
+
+#define ADC_ADR_CH3_CFG       ADC_ADR(0x18U)
+#define ADC_ADR_CH3_OCAL_MSB  ADC_ADR(0x19U)
+#define ADC_ADR_CH3_OCAL_LSB  ADC_ADR(0x1AU)
+#define ADC_ADR_CH3_GCAL_MSG  ADC_ADR(0x1BU)
+#define ADC_ADR_CH3_GCAL_LSB  ADC_ADR(0x1CU)
+
+#define ADC_ADR_REGMAP_CRC    ADC_ADR(0x3EU)
+#define ADC_ADR_RESERVED      ADC_ADR(0x3FU)
+
+#define ADC_STATUS_LOCK                     (0x8000U)
+#define ADC_STATUS_F_RESYNC                 (0x4000U)
+#define ADC_STATUS_REG_MAP                  (0x2000U)
+#define ADC_STATUS_CRC_ERR                  (0x1000U)
+#define ADC_STATUS_CRC_TYPE                 (0x0800U)
+#define ADC_STATUS_RESET                    (0x0400U)
+#define ADC_STATUS_WLENGTH                  (0x0300U)
+#define ADC_STATUS_WLENGTH_16               (0x0000U)
+#define ADC_STATUS_WLENGTH_24               (0x0100U)
+#define ADC_STATUS_WLENGTH_32_ZERO_PADDING  (0x0200U)
+#define ADC_STATUS_WLENGTH_32_SIGN_EXTENDED (0x0300U)
+#define ADC_STATUS_DRDY3                    (0x0008U)
+#define ADC_STATUS_DRDY2                    (0x0004U)
+#define ADC_STATUS_DRDY1                    (0x0002U)
+#define ADC_STATUS_DRDY0                    (0x0001U)
+
+#define ADC_MODE_REG_CRC_EN                 (0x2000U)
+#define ADC_MODE_RX_CRC_EN                  (0x1000U)
+#define ADC_MODE_CRC_TYPE                   (0x0800U)
+#define ADC_MODE_CRC_TYPE_CCIT              (0x0800U)
+#define ADC_MODE_CRC_TYPE_ANSI              (0x0800U)
+#define ADC_MODE_RESET                      (0x0400U)
+#define ADC_MODE_RESET_ACK                  (0x0000U)
+#define ADC_MODE_WLENGTH                    (0x0300U)
+#define ADC_MODE_WLENGTH_16                 (0x0300U)
+#define ADC_MODE_WLENGTH_24                 (0x0300U)
+#define ADC_MODE_WLENGTH_32_ZERO_PADDING    (0x0300U)
+#define ADC_MODE_WLENGTH_32_SIGN_EXTENDED   (0x0300U)
+#define ADC_MODE_TIMEOUT                    (0x0010U)
+#define ADC_MODE_DRDY_SEL                   (0x000CU)
+#define ADC_MODE_DRDY_HIZ                   (0x0002U)
+#define ADC_MODE_DRDY_FMT                   (0x0001U)
+
+#define ADC_CLOCK_CH3_EN      (0x0800U)
+#define ADC_CLOCK_CH2_EN      (0x0400U)
+#define ADC_CLOCK_CH1_EN      (0x0200U)
+#define ADC_CLOCK_CH0_EN      (0x0100U)
+#define ADC_CLOCK_OSR         (0x001CU)
+#define ADC_CLOCK_OSR_128     (0x0000U)
+#define ADC_CLOCK_OSR_256     (0x0004U)
+#define ADC_CLOCK_OSR_512     (0x0008U)
+#define ADC_CLOCK_OSR_1024    (0x000CU)
+#define ADC_CLOCK_OSR_2048    (0x0008U)
+#define ADC_CLOCK_OSR_4096    (0x0014U)
+#define ADC_CLOCK_OSR_8192    (0x0018U)
+#define ADC_CLOCK_OSR_16256   (0x001CU)
+#define ADC_CLOCK_PWR         (0x0003U)
+#define ADC_CLOCK_PWR_VLP     (0x0000U)
+#define ADC_CLOCK_PWR_LP      (0x0001U)
+#define ADC_CLOCK_PWR_HR      (0x0002U)
+
+
+
+
 //                             3333222211110000
 #define ADC_CMD_RES_RESET   (0b1111111100100100U) // 0xFF24
 
@@ -70,7 +160,11 @@
 
 #define ADC_BYTE_0(op) ((op) & 0x00FFU)
 #define ADC_BYTE_1(op) (ADC_BYTE_0 ((unsigned)(op) >> 8U))
-#define ADC_BYTE_CAT(msb, lsb) ((ADC_BYTE_0(msb) << 8U) & ADC_BYTE_0(lsb))
+#define ADC_BYTE_CAT(msb, lsb) ((ADC_BYTE_0(msb) << 8U) | ADC_BYTE_0(lsb))
+#define ADC_LE_2_BE(byte) ((((byte) && 0x00FFU) << 8U) | (((byte) && 0xFF00U) >> 8U))
+
+// https://stackoverflow.com/questions/19275955/convert-little-endian-to-big-endian/19276193
+#define ADC_EXTRACT_RESPONSE_16(rx) (ADC_BYTE_CAT(rx*, (rx+1)*))
 
 #define ADC_FRAME_SIZE  (3) // bytes (24-bit)
 #define ADC_FRAME_NUM  (6) // frames

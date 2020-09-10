@@ -6,6 +6,7 @@
 #include "logger.h"
 
 int ADC_TxRx_ (uint8_t *txBuf, uint8_t *prevRxBuf, size_t len);
+int ADC_Tx_LE_pad_(uint32_t data);
 
 //int ADC_Tx_ (uint16_t *buf, size_t len);
 
@@ -26,6 +27,8 @@ int ADC_init (SPI_HandleTypeDef *interface)
   uint32_t wait                              = 0;
   uint8_t  rx[ADC_FRAME_NUM][ADC_FRAME_SIZE] = {0};
 
+
+  // Reset ADC to known state
   ADC_sendCommand(ADC_CMD_OP_RESET, rx);
 
   while ((!ADC_IS_READY()
@@ -38,22 +41,51 @@ int ADC_init (SPI_HandleTypeDef *interface)
 
   if (wait > ADC_TIMEOUT) return -1;
 
-  // Wait till device ready or timed out
-  while (!ADC_IS_READY()
-         && (wait += ADC_WAIT_DELTA_) < ADC_TIMEOUT);
+  //
+//  ADC_sendCommand(ADC_CMD_OP_WREG
+//  | ADC_ADR_MODE
+//  | ADC_MODE_RESET_ACK
+//  |)
+  ADC_Tx_LE_pad_(0x00123456);
 
-  // Clear first sample from buffer
-  ADC_sendCommand(ADC_CMD_OP_NULL, NULL);
-  adc.state = ADC_READY;
+  adc.state = ADC_READY | ADC_FIRST_READ;
 
 }
 
 int ADC_sendCommand (uint16_t cmd, uint8_t rx[ADC_FRAME_NUM][ADC_FRAME_SIZE])
 {
+  // Flip Bytes to be in big endian
   uint8_t tx[ADC_FRAME_NUM][ADC_FRAME_SIZE] = {{ADC_BYTE_1(cmd), ADC_BYTE_0(cmd)}};
   return ADC_TxRx_((uint8_t *) tx, (uint8_t *) rx, ADC_FRAME_LEN);
 }
 
+int ADC_writeRegister(uint16_t addr, uint16_t* val, uint16_t len)
+{
+
+}
+
+int ADC_Tx_LE_pad_(uint32_t data)
+{
+  DBUG("%x", data);
+  uint8_t *tmp = (uint8_t*) &data;
+  for(int i = 0; i < 4; i++) {
+    DBUG("LE:");
+    DBUG("%d: 0x%02X", i, tmp[i]);
+  }
+
+  DBUG("BE: 0x%02X%02X%02X", tmp[2], tmp[1], tmp[0]);
+
+  // flipped
+
+  data = (tmp[0]<<16) | (tmp[1]<<8) | tmp[2];
+  DBUG("%x", data);
+  tmp = (uint8_t*) &data;
+  for(int i = 0; i < 4; i++) {
+    DBUG("flipped:");
+    DBUG("%d: 0x%02X", i, tmp[i]);
+  }
+
+}
 
 int ADC_TxRx_ (uint8_t *txBuf, uint8_t *prevRxBuf, size_t len)
 {
@@ -79,8 +111,12 @@ int ADC_TxRx_ (uint8_t *txBuf, uint8_t *prevRxBuf, size_t len)
 
 void ADC_callbackDRDY ()
 {
+  if (adc.state & ADC_FIRST_READ) {
+    adc.state &= ~ADC_FIRST_READ;
+    ADC_sendCommand(ADC_CMD_OP_NULL, NULL);
+  }
   if (adc.state & ADC_READY) {
     // TODO: do more efficiently
-    if (!ADC_sendCommand(ADC_CMD_OP_NULL, NULL)) ERR("ADC comm fail!");
+    ADC_sendCommand(ADC_CMD_OP_NULL, NULL);
   }
 }
