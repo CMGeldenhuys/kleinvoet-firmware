@@ -149,45 +149,32 @@
 #define ADC_CLOCK_PWR_LP      (0x0001U)
 #define ADC_CLOCK_PWR_HR      (0x0002U)
 
-//#if !__has_builtin(__builtin_bswap32) && !defined(__builtin_bswap32)
-//#warning "Missing '__builtin_bswap32' macro (gcc >= 4.3 required)"
-//#endif
-
-
-//                             3333222211110000
-#define ADC_CMD_RES_RESET   (0b1111111100100100U) // 0xFF24
-
 #define ADC_CMD_OP_ADR_POS  (7U)
 #define ADC_ADR(adr)        ((adr) << ADC_CMD_OP_ADR_POS)
 
-#define ADC_BYTE_0(op) ((op) & 0x00FFU)
-#define ADC_BYTE_1(op) (ADC_BYTE_0 ((unsigned)(op) >> 8U))
-#define ADC_BYTE_CAT(msb, lsb) ((ADC_BYTE_0(msb) << 8U) | ADC_BYTE_0(lsb))
-#define ADC_EXTRACT_RESPONSE_16(rx) (ADC_BYTE_CAT(rx*, (rx+1)*))
-
-#define ADC_FRAME_SIZE  (3) // bytes (24-bit)
-#define ADC_FRAME_NUM  (6) // frames
-#define ADC_FRAME_LEN (ADC_FRAME_SIZE * ADC_FRAME_NUM) // duration of whole frame
+#define ADC_FRAME_NUM (6) // number of frames
 #define ADC_SPS (4000)
+#define ADC_FRAME_LEN (3) // Bytes
 
 typedef enum {
-    ADC_READY      = 0x00000002U,
+    ADC_READY = 0x00000002U,
     ADC_FIRST_READ = 0x00000001U,
-    ADC_IDLE       = 0x00000000U,
+    ADC_IDLE = 0x00000000U,
     ADC_RESET
 } ADC_state_e;
 
 typedef struct {
     SPI_HandleTypeDef *spi;
-    ADC_state_e       state;
-    uint8_t           rx[ADC_FRAME_NUM][ADC_FRAME_SIZE];
+    ADC_state_e state;
+//    uint8_t           rx[ADC_FRAME_NUM][ADC_FRAME_SIZE];
 } ADC_t;
 
 
 int ADC_init (SPI_HandleTypeDef *interface);
 
-int ADC_sendCommand (uint16_t cmd, uint8_t rx[ADC_FRAME_NUM][ADC_FRAME_SIZE]);
 
 void ADC_callbackDRDY ();
+
+int ADC_sendCommand (uint16_t cmd);
 
 #endif // ADC_H_
