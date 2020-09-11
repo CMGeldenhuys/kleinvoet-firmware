@@ -61,12 +61,6 @@ DMA_HandleTypeDef hdma_uart4_rx;
 DMA_HandleTypeDef hdma_usart2_rx;
 
 /* USER CODE BEGIN PV */
-WAVE_t   wav;
-
-// TODO: Remove
-#define ADC_LEN 8192
-uint16_t     adcData[ADC_LEN];
-volatile int writeAdc = 0; // 0 - No write, 1 - half, 2 - full
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -127,6 +121,7 @@ int main(void)
   // Give time for RTC to init properly
   HAL_RTC_WaitForSynchro(&hrtc);
   TTY_init(&huart2);
+  FATFS_mount();
 
   // Test Logging
   DBUG("Hello, World.");
@@ -136,8 +131,6 @@ int main(void)
   WARN("HELLO, World!");
   HAL_Delay(1000);
   ERR("HELLO, WORLD!");
-
-  FATFS_mount();
 
   INFO("Waiting for GPS to finish starting up..");
   HAL_Delay(1500);
@@ -590,6 +583,10 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
+  for(;;){
+    HAL_GPIO_TogglePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin);
+    HAL_Delay(100);
+  }
   /* USER CODE END Error_Handler_Debug */
 }
 

@@ -19,12 +19,14 @@ static const char *LOG_Lvl_str_[] = {
         "ERR",
 };
 
+#ifdef LOG_COLOR
 static const char *LOG_color_code_[] = {
         LOG_COLOR_FG_DEFAULT,
         LOG_COLOR_FG_BLUE,
         LOG_COLOR_FG_YELLOW,
         LOG_COLOR_FG_RED
 };
+#endif
 
 int LOG_timestamp_ (const char *funcName, LOG_Lvl_e lvl, char *buf);
 

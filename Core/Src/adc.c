@@ -65,7 +65,7 @@ int ADC_yield ()
 {
   if (adc.storePtr != NULL) {
     WAVE_appendData(&adc.wav, adc.storePtr, ADC_RX_LEN / 2 * sizeof(uint32_t), 1);
-    DBUG("Persisting ADC buffer");
+    INFO("Persisting ADC buffer");
     adc.storePtr = NULL;
   }
 }
