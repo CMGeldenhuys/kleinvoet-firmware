@@ -6,6 +6,7 @@
 #define ADC_H_
 
 #include "main.h"
+#include "wave.h"
 
 #ifndef ADC_HARDWARE_NSS
 #ifndef ADC_nCS_Pin
@@ -155,18 +156,23 @@
 #define ADC_FRAME_NUM (6) // number of frames
 #define ADC_SPS (4000)
 #define ADC_FRAME_LEN (3) // Bytes
+#define ADC_RX_LEN (4000) // Sample
+#define ADC_NUM_CH (4)
 
 typedef enum {
-    ADC_READY = 0x00000002U,
+    ADC_READY      = 0x00000002U,
     ADC_FIRST_READ = 0x00000001U,
-    ADC_IDLE = 0x00000000U,
+    ADC_IDLE       = 0x00000000U,
     ADC_RESET
 } ADC_state_e;
 
 typedef struct {
     SPI_HandleTypeDef *spi;
-    ADC_state_e state;
-//    uint8_t           rx[ADC_FRAME_NUM][ADC_FRAME_SIZE];
+    ADC_state_e       state;
+    uint32_t          rx[ADC_RX_LEN][ADC_NUM_CH];
+    size_t            rxPos;
+    uint32_t *storePtr;
+    WAVE_t wav;
 } ADC_t;
 
 
@@ -176,5 +182,7 @@ int ADC_init (SPI_HandleTypeDef *interface);
 void ADC_callbackDRDY ();
 
 int ADC_sendCommand (uint16_t cmd);
+
+int ADC_yield ();
 
 #endif // ADC_H_

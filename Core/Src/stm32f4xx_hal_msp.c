@@ -263,6 +263,9 @@ void HAL_SD_MspInit(SD_HandleTypeDef* hsd)
 
     __HAL_LINKDMA(hsd,hdmatx,hdma_sdio_tx);
 
+    /* SDIO interrupt Init */
+    HAL_NVIC_SetPriority(SDIO_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(SDIO_IRQn);
   /* USER CODE BEGIN SDIO_MspInit 1 */
 
   /* USER CODE END SDIO_MspInit 1 */
@@ -302,6 +305,9 @@ void HAL_SD_MspDeInit(SD_HandleTypeDef* hsd)
     /* SDIO DMA DeInit */
     HAL_DMA_DeInit(hsd->hdmarx);
     HAL_DMA_DeInit(hsd->hdmatx);
+
+    /* SDIO interrupt DeInit */
+    HAL_NVIC_DisableIRQ(SDIO_IRQn);
   /* USER CODE BEGIN SDIO_MspDeInit 1 */
 
   /* USER CODE END SDIO_MspDeInit 1 */

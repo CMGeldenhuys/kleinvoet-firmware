@@ -7,11 +7,16 @@
 
 int ADC_TxRx_ (uint32_t *txBuf, uint32_t *prevRxBuf, size_t len);
 
+void ADC_sample_ ();
+
 ADC_t adc = {0};
 
-int ADC_init (SPI_HandleTypeDef *interface) {
-  adc.spi = interface;
+int ADC_init (SPI_HandleTypeDef *interface)
+{
+  adc.spi   = interface;
   adc.state = ADC_IDLE; // Block interrupts
+
+  WAVE_createFile(&adc.wav, "testing.wav");
 
   if (ADC_CS_IS_ENABLE()) {
     WARN("ADC CS low (unknown state)");
@@ -56,8 +61,40 @@ int ADC_init (SPI_HandleTypeDef *interface) {
 
 }
 
+int ADC_yield ()
+{
+  if (adc.storePtr != NULL) {
+    WAVE_appendData(&adc.wav, adc.storePtr, ADC_RX_LEN / 2 * sizeof(uint32_t), 1);
+    DBUG("Persisting ADC buffer");
+    adc.storePtr = NULL;
+  }
+}
 
-int ADC_sendCommand (uint16_t cmd) {
+void ADC_sample_ ()
+{
+  uint32_t rx[ADC_FRAME_NUM] = {0};
+  if (ADC_TxRx_(NULL, rx, ADC_FRAME_LEN) > 0) {
+    memcpy(adc.rx[adc.rxPos++], rx + 1, ADC_NUM_CH * sizeof(uint32_t));
+  }
+  else {
+    memset(adc.rx[adc.rxPos++], 0xFF, ADC_NUM_CH * sizeof(uint32_t));
+  }
+
+  // Half Complete
+  if (adc.rxPos == ADC_RX_LEN / 2) {
+    adc.storePtr = (uint32_t *) adc.rx;
+  }
+    // Full Complete
+  else if (adc.rxPos == ADC_RX_LEN){
+    adc.storePtr = (uint32_t *) adc.rx[ADC_RX_LEN / 2];
+    adc.rxPos = 0;
+  }
+
+}
+
+
+int ADC_sendCommand (uint16_t cmd)
+{
   uint32_t rx[ADC_FRAME_NUM] = {0};
   uint32_t tx[ADC_FRAME_NUM] = {cmd << 8U};
 
@@ -65,9 +102,10 @@ int ADC_sendCommand (uint16_t cmd) {
   else return -1;
 }
 
-int ADC_TxRx_ (uint32_t *txBuf, uint32_t *prevRxBuf, size_t len) {
+int ADC_TxRx_ (uint32_t *txBuf, uint32_t *prevRxBuf, size_t len)
+{
   HAL_StatusTypeDef ret;
-  uint32_t tx = 0, rx = 0;
+  uint32_t          tx = 0, rx = 0;
 
   // Select chip
   ADC_CS_ENABLE();
@@ -88,26 +126,31 @@ int ADC_TxRx_ (uint32_t *txBuf, uint32_t *prevRxBuf, size_t len) {
     // If transaction failed
     if (ret != HAL_OK) {
       ADC_CS_DISABLE();
+      // STM32 HAL bug leaves line IDLE last bit state
+      HAL_GPIO_WritePin(ADC_MOSI_GPIO_Port, ADC_MOSI_Pin, GPIO_PIN_SET);
       return 0;
     }
 
-    // Care about returned values
+    // Care about returned values.
     if (prevRxBuf != NULL) {
       // Convert to little endian & shift one byte down
       prevRxBuf[i] = __builtin_bswap32(rx) >> 8U;
     }
   }
   ADC_CS_DISABLE();
+  // STM32 HAL bug leaves line IDLE last bit state
+  HAL_GPIO_WritePin(ADC_MOSI_GPIO_Port, ADC_MOSI_Pin, GPIO_PIN_SET);
   return 1;
 }
 
-void ADC_callbackDRDY () {
+void ADC_callbackDRDY ()
+{
   if (adc.state & ADC_FIRST_READ) {
     adc.state &= ~ADC_FIRST_READ;
-//    ADC_sendCommand(ADC_CMD_OP_NULL, NULL);
+    ADC_sendCommand(ADC_CMD_OP_NULL);
   }
   if (adc.state & ADC_READY) {
     // TODO: do more efficiently
-//    ADC_sendCommand(ADC_CMD_OP_NULL, NULL);
+    ADC_sample_();
   }
 }
