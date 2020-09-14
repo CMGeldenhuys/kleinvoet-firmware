@@ -60,7 +60,7 @@ int LOG_log (const char *funcName, LOG_Lvl_e lvl, char *fmt, ...)
   // Persist Log entry
   // -1 : remove NULL term from string
   size_t tmp;
-  if((tmp = strlen(workBuf)) != len-1 ){
+  if ((tmp = strlen(workBuf)) != len - 1) {
     ERR("Fokop %u", tmp);
   }
   int bytesWritten = LOG_write((uint8_t *) workBuf, len - 1);

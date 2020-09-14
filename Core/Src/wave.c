@@ -11,7 +11,6 @@ int WAVE_writeHeader_ (WAVE_t *wav);
 int WAVE_createFile (WAVE_t *wav)
 {
   //TODO: Handle errors
-  WARN("Creating new wav file (%s%02u)", wav->fname, wav->subfile);
   DBUG("Will split on %lu bytes (%lu KiB | %lu MiB | %lu GiB)", WAVE_FILE_SPILT, WAVE_FILE_SPILT >> 10U, WAVE_FILE_SPILT >> 10U, WAVE_FILE_SPILT >> 10U);
   if (wav->fp) WAVE_close(wav);
 
@@ -35,7 +34,7 @@ int WAVE_createFile (WAVE_t *wav)
     snprintf(fname, WAVE_MAX_FILE_NAME_LEN, "%s.WAV", wav->fname);
   }
 
-
+  INFO("Creating new wav file (%s)", fname);
   if (FATFS_open(wav->fp, fname, FA_CREATE_ALWAYS | FA_WRITE) <= 0) {
     ERR("Failed to open/create file");
     return -1;

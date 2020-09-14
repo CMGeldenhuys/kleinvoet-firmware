@@ -35,7 +35,7 @@ extern "C" {
 #define WAVE_FILE_SPLIT_GiB(b) ((unsigned)(WAVE_FILE_SPLIT_MiB(b)) << 10U)
 
 #ifndef WAVE_FILE_SPLIT
-#define WAVE_FILE_SPILT WAVE_FILE_SPLIT_KiB(256)
+#define WAVE_FILE_SPILT WAVE_FILE_SPLIT_GiB(2)
 #endif
 
 const static DWORD WAVE_CID_RIFF = 0x46464952; // "RIFF"

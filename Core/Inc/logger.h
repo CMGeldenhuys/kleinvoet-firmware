@@ -23,23 +23,28 @@
 #include <string.h>
 #include "stm32f4xx_hal.h"
 
-#if !defined(DEBUG) || !defined(LOG_LEVEL_INFO) || !defined(LOG_LEVEL_WARN)
-#define LOG_LEVEL_WARN
+// Default logging level if not defined
+#if !defined(LOG_LEVEL_DEBUG) || !defined(LOG_LEVEL_INFO) || !defined(LOG_LEVEL_WARN)
+#if defined(DEBUG)
+#define LOG_LEVEL_DEBUG
+#else
+#define LOG_LEVEL_INFO
+#endif
 #endif
 
-#if defined(DEBUG)
+#if defined(LOG_LEVEL_DEBUG)
 #define DBUG(msg, ...) LOG_log(__func__, LOG_DEBUG, (msg), ##__VA_ARGS__)
 #else
 #define DBUG(cmd, ...)
 #endif
 
-#if defined(DEBUG) || defined(LOG_LEVEL_INFO)
+#if defined(LOG_LEVEL_DEBUG) || defined(LOG_LEVEL_INFO)
 #define INFO(msg, ...) LOG_log(__func__, LOG_INFO, (msg), ##__VA_ARGS__)
 #else
 #define INFO(cmd, ...)
 #endif
 
-#if defined(DEBUG) || defined(LOG_LEVEL_INFO) || defined(LOG_LEVEL_WARN)
+#if defined(LOG_LEVEL_DEBUG) || defined(LOG_LEVEL_INFO) || defined(LOG_LEVEL_WARN)
 #define WARN(msg, ...) LOG_log(__func__, LOG_WARN, (msg), ##__VA_ARGS__)
 #else
 #define WARN(cmd, ...)
