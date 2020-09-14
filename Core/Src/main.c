@@ -120,8 +120,8 @@ int main(void)
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
   // Give time for RTC to init properly
   HAL_RTC_WaitForSynchro(&hrtc);
-  TTY_init(&huart2);
-  FATFS_mount();
+  if(TTY_init(&huart2) <= 0) Error_Handler();
+  if(FATFS_mount() <= 0) Error_Handler();
 
   INFO("Version: %s", VERSION);
 
@@ -137,12 +137,10 @@ int main(void)
   INFO("Waiting for GPS to finish starting up..");
   HAL_Delay(1500);
   INFO("Done waiting for GPS");
-  GPS_init(&huart4);
-  ADC_init(&hspi2);
+  if(GPS_init(&huart4) <= 0) Error_Handler();
+  if(ADC_init(&hspi2) <= 0) Error_Handler();
 
   HAL_Delay(2000);
-// TODO: SD card doing strange things
-//  WAVE_createFile(&wav, "test.wav");
 
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_RESET);
   /* USER CODE END 2 */

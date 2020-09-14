@@ -80,9 +80,54 @@ int FATFS_mount ()
   // Mount to check if FS is working
   FRESULT ret = f_mount(&SDFatFS, SDPath, 1);
   if (ret == FR_OK) {
+    FILINFO fno;
+    char path[sizeof("REC_000")] = "DEBUG";
+#ifndef DEBUG
+    // TODO: Find a better way but this is just a quick fix
+    // Look for folders across 0...999
+    for (uint16_t idx = 0; idx <= 1000; idx++) {
+      if(idx == 1000) {
+        DBUG("Ran out of folder names");
+        return -2;
+      }
+
+      snprintf(path, sizeof(path), "REC_%03u", idx);
+      ret = f_stat(path, &fno);
+
+      // Check for folders and files
+      if(ret == FR_OK) {
+        DBUG("Folder %s exists, trying next...", path);
+        continue;
+      }
+      else if(ret == FR_NO_FILE) {
+        DBUG("Folder '%s' doesn't exist", path);
+        break;
+      }
+      else {
+        return FATFS_errHandle_(ret);
+      }
+    }
+
+    // Create folder and open dir
+    ret = f_mkdir(path);
+    if(ret != FR_OK) return FATFS_errHandle_(ret);
+#else
+    // Check if debug dir exists
+    ret = f_stat(path, &fno);
+    if(ret != FR_OK) {
+      // If not create it
+      ret = f_mkdir(path);
+      if(ret != FR_OK) return FATFS_errHandle_(ret);
+    }
+#endif
+
+    // Change directory
+    ret = f_chdir(path);
+    if(ret != FR_OK) return FATFS_errHandle_(ret);
+
+#ifndef DEBUG
     // Open all files
     // TODO: Move log handling out to own file
-#ifndef DEBUG
     ret = f_open(&LogFile, "KLEINVOET.LOG", FA_WRITE | FA_CREATE_ALWAYS);
 
     if (ret != FR_OK) {
@@ -90,8 +135,6 @@ int FATFS_mount ()
       return FATFS_errHandle_(ret);
     }
 #endif
-
-    // TODO: Find a better way but this is just a quick fix
 
   }
   else {
