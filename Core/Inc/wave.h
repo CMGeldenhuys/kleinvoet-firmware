@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 #ifndef WAVE_NCHANNELS
-#define WAVE_NCHANNELS 2
+#define WAVE_NCHANNELS 4
 #endif
 
 

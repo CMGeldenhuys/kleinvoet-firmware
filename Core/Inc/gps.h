@@ -562,7 +562,6 @@ static const UBX_CFG_TP5_t GPS_CONFIGURE_TIMEPULSE = {
                               | UBX_CFG_TP5_FLAGS_IS_FREQ
                               | UBX_CFG_TP5_FLAGS_IS_LENGTH
                               | UBX_CFG_TP5_FLAGS_ALIGN_TO_TOW
-                              | UBX_CFG_TP5_FLAGS_POLARITY_RISING
 };
 
 

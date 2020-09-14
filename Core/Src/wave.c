@@ -15,7 +15,14 @@ int WAVE_createFile (WAVE_t *wav, const char *fname)
 
   DBUG("Allocating memory to WAVE file");
   wav->fp = (FIL *) malloc(sizeof(FIL));
-  FATFS_open(wav->fp, fname, FA_CREATE_ALWAYS | FA_WRITE);
+  if(wav->fp == NULL) {
+    ERR("Failed to allocate memory for file");
+    return -1;
+  }
+  if(FATFS_open(wav->fp, fname, FA_CREATE_ALWAYS | FA_WRITE) <= 0) {
+    ERR("Failed to open/create file");
+    return -1;
+  }
 
   WAVE_createHeader_(wav);
   WAVE_writeHeader_(wav);
