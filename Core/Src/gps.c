@@ -62,6 +62,7 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, __unused int waitAck, __unused in
   GPS_UBX_msg_t msg = {0};
   msg.cmd = cmd;
   DBUG("Sending UBX command 0x%02X - 0x%02X (%u bytes)", cmd->cls, cmd->id, cmd->len);
+  INFO("< UBX 0x%02X|0x%02X (%uB)", cmd->cls, cmd->id, cmd->len);
   GPS_packMsg_(&msg);
 
   // Send sync header
@@ -217,14 +218,15 @@ int GPS_rxByte_ (uint8_t c)
 
 int GPS_processCmd_ (GPS_UBX_cmd_t *cmd)
 {
+  INFO("> UBX 0x%02X|0x%02X (%uB)", cmd->cls, cmd->id, cmd->len);
   switch (cmd->cls) {
     case UBX_NAV: {
-      INFO("NAV Msg recv (0x%02X | 0x%02X)", cmd->cls, cmd->id);
+      DBUG("NAV Msg recv (0x%02X | 0x%02X)", cmd->cls, cmd->id);
       return GPS_processCmdNav_(cmd);
     }
 
     default: {
-      INFO("GPS Msg ignored (0x%02X | 0x%02X)", cmd->cls, cmd->id);
+      WARN("GPS Msg ignored (0x%02X | 0x%02X)", cmd->cls, cmd->id);
       return 0;
     }
   }
@@ -237,7 +239,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
     return 0;
   }
 
-  switch (cmd->id.UBX) {
+  switch (cmd->id) {
 
     case UBX_NAV_CLK: {
       INFO("UBX-NAV-CLK");
@@ -269,9 +271,14 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
       if (cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC) {
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
         GPS_updateRTC_(&hrtc, cmd_t);
+        // Once fix & valid time then disable SAT msgs
+        GPS_sendCommand(&GPS_DISABLE_UBX_NAV_SAT.generic, 0, 0);
       }
-      else
+      else{
+        // If fix lost or never had ensure SAT is on as to show feedback of num sats
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+        GPS_sendCommand(&GPS_ENABLE_UBX_NAV_SAT.generic, 0, 0);
+      }
 
       return UBX_NAV_TIMEUTC;
     }

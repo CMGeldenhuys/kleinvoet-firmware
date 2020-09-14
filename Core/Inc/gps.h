@@ -44,37 +44,34 @@ typedef enum __attribute__ ((packed)) {
     NMEA_PBX = 0xF1
 } GPS_cls_e;
 
-typedef union {
-    enum __attribute__ ((packed)) {
-        UBX_NAV_CLK     = 0x22,
-        UBX_NAV_TIMEUTC = 0x21,
-        UBX_NAV_STATUS  = 0x03,
-        UBX_NAV_SAT     = 0x35,
-        UBX_CFG_PRT     = 0x00,
-        UBX_CFG_MSG     = 0x01,
-        UBX_CFG_TP5     = 0x31
-    } UBX;
+typedef enum __attribute__ ((packed)) {
+    UBX_NAV_CLK     = 0x22,
+    UBX_NAV_TIMEUTC = 0x21,
+    UBX_NAV_STATUS  = 0x03,
+    UBX_NAV_SAT     = 0x35,
+    UBX_CFG_PRT     = 0x00,
+    UBX_CFG_MSG     = 0x01,
+    UBX_CFG_TP5     = 0x31,
 
-    enum __attribute__ ((packed)) {
-        NMEA_DTM = 0x0A,
-        NMEA_GBQ = 0x44,
-        NMEA_GBS = 0x09,
-        NMEA_GGA = 0x00,
-        NMEA_GLL = 0x01,
-        NMEA_GLQ = 0x43,
-        NMEA_GNQ = 0x42,
-        NMEA_GNS = 0x0D,
-        NMEA_GPQ = 0x40,
-        NMEA_GRS = 0x06,
-        NMEA_GSA = 0x02,
-        NMEA_GST = 0x07,
-        NMEA_GSV = 0x03,
-        NMEA_RMC = 0x04,
-        NMEA_TXT = 0x41,
-        NMEA_VLW = 0x0F,
-        NMEA_VTG = 0x05,
-        NMEA_ZDA = 0x08
-    } NMEA;
+    NMEA_DTM = 0x0A,
+    NMEA_GBQ = 0x44,
+    NMEA_GBS = 0x09,
+    NMEA_GGA = 0x00,
+    NMEA_GLL = 0x01,
+    NMEA_GLQ = 0x43,
+    NMEA_GNQ = 0x42,
+    NMEA_GNS = 0x0D,
+    NMEA_GPQ = 0x40,
+    NMEA_GRS = 0x06,
+    NMEA_GSA = 0x02,
+    NMEA_GST = 0x07,
+    NMEA_GSV = 0x03,
+    NMEA_RMC = 0x04,
+    NMEA_TXT = 0x41,
+    NMEA_VLW = 0x0F,
+    NMEA_VTG = 0x05,
+    NMEA_ZDA = 0x08
+
 } GPS_id_e;
 
 typedef struct {
