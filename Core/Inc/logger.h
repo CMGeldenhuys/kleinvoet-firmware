@@ -22,9 +22,10 @@
 #include <stdio.h>
 #include <string.h>
 #include "stm32f4xx_hal.h"
+#include "config.h"
 
 // Default logging level if not defined
-#if !defined(LOG_LEVEL_DEBUG) || !defined(LOG_LEVEL_INFO) || !defined(LOG_LEVEL_WARN)
+#if !defined(LOG_LEVEL_DEBUG) && !defined(LOG_LEVEL_INFO) && !defined(LOG_LEVEL_WARN)
 #if defined(DEBUG)
 #define LOG_LEVEL_DEBUG
 #else

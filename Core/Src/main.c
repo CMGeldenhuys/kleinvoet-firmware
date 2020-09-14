@@ -23,9 +23,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "config.h"
 #include "tty.h"
 #include "logger.h"
-#include "wave.h"
 #include "gps.h"
 #include "adc.h"
 /* USER CODE END Includes */
@@ -122,6 +122,8 @@ int main(void)
   HAL_RTC_WaitForSynchro(&hrtc);
   TTY_init(&huart2);
   FATFS_mount();
+
+  INFO("Version: %s", VERSION);
 
   // Test Logging
   DBUG("Hello, World.");
