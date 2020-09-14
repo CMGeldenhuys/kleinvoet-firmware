@@ -259,8 +259,8 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
     }
 
     case UBX_NAV_TIMEUTC: {
-      INFO("UBX-NAV-TIMEUTC");
       const UBX_NAV_TIMEUTC_t *cmd_t = (UBX_NAV_TIMEUTC_t *) &gps.rx.cmd._t;
+      INFO("UBX-NAV-TIMEUTC (%s)", cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC ? "VALID" : "INVALID");
       DBUG("  iTOW: %lu", cmd_t->iTOW);
       DBUG("  tAcc: %lu", cmd_t->tAcc);
       DBUG("  nano: %0l", cmd_t->nano);
@@ -271,7 +271,6 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
       DBUG("  min: %02u", cmd_t->min);
       DBUG("  sec: %02u", cmd_t->sec);
       DBUG("  valid: 0x%02X", cmd_t->valid);
-
 
       // TODO: Replace with constant blip
       if (cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC) {
@@ -303,8 +302,8 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
     }
 
     case UBX_NAV_SAT: {
-      INFO("UBX-NAV-SAT");
       const UBX_NAV_SAT_t *cmd_t = (UBX_NAV_SAT_t *) &gps.rx.cmd._t;
+      INFO("UBX-NAV-SAT (%u)", cmd_t->numSvs);
       DBUG("  iTOW: %lu", cmd_t->iTOW);
       DBUG("  version: %u", cmd_t->version);
       DBUG("  numSvs: %u", cmd_t->numSvs);
@@ -319,6 +318,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
         DBUG("    prRes: %d", cmd_t->svs[i].prRes);
         DBUG("    flags: 0x%02X", cmd_t->svs[i].flags);
         // TODO: Make this non blocking??
+        // Need 'outer' state machine that controls LED status with main yield
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
         HAL_Delay(100);
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
