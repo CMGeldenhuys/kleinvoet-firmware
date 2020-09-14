@@ -76,6 +76,8 @@ int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
     else {
       // TODO: Check return
       // Spilt Files
+      // TODO: Make us of BWF format (link chunk)
+      // https://tech.ebu.ch/docs/tech/tech3285s4.pdf
       INFO("Slitting WAVE file");
       wav->subfile++; //TODO: Check overrun
       WAVE_createFile(wav);
