@@ -225,6 +225,12 @@ int GPS_processCmd_ (GPS_UBX_cmd_t *cmd)
       return GPS_processCmdNav_(cmd);
     }
 
+    case UBX_ACK: {
+      DBUG("ACK Msg recv (0x%02X | 0x%02X)", cmd->cls, cmd->id);
+      // TODO: Process ACK msg to make sure commands are successful
+      return 1;
+    }
+
     default: {
       WARN("GPS Msg ignored (0x%02X | 0x%02X)", cmd->cls, cmd->id);
       return 0;
