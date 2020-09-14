@@ -2,32 +2,54 @@
 // Created by CM Geldenhuys on 2020/08/11.
 //
 #include "wave.h"
+#include <string.h>
 
 int WAVE_createHeader_ (WAVE_t *wav);
 
 int WAVE_writeHeader_ (WAVE_t *wav);
 
-int WAVE_createFile (WAVE_t *wav, const char *fname)
+int WAVE_createFile (WAVE_t *wav)
 {
   //TODO: Handle errors
-
+  WARN("Creating new wav file (%s%02u)", wav->fname, wav->subfile);
+  DBUG("Will split on %lu bytes (%lu KiB | %lu MiB | %lu GiB)", WAVE_FILE_SPILT, WAVE_FILE_SPILT >> 10U, WAVE_FILE_SPILT >> 10U, WAVE_FILE_SPILT >> 10U);
   if (wav->fp) WAVE_close(wav);
 
   DBUG("Allocating memory to WAVE file");
   wav->fp = (FIL *) malloc(sizeof(FIL));
-  if(wav->fp == NULL) {
+  if (wav->fp == NULL) {
     ERR("Failed to allocate memory for file");
     return -1;
   }
-  if(FATFS_open(wav->fp, fname, FA_CREATE_ALWAYS | FA_WRITE) <= 0) {
+
+  // Create empty string buffer
+  char fname[WAVE_MAX_FILE_NAME_LEN];
+  fname[0] = '\0';
+
+  // Subsequent files
+  if(wav->subfile > 0) {
+    snprintf(fname, WAVE_MAX_FILE_NAME_LEN, "%s.W%02u", wav->fname, wav->subfile);
+  }
+  // Original file
+  else {
+    snprintf(fname, WAVE_MAX_FILE_NAME_LEN, "%s.WAV", wav->fname);
+  }
+
+
+  if (FATFS_open(wav->fp, fname, FA_CREATE_ALWAYS | FA_WRITE) <= 0) {
     ERR("Failed to open/create file");
     return -1;
   }
 
   WAVE_createHeader_(wav);
   WAVE_writeHeader_(wav);
-  // TODO: Expand file to 4GB
-  // Need to check for space
+
+  // TODO: Expand file to 4GB/ File split
+  // Improves writing speed as the FS doesn't need to still allocated blocks of
+  // space to file on write. Rather precompute and clear to ensure there will
+  // also be enough space.
+
+  // TODO: Need to check for space
 
   return 1;
 }
@@ -40,7 +62,7 @@ int WAVE_writeHeader_ (WAVE_t *wav)
 
 int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
 {
-  if(len < FATFS_free()){
+  if (len < FATFS_free()) {
     if (wav->header->RIFF_chunk.ChunkSize + len < WAVE_FILE_SPILT) {
       wav->header->RIFF_chunk.ChunkSize += len;
       wav->header->data_chunk.SubchunkSize += len;
@@ -53,10 +75,11 @@ int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
       return FATFS_swrite(wav->fp, buff, len, sync);
     }
     else {
-      // TOOD: Check return
+      // TODO: Check return
       // Spilt Files
-      DBUG("Slitting WAVE file");
-      WAVE_createFile(wav, "TEST.W01");
+      INFO("Slitting WAVE file");
+      wav->subfile++; //TODO: Check overrun
+      WAVE_createFile(wav);
       return WAVE_appendData(wav, buff, len, sync);
     }
   }
@@ -71,11 +94,14 @@ int WAVE_createHeader_ (WAVE_t *wav)
 
   // Prevent memory leak if file already exists, otherwise reuse header
   if (!wav->header) {
-    DBUG("Allocating memory to WAVE file header");
+    DBUG("Allocating memory to WAVE file header (creating new header)");
     wav->header = (WAVE_header_t *) malloc(sizeof(WAVE_header_t));
+
+    if (!wav->sampleRate) wav->sampleRate       = WAVE_DEFAULT_SAMPLE_RATE;
+    if (!wav->nChannels) wav->nChannels         = WAVE_DEFAULT_NCHANNELS;
+    if (!wav->blockSize) wav->blockSize         = WAVE_DEFAULT_BLOCK_SIZE;
+    if (!wav->bitsPerSample) wav->bitsPerSample = WAVE_DEFAULT_BPS;
   }
-
-
   // RIFF Chunk
   WAVE_RIFF_chunk_t *RIFF_chunk = &wav->header->RIFF_chunk;
   RIFF_chunk->ChunkID   = WAVE_CID_RIFF;
@@ -89,11 +115,11 @@ int WAVE_createHeader_ (WAVE_t *wav)
   fmt_chunk->SubchunkID    = WAVE_CID_FMT;
   fmt_chunk->SubchunkSize  = 16; // TODO: Don't use magic number
   fmt_chunk->AudioFormat   = WAVE_AUDIO_PCM;
-  fmt_chunk->NumChannels   = WAVE_NCHANNELS;
-  fmt_chunk->SampleRate    = WAVE_SAMPLE_RATE;
-  fmt_chunk->ByteRate      = WAVE_SAMPLE_RATE * WAVE_NCHANNELS * WAVE_BPS / 8;
-  fmt_chunk->BlockAlign    = WAVE_NCHANNELS * WAVE_BLOCK_SIZE / 8;
-  fmt_chunk->BitsPerSample = WAVE_BPS;
+  fmt_chunk->NumChannels   = wav->nChannels;
+  fmt_chunk->SampleRate    = wav->sampleRate;
+  fmt_chunk->ByteRate      = wav->sampleRate * wav->nChannels * wav->bitsPerSample / 8;
+  fmt_chunk->BlockAlign    = wav->nChannels * wav->blockSize / 8;
+  fmt_chunk->BitsPerSample = wav->bitsPerSample;
 
 
 
@@ -103,8 +129,6 @@ int WAVE_createHeader_ (WAVE_t *wav)
   data_chunk->SubchunkSize = 0; //TODO: Update with data size
 
   DBUG("WAVE Header created");
-//  FATFS_open(wav->fp, "test.wav", FA_WRITE | FA_CREATE_ALWAYS);
-//  FATFS_swrite(wav->fp, &wav, sizeof(wav), 1);
   return 1;
 }
 

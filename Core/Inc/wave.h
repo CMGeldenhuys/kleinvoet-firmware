@@ -10,29 +10,36 @@ extern "C" {
 
 #include "fatfs.h"
 
-#ifndef WAVE_SAMPLE_RATE
-#define WAVE_SAMPLE_RATE 4000
+#ifndef WAVE_DEFAULT_SAMPLE_RATE
+#define WAVE_DEFAULT_SAMPLE_RATE 4000
 #endif
 
-#ifndef WAVE_BLOCK_SIZE
-#define WAVE_BLOCK_SIZE 32
+#ifndef WAVE_DEFAULT_BLOCK_SIZE
+#define WAVE_DEFAULT_BLOCK_SIZE 32
 #endif
 
-#ifndef WAVE_BPS
-#define WAVE_BPS 24
+#ifndef WAVE_DEFAULT_BPS
+#define WAVE_DEFAULT_BPS 24
 #endif
 
-#ifndef WAVE_NCHANNELS
-#define WAVE_NCHANNELS 4
+#ifndef WAVE_DEFAULT_NCHANNELS
+#define WAVE_DEFAULT_NCHANNELS 4
 #endif
 
+#ifndef WAVE_MAX_FILE_NAME_LEN
+#define WAVE_MAX_FILE_NAME_LEN 32
+#endif
+
+#define WAVE_FILE_SPLIT_KiB(b) ((unsigned)(b) << 10U)
+#define WAVE_FILE_SPLIT_MiB(b) ((unsigned)(WAVE_FILE_SPLIT_KiB(b)) << 10U)
+#define WAVE_FILE_SPLIT_GiB(b) ((unsigned)(WAVE_FILE_SPLIT_MiB(b)) << 10U)
 
 #ifndef WAVE_FILE_SPLIT
-#define WAVE_FILE_SPILT (-1u)
+#define WAVE_FILE_SPILT WAVE_FILE_SPLIT_KiB(256)
 #endif
 
 const static DWORD WAVE_CID_RIFF = 0x46464952; // "RIFF"
-const static DWORD WAVE_CID_FMT = 0x20746d66; // "fmt "
+const static DWORD WAVE_CID_FMT  = 0x20746d66; // "fmt "
 const static DWORD WAVE_CID_DATA = 0x61746164; // "data"
 
 const static DWORD WAVE_RIFF_FORMAT = 0x45564157; // "WAVE"
@@ -45,37 +52,43 @@ typedef struct {
     DWORD ChunkID;
     DWORD ChunkSize;
     DWORD Format;
-} WAVE_RIFF_chunk_t;
+}                 WAVE_RIFF_chunk_t;
 
 typedef struct {
     DWORD SubchunkID;
     DWORD SubchunkSize;
-    WORD AudioFormat;
-    WORD NumChannels;
+    WORD  AudioFormat;
+    WORD  NumChannels;
     DWORD SampleRate;
     DWORD ByteRate;
-    WORD BlockAlign;
-    WORD BitsPerSample;
-} WAVE_fmt_subchunk_t;
+    WORD  BlockAlign;
+    WORD  BitsPerSample;
+}                 WAVE_fmt_subchunk_t;
 
 
 typedef struct {
     DWORD SubchunkID;
     DWORD SubchunkSize;
-} WAVE_data_subchunk_t;
+}                 WAVE_data_subchunk_t;
 
 typedef struct {
-    WAVE_RIFF_chunk_t RIFF_chunk;
-    WAVE_fmt_subchunk_t fmt_chunk;
+    WAVE_RIFF_chunk_t    RIFF_chunk;
+    WAVE_fmt_subchunk_t  fmt_chunk;
     WAVE_data_subchunk_t data_chunk;
-} WAVE_header_t;
+}                 WAVE_header_t;
 
 typedef struct {
     WAVE_header_t *header;
-    FIL *fp;
-} WAVE_t;
+    FIL           *fp;
+    const char *fname;
+    uint8_t  subfile;
+    uint32_t sampleRate;
+    uint16_t nChannels;
+    uint16_t blockSize;
+    uint16_t bitsPerSample;
+}                 WAVE_t;
 
-int WAVE_createFile (WAVE_t *wav, const char *fname);
+int WAVE_createFile (WAVE_t *wav);
 
 int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync);
 

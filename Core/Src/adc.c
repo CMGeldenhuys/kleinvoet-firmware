@@ -16,7 +16,13 @@ int ADC_init (SPI_HandleTypeDef *interface)
   adc.spi   = interface;
   adc.state = ADC_IDLE; // Block interrupts
 
-  WAVE_createFile(&adc.wav, "testing.wav");
+  adc.wav.fname = "REC";
+  adc.wav.sampleRate = 4000; // sps
+  adc.wav.nChannels = 4;
+  adc.wav.bitsPerSample = 24;
+  adc.wav.blockSize = 32; // bits
+
+  WAVE_createFile(&adc.wav);
 
   if (ADC_CS_IS_ENABLE()) {
     WARN("ADC CS low (unknown state)");
@@ -65,7 +71,7 @@ int ADC_yield ()
 {
   if (adc.storePtr != NULL) {
     WAVE_appendData(&adc.wav, adc.storePtr, ADC_RX_LEN / 2 * sizeof(uint32_t), 1);
-    INFO("Persisting ADC buffer");
+    DBUG("Persisting ADC buffer");
     adc.storePtr = NULL;
   }
 }
