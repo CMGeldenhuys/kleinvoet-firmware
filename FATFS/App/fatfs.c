@@ -90,7 +90,7 @@ int FATFS_mount ()
         DBUG("Ran out of folder names");
         return -2;
       }
-
+      // TODO: Rather check if recording exists to stop many folder problem
       snprintf(path, sizeof(path), "REC_%03u", idx);
       ret = f_stat(path, &fno);
 
@@ -128,7 +128,7 @@ int FATFS_mount ()
 #ifndef DEBUG
     // Open all files
     // TODO: Move log handling out to own file
-    ret = f_open(&LogFile, "KLEINVOET.LOG", FA_WRITE | FA_CREATE_ALWAYS);
+    ret = f_open(&LogFile, "KV.LOG", FA_WRITE | FA_CREATE_ALWAYS);
 
     if (ret != FR_OK) {
       //TODO: HANDLE FAIL TO OPEN
