@@ -11,7 +11,8 @@ int WAVE_writeHeader_ (WAVE_t *wav);
 int WAVE_createFile (WAVE_t *wav)
 {
   //TODO: Handle errors
-  DBUG("Will split on %lu bytes (%lu KiB | %lu MiB | %lu GiB)", WAVE_FILE_SPILT, WAVE_FILE_SPILT >> 10U, WAVE_FILE_SPILT >> 10U, WAVE_FILE_SPILT >> 10U);
+  DBUG("Will split on %lu bytes (%lu KiB | %lu MiB | %lu GiB)", WAVE_FILE_SPILT, WAVE_FILE_SPILT >> 10U,
+       WAVE_FILE_SPILT >> 10U, WAVE_FILE_SPILT >> 10U);
   if (wav->fp) WAVE_close(wav);
 
   DBUG("Allocating memory to WAVE file");
@@ -26,10 +27,10 @@ int WAVE_createFile (WAVE_t *wav)
   fname[0] = '\0';
 
   // Subsequent files
-  if(wav->subfile > 0) {
+  if (wav->subfile > 0) {
     snprintf(fname, WAVE_MAX_FILE_NAME_LEN, "%s.W%02u", wav->fname, wav->subfile);
   }
-  // Original file
+    // Original file
   else {
     snprintf(fname, WAVE_MAX_FILE_NAME_LEN, "%s.WAV", wav->fname);
   }
@@ -37,8 +38,14 @@ int WAVE_createFile (WAVE_t *wav)
   INFO("Creating new wav file (%s)", fname);
   if (FATFS_open(wav->fp, fname, FA_CREATE_ALWAYS | FA_WRITE) <= 0) {
     ERR("Failed to open/create file");
+    // Clean up memory
+    WAVE_close(wav);
     return -1;
   }
+
+  if (FATFS_expand(wav->fp, WAVE_FILE_SPILT, 1) <= 0)
+    WARN("Could not allocate continuous file space");
+
 
   WAVE_createHeader_(wav);
   WAVE_writeHeader_(wav);
