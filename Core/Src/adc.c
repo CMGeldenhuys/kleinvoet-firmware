@@ -16,11 +16,11 @@ int ADC_init (SPI_HandleTypeDef *interface)
   adc.spi   = interface;
   adc.state = ADC_IDLE; // Block interrupts
 
-  adc.wav.fname = "REC";
-  adc.wav.sampleRate = 4000; // sps
-  adc.wav.nChannels = 4;
+  adc.wav.fname         = "REC";
+  adc.wav.sampleRate    = 4000; // sps
+  adc.wav.nChannels     = 4;
   adc.wav.bitsPerSample = 24;
-  adc.wav.blockSize = 32; // bits
+  adc.wav.blockSize     = 32; // bits
 
   WAVE_createFile(&adc.wav);
 
@@ -64,7 +64,7 @@ int ADC_init (SPI_HandleTypeDef *interface)
 //  |)
 
   adc.state = ADC_READY | ADC_FIRST_READ;
-
+  return 1;
 }
 
 int ADC_yield ()
@@ -80,20 +80,26 @@ void ADC_sample_ ()
 {
   uint32_t rx[ADC_FRAME_NUM] = {0};
   if (ADC_TxRx_(NULL, rx, ADC_FRAME_LEN) > 0) {
-    memcpy(adc.rx[adc.rxPos++], rx + 1, ADC_NUM_CH * sizeof(uint32_t));
+    // Store Sample (ignore status response)
+    memcpy(adc.rx[adc.rxPos], rx + 1, ADC_NUM_CH * sizeof(uint32_t));
   }
   else {
-    memset(adc.rx[adc.rxPos++], 0xFF, ADC_NUM_CH * sizeof(uint32_t));
+    // Coms failed so store 0xFF instead
+    memset(adc.rx[adc.rxPos], 0xFF, ADC_NUM_CH * sizeof(uint32_t));
   }
+
+  // Increment counters
+  adc.rxPos++;
+  adc.sampleCount++;
 
   // Half Complete
   if (adc.rxPos == ADC_RX_LEN / 2) {
     adc.storePtr = (uint32_t *) adc.rx;
   }
-    // Full Complete
-  else if (adc.rxPos == ADC_RX_LEN){
+  // Full Complete
+  else if (adc.rxPos == ADC_RX_LEN) {
     adc.storePtr = (uint32_t *) adc.rx[ADC_RX_LEN / 2];
-    adc.rxPos = 0;
+    adc.rxPos    = 0;
   }
 
 }

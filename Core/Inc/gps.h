@@ -18,6 +18,7 @@ extern "C" {
 #endif
 
 #include "serial.h"
+#include "fatfs.h"
 
 #ifndef GPS_BUF_LEN
 #define GPS_BUF_LEN 128
@@ -119,6 +120,9 @@ typedef struct {
     }        rx;
 
     GPS_state_e state;
+
+    size_t adcTimestamp;
+    FIL * fp;
 } GPS_t;
 
 typedef union {

@@ -171,6 +171,7 @@ typedef struct {
     ADC_state_e       state;
     uint32_t          rx[ADC_RX_LEN][ADC_NUM_CH];
     size_t            rxPos;
+    size_t            sampleCount;
     uint32_t *storePtr;
     WAVE_t wav;
 } ADC_t;

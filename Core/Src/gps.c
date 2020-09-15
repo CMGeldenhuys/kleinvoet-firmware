@@ -12,9 +12,11 @@
 
 #include "gps.h"
 #include "logger.h"
+#include "adc.h"
 
 static GPS_t             gps = {0};
 extern RTC_HandleTypeDef hrtc;
+extern ADC_t             adc;
 
 void GPS_packMsg_ (GPS_UBX_msg_t *ubx);
 
@@ -40,8 +42,20 @@ int dow (int year, int month, int day);
 
 int GPS_init (UART_HandleTypeDef *uart)
 {
-  Serial_wrap(&gps.serial, uart);
-  GPS_configureUBX_();
+  DBUG("Wrapping serial");
+  if(Serial_wrap(&gps.serial, uart) <= 0) return -1;
+
+  DBUG("Allocating memory for timestamping file");
+  gps.fp = (FIL *) malloc(sizeof(FIL));
+  if(gps.fp == NULL) return -2;
+  DBUG("Open/creating file");
+  if(FATFS_open(
+          gps.fp,
+          "TS.CSV",
+          FA_CREATE_ALWAYS | FA_WRITE) <= 0) return -2;
+  DBUG("Writing header to file");
+  f_printf(gps.fp, "Sample,Date Time,GPS Time of Week,Time Accuracy,Status" FATFS_EOL);
+  if(GPS_configureUBX_() <= 0) return -3;
   return 1;
 }
 
@@ -52,7 +66,7 @@ int GPS_configureUBX_ ()
     GPS_sendCommand(GPS_DEFAULT_CONFIG[i], 0, 0);
   }
   gps.rx.state = GPS_IDLE;
-  gps.state = GPS_IDLE;
+  gps.state    = GPS_IDLE;
   return 1;
 }
 
@@ -109,6 +123,9 @@ int GPS_rxByte_ (uint8_t c)
 
     // Sync 1
     case GPS_IDLE: {
+      // Cache sample when time code was received
+      gps.adcTimestamp = adc.sampleCount;
+
       // Received start byte
       if (c == GPS_SYNC_1_) gps.rx.state = GPS_RX_SYNC_2;
       else if (c == '$') DBUG("NMEA Msg recv (ignoring)");
@@ -260,7 +277,19 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
 
     case UBX_NAV_TIMEUTC: {
       const UBX_NAV_TIMEUTC_t *cmd_t = (UBX_NAV_TIMEUTC_t *) &gps.rx.cmd._t;
-      INFO("UBX-NAV-TIMEUTC (%s)", cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC ? "VALID" : "INVALID");
+      INFO("UBX-NAV-TIMEUTC (%s - %lu)",
+           cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC ? "VALID" : "INVALID",
+           gps.adcTimestamp);
+
+      // Best attempt timestamping
+      DBUG("Timestamping");
+      f_printf(gps.fp, "%ul,%u-%02u-%02 %02u:%02u:%02u.%0l,%lu,%lu,%s" FATFS_EOL,
+               gps.adcTimestamp,
+               cmd_t->year, cmd_t->month, cmd_t->day,
+               cmd_t->hour, cmd_t->min, cmd_t->sec, cmd_t->nano,
+               cmd_t->iTOW, cmd_t->tAcc,
+               cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC ? "VALID" : "INVALID");
+
       DBUG("  iTOW: %lu", cmd_t->iTOW);
       DBUG("  tAcc: %lu", cmd_t->tAcc);
       DBUG("  nano: %0l", cmd_t->nano);
@@ -279,7 +308,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
         // Once fix & valid time then disable SAT msgs
         GPS_sendCommand(&GPS_DISABLE_UBX_NAV_SAT.generic, 0, 0);
       }
-      else{
+      else {
         // If fix lost or never had ensure SAT is on as to show feedback of num sats
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
         GPS_sendCommand(&GPS_ENABLE_UBX_NAV_SAT.generic, 0, 0);
@@ -304,6 +333,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
     case UBX_NAV_SAT: {
       const UBX_NAV_SAT_t *cmd_t = (UBX_NAV_SAT_t *) &gps.rx.cmd._t;
       INFO("UBX-NAV-SAT (%u)", cmd_t->numSvs);
+
       DBUG("  iTOW: %lu", cmd_t->iTOW);
       DBUG("  version: %u", cmd_t->version);
       DBUG("  numSvs: %u", cmd_t->numSvs);

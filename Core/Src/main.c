@@ -127,11 +127,8 @@ int main(void)
 
   // Test Logging
   DBUG("Hello, World.");
-  HAL_Delay(10);
   INFO("Hello, World!");
-  HAL_Delay(100);
   WARN("HELLO, World!");
-  HAL_Delay(1000);
   ERR("HELLO, WORLD!");
 
   INFO("Waiting for GPS to finish starting up..");
@@ -581,6 +578,8 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
+  // Try flush log to SD card
+  LOG_flush();
   for(;;){
     HAL_GPIO_TogglePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin);
     HAL_Delay(100);
