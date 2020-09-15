@@ -19,10 +19,6 @@ extern "C" {
 #define TTY_SERVICE_INTERVAL 1000
 #endif
 
-#ifndef TTY_GREETING
-#define TTY_GREETING (TTY_EOL "Hello, World!")
-#endif
-
 #ifndef TTY_CMD_BUF
 #define TTY_CMD_BUF 128
 #endif

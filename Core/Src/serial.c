@@ -67,7 +67,7 @@ uint8_t Serial_peek (Serial_t *self)
 
 }
 
-int Serial_write (Serial_t *self, uint8_t *buf, const size_t len)
+int Serial_write (Serial_t *self, const uint8_t *buf, size_t len)
 {
 #ifdef SERIAL_TX_BLOCKING
   if (HAL_UART_Transmit(self->config_.uart, buf, len, SERIAL_MAX_DELAY) == HAL_OK)

@@ -69,7 +69,7 @@ size_t Serial_available (Serial_t *self);
 
 uint8_t Serial_read (Serial_t *self);
 
-int Serial_write (Serial_t *self, uint8_t *buf, const size_t len);
+int Serial_write (Serial_t *self, const uint8_t *buf, size_t len);
 
 int Serial_println (Serial_t *self, const char *str);
 

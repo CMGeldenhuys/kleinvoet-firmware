@@ -8,6 +8,7 @@
 #include "logger.h"
 #include <stdlib.h>
 #include <string.h>
+#include "oli.h"
 
 #ifdef TTY_PRINTF
 
@@ -39,10 +40,8 @@ int TTY_init (UART_HandleTypeDef *uart)
   Serial_wrap(tty.serial, uart);
   TTY_clearCommandBuffer_();
 
-#ifdef TTY_GREETING
   TTY_greet_();
   TTY_registerCommand("greet", &TTY_greet_);
-#endif
 
   // Register TTY default commands
   TTY_registerCommand("reset", &CMD_resetDevice);
@@ -63,7 +62,9 @@ void TTY_deint ()
 
 __weak int TTY_greet_ ()
 {
-  return Serial_println(tty.serial, TTY_GREETING);
+  Serial_write(tty.serial, oli, sizeof(oli));
+  Serial_println(tty.serial, "VERSION: " VERSION);
+  Serial_println(tty.serial, "AUTHORS: " AUTHORS);
 }
 
 int TTY_yield ()
