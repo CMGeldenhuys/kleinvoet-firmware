@@ -43,6 +43,7 @@ int WAVE_createFile (WAVE_t *wav)
     return -1;
   }
 
+  DBUG("Creating file allocation of %lu bytes", WAVE_FILE_SPILT);
   if (FATFS_expand(wav->fp, WAVE_FILE_SPILT, 1) <= 0)
     WARN("Could not allocate continuous file space");
 
