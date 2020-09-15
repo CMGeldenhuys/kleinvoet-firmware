@@ -21,7 +21,7 @@ int TTY_greet_ ();
 
 void TTY_clearCommandBuffer_ ();
 
-int TTY_processCommand_ ();
+int TTY_processCommand_ (char * cmdStrBuffer);
 
 int TTY_PS_ ();
 
@@ -45,7 +45,7 @@ int TTY_init (UART_HandleTypeDef *uart)
 #endif
 
   // Register TTY default commands
-  TTY_registerCommand("reset", &TTY_resetDevice);
+  TTY_registerCommand("reset", &CMD_resetDevice);
 
 #ifdef DEBUG
   TTY_registerCommand("args", &TTY_testArgs);
@@ -61,7 +61,7 @@ void TTY_deint ()
   free(tty.serial);
 }
 
-int TTY_greet_ ()
+__weak int TTY_greet_ ()
 {
   return Serial_println(tty.serial, TTY_GREETING);
 }
@@ -104,7 +104,8 @@ int TTY_yield ()
       // Terminate command string
       (*tty.command.pos) = '\0';
 
-      TTY_processCommand_();
+      TTY_println("");
+      TTY_processCommand_((char *)tty.command.buffer);
       TTY_clearCommandBuffer_();
       TTY_PS_();
     }
@@ -167,14 +168,14 @@ int TTY_printf (const char *fmt, ...)
 
 #endif
 
-int TTY_processCommand_ ()
+int TTY_processCommand_ (char * cmdStrBuffer)
 {
   //TODO: Split command string into command + args
   char * cmdStr;
   char *args[TTY_ARGS_LEN];
   int argc;
 
-  TTY_splitArgs_((char *) tty.command.buffer, &cmdStr, &argc, args);
+  TTY_splitArgs_(cmdStrBuffer, &cmdStr, &argc, args);
 
   for (size_t idx = 0; idx < TTY_CMD_LST; idx++) {
     // Lookup command
@@ -214,9 +215,11 @@ int TTY_PS_ ()
   return Serial_print(tty.serial, tty.PS);
 }
 
-int TTY_resetDevice (__unused int argc, __unused char *argv[])
+int CMD_resetDevice (__unused int argc, __unused char **argv)
 {
   TTY_println("System is being reset!");
+  WARN("System is being reset!");
+  TTY_processCommand_("sync");
   HAL_NVIC_SystemReset();
   return 1;
 }

@@ -16,7 +16,7 @@ int WAVE_createFile (WAVE_t *wav)
   if (wav->fp) WAVE_close(wav);
 
   DBUG("Allocating memory to WAVE file");
-  wav->fp = (FIL *) malloc(sizeof(FIL));
+  wav->fp = FATFS_malloc(0);
   if (wav->fp == NULL) {
     ERR("Failed to allocate memory for file");
     return -1;

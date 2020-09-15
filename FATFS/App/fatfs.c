@@ -19,19 +19,21 @@
 #include "fatfs.h"
 
 uint8_t retSD;    /* Return value for SD */
-char SDPath[4];   /* SD logical drive path */
-FATFS SDFatFS;    /* File system object for SD logical drive */
-FIL SDFile;       /* File object for SD */
+char    SDPath[4];   /* SD logical drive path */
+FATFS   SDFatFS;    /* File system object for SD logical drive */
+FIL     SDFile;       /* File object for SD */
 
 /* USER CODE BEGIN Variables */
-FIL                      LogFile;
+FIL                      *LogFile;
 extern RTC_HandleTypeDef hrtc;
+
+FIL *files[_FS_LOCK] = {0};
 
 int FATFS_errHandle_ (FRESULT res);
 
 /* USER CODE END Variables */
 
-void MX_FATFS_Init(void)
+void MX_FATFS_Init (void)
 {
   /*## FatFS: Link the SD driver ###########################*/
   retSD = FATFS_LinkDriver(&SD_Driver, SDPath);
@@ -46,7 +48,7 @@ void MX_FATFS_Init(void)
   * @param  None
   * @retval Time in DWORD
   */
-DWORD get_fattime(void)
+DWORD get_fattime (void)
 {
   /* USER CODE BEGIN get_fattime */
   DWORD           dt;
@@ -74,8 +76,8 @@ int FATFS_mount ()
 {
   // NB: CANT CALL LOGGING YET AS IT HAS NOT BEEN INIT.
   TTY_registerCommand("free", &CMD_free);
-  // TODO: Make it so that it flushes all files
-  TTY_registerCommand("sync", &LOG_flush);
+
+  TTY_registerCommand("sync", &CMD_sync);
 
   // Mount to check if FS is working
   FRESULT ret = f_mount(&SDFatFS, SDPath, 1);
@@ -86,7 +88,7 @@ int FATFS_mount ()
     // TODO: Find a better way but this is just a quick fix
     // Look for folders across 0...999
     for (uint16_t idx = 0; idx <= 1000; idx++) {
-      if(idx == 1000) {
+      if (idx == 1000) {
         DBUG("Ran out of folder names");
         return -2;
       }
@@ -95,11 +97,11 @@ int FATFS_mount ()
       ret = f_stat(path, &fno);
 
       // Check for folders and files
-      if(ret == FR_OK) {
+      if (ret == FR_OK) {
         DBUG("Folder %s exists, trying next...", path);
         continue;
       }
-      else if(ret == FR_NO_FILE) {
+      else if (ret == FR_NO_FILE) {
         DBUG("Folder '%s' doesn't exist", path);
         break;
       }
@@ -110,7 +112,7 @@ int FATFS_mount ()
 
     // Create folder and open dir
     ret = f_mkdir(path);
-    if(ret != FR_OK) return FATFS_errHandle_(ret);
+    if (ret != FR_OK) return FATFS_errHandle_(ret);
 #else
     // Check if debug dir exists
     ret = f_stat(path, &fno);
@@ -128,7 +130,8 @@ int FATFS_mount ()
 #ifndef DEBUG
     // Open all files
     // TODO: Move log handling out to own file
-    ret = f_open(&LogFile, "KV.LOG", FA_WRITE | FA_CREATE_ALWAYS);
+    LogFile = FATFS_malloc(1);
+    ret     = f_open(LogFile, "KV.LOG", FA_WRITE | FA_CREATE_ALWAYS);
 
     if (ret != FR_OK) {
       //TODO: HANDLE FAIL TO OPEN
@@ -331,7 +334,24 @@ int FATFS_errHandle_ (FRESULT res)
     }
   }
 #endif
+  Error_Handler();
   return 0;
+}
+
+FIL *FATFS_malloc (BYTE sync)
+{
+  DBUG("Creating new file pointer");
+  FIL *newFile = (FIL *) malloc(sizeof(FIL));
+  if (sync) {
+    DBUG("Storing reference to new file for sync");
+    for (size_t i = 0; i < _FS_LOCK; i++) {
+      if (files[i] == NULL) {
+        files[i] = newFile;
+        break;
+      }
+    }
+  }
+  return newFile;
 }
 
 int FATFS_expand (FIL *fp, FSIZE_t fsize, BYTE opt)
@@ -342,6 +362,38 @@ int FATFS_expand (FIL *fp, FSIZE_t fsize, BYTE opt)
   return 1;
 }
 
+int FATFS_sync (FIL *fp)
+{
+  FRESULT ret;
+  if (fp != NULL) {
+    ret = f_sync(fp);
+    if (ret != FR_OK) return 0;
+  }
+  // Sync all tracked files
+  else {
+    INFO("Syncing all tracked files");
+    for(size_t i = 0; i < _FS_LOCK; i++) {
+      fp = files[i];
+      if(fp != NULL){
+        ret = f_sync(fp);
+        if(ret != FR_OK) {
+          ERR("Failed to sync tracked files to disk");
+          return 0;
+        }
+      }
+      else break;
+    }
+  }
+  DBUG("Synced all files");
+  return 1;
+}
+
+int CMD_sync(__unused int argc, __unused char * args[])
+{
+  TTY_println("Syncing all tracked files");
+  return FATFS_sync(NULL);
+}
+
 /* LOG CODE START Application */
 #ifndef DEBUG
 
@@ -350,7 +402,7 @@ int LOG_write (uint8_t *buf, size_t len)
   UINT    bytesWritten;
   FRESULT ret;
 
-  ret = f_write(&LogFile, buf, len, &bytesWritten);
+  ret = f_write(LogFile, buf, len, &bytesWritten);
 
   if (ret != FR_OK) return FATFS_errHandle_(ret);
   else return bytesWritten;
@@ -358,11 +410,7 @@ int LOG_write (uint8_t *buf, size_t len)
 
 int LOG_flush ()
 {
-  FRESULT ret;
-  DBUG("Log cache flushed")
-  ret = f_sync(&LogFile);
-  if (ret != FR_OK) return FATFS_errHandle_(ret);
-  else return 1;
+  return FATFS_sync(NULL);
 }
 
 #endif

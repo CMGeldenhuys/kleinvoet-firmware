@@ -20,7 +20,7 @@ extern "C" {
 #endif
 
 #ifndef TTY_GREETING
-#define TTY_GREETING "Hello, World!"
+#define TTY_GREETING (TTY_EOL "Hello, World!")
 #endif
 
 #ifndef TTY_CMD_BUF
@@ -85,7 +85,7 @@ int TTY_available ();
 
 uint8_t TTY_read ();
 
-int TTY_resetDevice (int argc, char *argv[]);
+int CMD_resetDevice (int argc, char **argv);
 
 // TODO: Find fix for linker to pick up
 #define TTY_PRINTF
