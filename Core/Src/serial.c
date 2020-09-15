@@ -70,7 +70,11 @@ uint8_t Serial_peek (Serial_t *self)
 int Serial_write (Serial_t *self, const uint8_t *buf, size_t len)
 {
 #ifdef SERIAL_TX_BLOCKING
-  if (HAL_UART_Transmit(self->config_.uart, buf, len, SERIAL_MAX_DELAY) == HAL_OK)
+  // NOTE: This is a little pointer hack to allow for `const` buffers to be
+  // passed making the overall program more memory efficient. This is based on
+  // a brief code review of STM's UART transmit functions. Future changes to
+  // this function might break some things.
+  if (HAL_UART_Transmit(self->config_.uart, (uint8_t *) buf, len, SERIAL_MAX_DELAY) == HAL_OK)
     return 1;
   else
     return 0;
