@@ -43,19 +43,20 @@ int dow (int year, int month, int day);
 int GPS_init (UART_HandleTypeDef *uart)
 {
   DBUG("Wrapping serial");
-  if(Serial_wrap(&gps.serial, uart) <= 0) return -1;
+  if (Serial_wrap(&gps.serial, uart) <= 0) return -1;
 
   DBUG("Allocating memory for timestamping file");
   gps.fp = (FIL *) malloc(sizeof(FIL));
-  if(gps.fp == NULL) return -2;
+  if (gps.fp == NULL) return -2;
   DBUG("Open/creating file");
-  if(FATFS_open(
+  if (FATFS_open(
           gps.fp,
           "TS.CSV",
-          FA_CREATE_ALWAYS | FA_WRITE) <= 0) return -2;
+          FA_CREATE_ALWAYS | FA_WRITE) <= 0)
+    return -2;
   DBUG("Writing header to file");
   f_printf(gps.fp, "Sample,Date Time,GPS Time of Week,Time Accuracy,Status" FATFS_EOL);
-  if(GPS_configureUBX_() <= 0) return -3;
+  if (GPS_configureUBX_() <= 0) return -3;
   return 1;
 }
 
@@ -281,15 +282,6 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
            cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC ? "VALID" : "INVALID",
            gps.adcTimestamp);
 
-      // Best attempt timestamping
-      DBUG("Timestamping");
-      f_printf(gps.fp, "%ul,%u-%02u-%02 %02u:%02u:%02u.%0l,%lu,%lu,%u" FATFS_EOL,
-               gps.adcTimestamp,
-               cmd_t->year, cmd_t->month, cmd_t->day,
-               cmd_t->hour, cmd_t->min, cmd_t->sec, cmd_t->nano,
-               cmd_t->iTOW, cmd_t->tAcc,
-               cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC);
-
       DBUG("  iTOW: %lu", cmd_t->iTOW);
       DBUG("  tAcc: %lu", cmd_t->tAcc);
       DBUG("  nano: %0l", cmd_t->nano);
@@ -303,16 +295,35 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
 
       // TODO: Replace with constant blip
       if (cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC) {
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-        GPS_updateRTC_(&hrtc, cmd_t);
-        // Once fix & valid time then disable SAT msgs
-        GPS_sendCommand(&GPS_DISABLE_UBX_NAV_SAT.generic, 0, 0);
+        // Previously not valid
+        if (!gps.timeValid) {
+          HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+          GPS_updateRTC_(&hrtc, cmd_t);
+
+          // Once fix & valid time then disable SAT msgs
+          GPS_sendCommand(&GPS_DISABLE_UBX_NAV_SAT.generic, 0, 0);
+
+          // Mark time as valid for next epoch
+          gps.timeValid = 1;
+        }
+        // Best attempt timestamping
+        DBUG("Timestamping");
+        f_printf(gps.fp, "%ul,%u-%02u-%02 %02u:%02u:%02u.%0l,%lu,%lu" FATFS_EOL,
+                 gps.adcTimestamp,
+                 cmd_t->year, cmd_t->month, cmd_t->day,
+                 cmd_t->hour, cmd_t->min, cmd_t->sec, cmd_t->nano,
+                 cmd_t->iTOW, cmd_t->tAcc);
       }
-      else {
-        // If fix lost or never had ensure SAT is on as to show feedback of num sats
+      // If fix lost or never had ensure SAT is on as to show feedback of num sats
+      else if (gps.timeValid) {
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
         GPS_sendCommand(&GPS_ENABLE_UBX_NAV_SAT.generic, 0, 0);
+        gps.timeValid = 0;
       }
+      else {
+        DBUG("Not not valid and was previously not valid");
+      }
+
 
       return UBX_NAV_TIMEUTC;
     }

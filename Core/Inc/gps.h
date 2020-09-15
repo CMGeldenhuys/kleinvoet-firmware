@@ -121,8 +121,9 @@ typedef struct {
 
     GPS_state_e state;
 
-    size_t adcTimestamp;
-    FIL * fp;
+    size_t  adcTimestamp;
+    uint8_t timeValid;
+    FIL *fp;
 } GPS_t;
 
 typedef union {
