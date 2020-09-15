@@ -308,7 +308,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
         }
         // Best attempt timestamping
         DBUG("Timestamping");
-        f_printf(gps.fp, "%lu,%4u-%02u-%02u %02u:%02u:%02u.%lu,%lu,%lu" FATFS_EOL,
+        f_printf(gps.fp, "%lu,%4u-%02u-%02u %02u:%02u:%02u.%lu,%lu,%lu",
                  gps.adcTimestamp,
                  cmd_t->year, cmd_t->month, cmd_t->day,
                  cmd_t->hour, cmd_t->min, cmd_t->sec, cmd_t->nano,
