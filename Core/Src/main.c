@@ -139,9 +139,6 @@ int main(void)
   INFO("Done waiting for GPS");
   if(GPS_init(&huart4) <= 0) Error_Handler();
   if(ADC_init(&hspi2) <= 0) Error_Handler();
-
-  HAL_Delay(2000);
-
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_RESET);
   /* USER CODE END 2 */
 
