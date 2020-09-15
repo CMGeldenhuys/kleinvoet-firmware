@@ -109,6 +109,7 @@ void Error_Handler(void);
 #define LED_STATUS_GPIO_Port GPIOA
 #define USR_BTN_Pin GPIO_PIN_8
 #define USR_BTN_GPIO_Port GPIOB
+#define USR_BTN_EXTI_IRQn EXTI9_5_IRQn
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
