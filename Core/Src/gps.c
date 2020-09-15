@@ -278,7 +278,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
 
     case UBX_NAV_TIMEUTC: {
       const UBX_NAV_TIMEUTC_t *cmd_t = (UBX_NAV_TIMEUTC_t *) &gps.rx.cmd._t;
-      INFO("UBX-NAV-TIMEUTC (%s - %lu)",
+      INFO("UBX-NAV-TIMEUTC (%s - 0x%08X)",
            cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC ? "VALID" : "INVALID",
            gps.adcTimestamp);
 

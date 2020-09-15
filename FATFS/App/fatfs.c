@@ -76,8 +76,8 @@ int FATFS_mount ()
 {
   // NB: CANT CALL LOGGING YET AS IT HAS NOT BEEN INIT.
   TTY_registerCommand("free", &CMD_free);
-
   TTY_registerCommand("sync", &CMD_sync);
+  TTY_registerCommand("cat", &CMD_cat);
 
   // Mount to check if FS is working
   FRESULT ret = f_mount(&SDFatFS, SDPath, 1);
@@ -334,6 +334,7 @@ int FATFS_errHandle_ (FRESULT res)
     }
   }
 #endif
+  //TODO: Find a better way to do this
   Error_Handler();
   return 0;
 }
@@ -392,6 +393,45 @@ int CMD_sync(__unused int argc, __unused char * args[])
 {
   TTY_println("Syncing all tracked files");
   return FATFS_sync(NULL);
+}
+
+// TODO: Can't read file while open
+int CMD_cat(int argc, char * args[])
+{
+  if(argc != 1) return TTY_println("Please specify one file name");
+
+  char * fname = args[0];
+  FILINFO fno;
+  FRESULT ret = f_stat(fname, &fno);
+  // File exists
+  if(ret == FR_OK) {
+    FIL * fp = FATFS_malloc(0);
+
+    ret = f_open(fp, fname, FA_READ);
+    if (ret != FR_OK) return FATFS_errHandle_(ret);
+
+    const FSIZE_t bufLen = 512;
+    BYTE buf[bufLen];
+    UINT br = bufLen;
+    while(br >= bufLen) {
+      ret = f_read(fp, buf, bufLen, &br);
+      if(ret != FR_OK) return FATFS_errHandle_(ret);
+
+      TTY_write(buf, br);
+    }
+    DBUG("End of file reached");
+
+    FATFS_close(fp);
+    free(fp);
+  }
+  // No such file
+  else if (ret == FR_NO_FILE){
+    TTY_println("No such file");
+  }
+  // Some other error
+  else return FATFS_errHandle_(ret);
+
+  return 1;
 }
 
 /* LOG CODE START Application */
