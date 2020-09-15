@@ -101,10 +101,10 @@ void Error_Handler(void);
 #define ADC_nCS_GPIO_Port GPIOC
 #define ADC_CLK_Pin GPIO_PIN_7
 #define ADC_CLK_GPIO_Port GPIOC
-#define SDIO_CD_Pin GPIO_PIN_8
-#define SDIO_CD_GPIO_Port GPIOA
-#define SDIO_WP_Pin GPIO_PIN_9
-#define SDIO_WP_GPIO_Port GPIOA
+#define SDIO_CD_IN_Pin GPIO_PIN_8
+#define SDIO_CD_IN_GPIO_Port GPIOA
+#define SDIO_CD_OUT_Pin GPIO_PIN_9
+#define SDIO_CD_OUT_GPIO_Port GPIOA
 #define LED_STATUS_Pin GPIO_PIN_15
 #define LED_STATUS_GPIO_Port GPIOA
 #define USR_BTN_Pin GPIO_PIN_8
