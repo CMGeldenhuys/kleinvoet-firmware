@@ -62,6 +62,7 @@ void TTY_deint ()
 
 __weak int TTY_greet_ ()
 {
+  Serial_print(tty.serial, TTY_VT100_CLEAR_SCREEN);
   Serial_write(tty.serial, oli, sizeof(oli));
   Serial_println(tty.serial, "VERSION: " VERSION);
   Serial_println(tty.serial, "AUTHORS: " AUTHORS);
@@ -89,8 +90,8 @@ int TTY_yield ()
       tty.command.pos--;
 
 #ifndef TTY_ECHO_DISABLE
-      // Send Backspace
-      Serial_print(tty.serial, SERIAL_BS);
+      // Send Backspace & clear to the right
+      Serial_print(tty.serial, SERIAL_BS TTY_VT100_CLEAR_LINE_RIGHT);
 #endif
     }
       // Check for return key

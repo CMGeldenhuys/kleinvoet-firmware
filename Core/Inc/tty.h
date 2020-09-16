@@ -43,6 +43,9 @@ extern "C" {
 #define TTY_EOL SERIAL_EOL
 #endif
 
+#define TTY_VT100_CLEAR_LINE_RIGHT "\e[K"
+#define TTY_VT100_CLEAR_SCREEN "\e[2J"
+
 typedef struct {
     const char *name;
 
