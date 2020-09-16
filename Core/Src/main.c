@@ -616,7 +616,7 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
       // TODO: In global state machine stop recording
       return;
     default:
-      DBUG("Unknown GPIO interrupt (pin: %u)", GPIO_pin);
+      DBUG("Unknown GPIO interrupt (pin: %u)", GPIO_Pin);
       return;
   }
 }

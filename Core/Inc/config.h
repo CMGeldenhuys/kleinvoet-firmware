@@ -18,7 +18,7 @@ extern "C" {
 
 #define VERSION VERSION_MAJOR "." VERSION_MINOR "." VERSION_PATCH VERSION_RC
 
-#define LOG_LEVEL_INFO
+//#define LOG_LEVEL_INFO
 
 #ifdef __cplusplus
 }

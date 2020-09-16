@@ -85,7 +85,7 @@ void ADC_sample_ ()
   }
   else {
     // Coms failed so store 0xFF instead
-    memset(adc.rx[adc.rxPos], 0xFF, ADC_NUM_CH * sizeof(uint32_t));
+    memset(adc.rx[adc.rxPos], 0x00, ADC_NUM_CH * sizeof(uint32_t));
   }
 
   // Increment counters

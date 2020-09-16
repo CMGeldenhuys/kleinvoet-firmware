@@ -358,8 +358,7 @@ FIL *FATFS_malloc (BYTE sync)
 int FATFS_expand (FIL *fp, FSIZE_t fsize, BYTE opt)
 {
   FRESULT ret = f_expand(fp, fsize, opt);
-  if (ret != FR_OK) return FATFS_errHandle_(ret);
-
+  if (ret != FR_OK) return 0;
   return 1;
 }
 
