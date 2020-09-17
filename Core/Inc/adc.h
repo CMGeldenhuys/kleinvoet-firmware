@@ -52,7 +52,6 @@
 #define ADC_TIMEOUT HAL_MAX_DELAY
 #endif // ADC_MAX_TIMEOUT
 
-
 //                             3333222211110000
 #define ADC_CMD_OP_NULL     (0b0000000000000000U)
 #define ADC_CMD_OP_RESET    (0b0000000000010001U)
@@ -153,11 +152,13 @@
 #define ADC_CMD_OP_ADR_POS  (7U)
 #define ADC_ADR(adr)        ((adr) << ADC_CMD_OP_ADR_POS)
 
-#define ADC_FRAME_NUM (6) // number of frames
+#define ADC_FRAME_NUM (ADC_RESPONSE_LEN + ADC_NUM_CH + ADC_CRC_LEN) // number of frames
 #define ADC_SPS (4000)
-#define ADC_FRAME_LEN (3) // Bytes
+#define ADC_FRAME_SIZE (3) // Bytes
 #define ADC_RX_LEN (4000) // Sample
 #define ADC_NUM_CH (4)
+#define ADC_RESPONSE_LEN (1)
+#define ADC_CRC_LEN (1)
 
 typedef enum {
     ADC_READY      = 0x00000002U,
@@ -168,12 +169,13 @@ typedef enum {
 
 typedef struct {
     SPI_HandleTypeDef *spi;
+    uint8_t           spiRx[ADC_FRAME_NUM][ADC_FRAME_SIZE];
     ADC_state_e       state;
     uint32_t          rx[ADC_RX_LEN][ADC_NUM_CH];
     size_t            rxPos;
     size_t            sampleCount;
-    uint32_t *storePtr;
-    WAVE_t wav;
+    uint32_t          *storePtr;
+    WAVE_t            wav;
 } ADC_t;
 
 
