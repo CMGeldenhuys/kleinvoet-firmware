@@ -82,6 +82,10 @@ void Error_Handler(void);
 #define FLASH_MISO_GPIO_Port GPIOA
 #define FLASH_MOSI_Pin GPIO_PIN_7
 #define FLASH_MOSI_GPIO_Port GPIOA
+#define CAL_EN_Pin GPIO_PIN_4
+#define CAL_EN_GPIO_Port GPIOC
+#define SENSOR_EN_Pin GPIO_PIN_5
+#define SENSOR_EN_GPIO_Port GPIOC
 #define GPS_nSAFEBOOT_Pin GPIO_PIN_0
 #define GPS_nSAFEBOOT_GPIO_Port GPIOB
 #define V_MONITOR_Pin GPIO_PIN_1
