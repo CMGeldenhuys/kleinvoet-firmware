@@ -557,7 +557,7 @@ static const UBX_CFG_TP5_t GPS_CONFIGURE_TIMEPULSE = {
         .tpIdx              = UBX_CFG_TP5_TIMEPULSE,
         .antCableDelay      = 50, // ns
         .freqPeriod         = 4, // Hz
-        .pulseLenRatio      = 100, // us
+        .pulseLenRatio      = 0, // us
         .userConfigDelay    = 0, // ns
         .flags              = UBX_CFG_TP5_FLAGS_ACTIVE
                               | UBX_CFG_TP5_FLAGS_LOCK_GPS_FREQ
