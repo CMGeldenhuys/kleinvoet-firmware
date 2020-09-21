@@ -62,7 +62,7 @@ void TTY_deint ()
 
 __weak int TTY_greet_ ()
 {
-  Serial_print(tty.serial, TTY_VT100_CLEAR_SCREEN);
+  Serial_print(tty.serial, TTY_VT100_CLEAR_SCREEN TTY_VT100_COLOR_DEFAULT);
   Serial_write(tty.serial, oli, sizeof(oli));
   Serial_println(tty.serial, "VERSION: " VERSION);
   Serial_println(tty.serial, "AUTHORS: " AUTHORS);
