@@ -44,9 +44,10 @@ const static DWORD WAVE_CID_DATA = 0x61746164; // "data"
 
 const static DWORD WAVE_RIFF_FORMAT = 0x45564157; // "WAVE"
 
-const static WORD WAVE_AUDIO_PCM = 1u;
+const static WORD WAVE_AUDIO_PCM = 0x0001U;
 
 // Very helpful: http://soundfile.sapp.org/doc/WaveFormat/
+// Also helpful: http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html
 
 typedef struct {
     DWORD ChunkID;
