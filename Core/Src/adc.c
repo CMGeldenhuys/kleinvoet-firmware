@@ -5,7 +5,7 @@
 #include "adc.h"
 #include "logger.h"
 
-static inline uint32_t ADC_bswap32_24_ (uint8_t frame[3]);
+static inline int32_t ADC_bswap32_24_ (uint8_t const frame[3]);
 
 void ADC_sample_ ();
 
@@ -16,8 +16,10 @@ int ADC_init (SPI_HandleTypeDef *interface)
   adc.spi   = interface;
   adc.state = ADC_IDLE; // Block interrupts
 
+  // TODO: Get rid of magic numbers\
+  // TODO: Add recorder ID
   adc.wav.fname         = "REC";
-  adc.wav.sampleRate    = 4000; // sps
+  adc.wav.sampleRate    = 16000; // sps
   adc.wav.nChannels     = 4;
   adc.wav.bitsPerSample = 24;
   adc.wav.blockSize     = 32; // bits
@@ -30,14 +32,22 @@ int ADC_init (SPI_HandleTypeDef *interface)
     HAL_Delay(ADC_WAIT_DELTA_);
   }
 
-  ADC_sendCommand(ADC_CMD_OP_RESET);
-  DBUG("Reset: 0x%06X", ADC_sendCommand(ADC_CMD_OP_NULL));
-
-  ADC_sendCommand(ADC_CMD_OP_RREG | ADC_ADR_ID);
-  DBUG("ID: 0x%06X", ADC_sendCommand(ADC_CMD_OP_NULL));
+  ADC_sendCommand(ADC_CMD_OP_RESET, 0);
+  DBUG("Reset: 0x%06X", ADC_sendCommand(ADC_CMD_OP_NULL, 0));
 
   while (!ADC_IS_READY());
 
+  ADC_sendCommand(ADC_CMD_OP_RREG | ADC_ADR_ID, 0);
+  DBUG("ID: 0x%06X", ADC_sendCommand(ADC_CMD_OP_NULL, 0));
+
+  ADC_sendCommand(ADC_CMD_OP_WREG | ADC_ADR_CLOCK,
+                  ADC_CLOCK_CH3_EN
+                  | ADC_CLOCK_CH2_EN
+                  | ADC_CLOCK_CH1_EN
+                  | ADC_CLOCK_CH0_EN
+                  | ADC_CLOCK_OSR_256
+                  | ADC_CLOCK_PWR_HR);
+  DBUG("WREG - CLK: 0x%06X", ADC_sendCommand(ADC_CMD_OP_NULL, 0));
 
   adc.state = ADC_READY | ADC_FIRST_READ;
   return 1;
@@ -45,16 +55,30 @@ int ADC_init (SPI_HandleTypeDef *interface)
 
 int ADC_yield ()
 {
+  // TODO: Handle buffer overrun
+  // Half Complete
+  if (adc.rxPos == ADC_RX_LEN / 2) {
+    if (adc.storePtr != NULL) ERR("Persistence buffer overrun");
+    adc.storePtr = (uint32_t *) adc.rx;
+  }
+    // Full Complete
+  else if (adc.rxPos == ADC_RX_LEN) {
+    if (adc.storePtr != NULL) ERR("Persistence buffer overrun");
+    adc.storePtr = (uint32_t *) adc.rx[ADC_RX_LEN / 2];
+    adc.rxPos    = 0;
+  }
+
   if (adc.storePtr != NULL) {
-    WAVE_appendData(&adc.wav, adc.storePtr, ADC_RX_LEN / 2 * sizeof(uint32_t), 1);
+    WAVE_appendData(&adc.wav, adc.storePtr, ADC_RX_LEN / 2 * (adc.wav.blockSize / 8), 1);
     DBUG("Persisting ADC buffer");
     adc.storePtr = NULL;
   }
 }
 
-static inline uint32_t ADC_bswap32_24_ (uint8_t frame[3])
+static inline int32_t ADC_bswap32_24_ (uint8_t const frame[3])
 {
-  return (unsigned) (frame[0] << 16u)
+  return (frame[0] & 0x80U ? 0xFFFFU << 24U : 0x0000U << 24U) // sign extension
+         | (unsigned) (frame[0] << 16u)
          | (unsigned) (frame[1] << 8u)
          | (unsigned) frame[2];
 }
@@ -74,23 +98,18 @@ void ADC_sample_ ()
   adc.rxPos++;
   adc.sampleCount++;
 
-  // Half Complete
-  if (adc.rxPos == ADC_RX_LEN / 2) {
-    adc.storePtr = (uint32_t *) adc.rx;
-  }
-    // Full Complete
-  else if (adc.rxPos == ADC_RX_LEN) {
-    adc.storePtr = (uint32_t *) adc.rx[ADC_RX_LEN / 2];
-    adc.rxPos    = 0;
-  }
-
 }
 
-int ADC_sendCommand (uint16_t cmd)
+int ADC_sendCommand (uint16_t cmd, uint16_t opt)
 {
   HAL_StatusTypeDef status;
   // Little Endian to Big Endian with zero padding
   uint8_t           tx[ADC_FRAME_NUM][ADC_FRAME_SIZE] = {{cmd >> 8u, cmd & 0xFFu}};
+  // TODO: Fix hardcode
+  if ((cmd & ADC_CMD_OP_WREG) == ADC_CMD_OP_WREG) {
+    tx[1][0] = ((opt & 0x0000FF00U) >> 8U);
+    tx[1][1] = ((opt & 0x000000FFU) >> 0U);
+  }
 
   ADC_CS_ENABLE();
   status = HAL_SPI_TransmitReceive(adc.spi,

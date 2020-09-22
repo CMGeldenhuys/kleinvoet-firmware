@@ -161,9 +161,10 @@
 #define ADC_CRC_LEN (1)
 
 typedef enum {
-    ADC_READY      = 0x00000002U,
-    ADC_FIRST_READ = 0x00000001U,
-    ADC_IDLE       = 0x00000000U,
+    ADC_READY            = 0x00000002U,
+    ADC_FIRST_READ       = 0x00000001U,
+    ADC_FIRST_READ_READY = ADC_READY | ADC_FIRST_READ,
+    ADC_IDLE             = 0x00000000U,
     ADC_RESET
 } ADC_state_e;
 
@@ -171,7 +172,7 @@ typedef struct {
     SPI_HandleTypeDef *spi;
     uint8_t           spiRx[ADC_FRAME_NUM][ADC_FRAME_SIZE];
     ADC_state_e       state;
-    uint32_t          rx[ADC_RX_LEN][ADC_NUM_CH];
+    int32_t           rx[ADC_RX_LEN][ADC_NUM_CH];
     size_t            rxPos;
     size_t            sampleCount;
     uint32_t          *storePtr;
@@ -181,10 +182,9 @@ typedef struct {
 
 int ADC_init (SPI_HandleTypeDef *interface);
 
-
 void ADC_callbackDRDY ();
 
-int ADC_sendCommand (uint16_t cmd);
+int ADC_sendCommand (uint16_t cmd, uint16_t opt);
 
 int ADC_yield ();
 
