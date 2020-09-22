@@ -361,9 +361,9 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
         DBUG("    flags: 0x%02X", cmd_t->svs[i].flags);
         // TODO: Make this non blocking??
         // Need 'outer' state machine that controls LED status with main yield
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-        HAL_Delay(100);
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+//        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+//        HAL_Delay(100);
+//        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
       }
       return UBX_NAV_SAT;
     }
