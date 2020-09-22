@@ -1,11 +1,11 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 
 fname=${1:-"oli.bmp"}
 width=${2:-48}
 
 echo "const static uint8_t oli[] = {"
 
-convert "$fname" jpg:- \
+convert "$fname" -trim jpg:- \
   | jp2a --width="$width" --background=light --grayscale --chars=".| " - \
   | unix2dos \
   | od -t x1 -An --width=$(($width + 2)) \
