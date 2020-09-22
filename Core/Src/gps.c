@@ -163,6 +163,11 @@ int GPS_rxByte_ (uint8_t c)
         gps.rx.state = GPS_RX_PAYLOAD;
         gps.rx.idx   = 0;
       }
+
+      if(gps.rx.idx >= GPS_BUF_LEN) {
+        WARN("Command buffer overflow!");
+        gps.rx.state = GPS_IDLE;
+      }
       break;
     }
 
@@ -313,9 +318,8 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
                  cmd_t->year, cmd_t->month, cmd_t->day,
                  cmd_t->hour, cmd_t->min, cmd_t->sec, cmd_t->nano,
                  cmd_t->iTOW, cmd_t->tAcc);
-        FATFS_free(gps.fp);
       }
-      // If fix lost or never had ensure SAT is on as to show feedback of num sats
+        // If fix lost or never had ensure SAT is on as to show feedback of num sats
       else if (gps.timeValid) {
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
         GPS_sendCommand(&GPS_ENABLE_UBX_NAV_SAT.generic, 0, 0);

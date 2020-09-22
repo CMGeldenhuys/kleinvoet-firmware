@@ -57,6 +57,8 @@ DMA_HandleTypeDef hdma_sdio_tx;
 
 SPI_HandleTypeDef hspi2;
 
+TIM_HandleTypeDef htim10;
+
 UART_HandleTypeDef huart4;
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_uart4_rx;
@@ -76,6 +78,7 @@ static void MX_RTC_Init(void);
 static void MX_UART4_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_IWDG_Init(void);
+static void MX_TIM10_Init(void);
 /* USER CODE BEGIN PFP */
 /* USER CODE END PFP */
 
@@ -119,10 +122,12 @@ int main(void)
   MX_UART4_Init();
   MX_SPI2_Init();
   MX_IWDG_Init();
+  MX_TIM10_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
   // TODO: Remove
-  HAL_GPIO_WritePin(CAL_EN_GPIO_Port, CAL_EN_Pin, GPIO_PIN_SET);
+  // Place device in CAL mode
+//  HAL_GPIO_WritePin(CAL_EN_GPIO_Port, CAL_EN_Pin, GPIO_PIN_SET);
   // Give time for RTC to init properly
   HAL_RTC_WaitForSynchro(&hrtc);
   if (TTY_init(&huart2) <= 0) Error_Handler();
@@ -130,6 +135,9 @@ int main(void)
   INFO("Version: %s", VERSION);
 
   // Test Logging
+  // TODO: Rather log actual level
+  // logging error causes SD card to flush this results in watchdog timeout
+  HAL_IWDG_Refresh(&hiwdg);
   DBUG("Hello, World.");
   INFO("Hello, World!");
   WARN("HELLO, World!");
@@ -145,6 +153,9 @@ int main(void)
   // Change watch dog timeout from ~32 sec to ~4
   hiwdg.Init.Prescaler = IWDG_PRESCALER_32;
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK) Error_Handler();
+
+  // Enable FS flush timer
+  HAL_TIM_Base_Start_IT(&htim10);
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_RESET);
   /* USER CODE END 2 */
 
@@ -184,16 +195,15 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSI
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE
                               |RCC_OSCILLATORTYPE_LSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.LSEState = RCC_LSE_ON;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 132;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 6;
+  RCC_OscInitStruct.PLL.PLLN = 144;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 6;
   RCC_OscInitStruct.PLL.PLLR = 2;
@@ -398,7 +408,7 @@ static void MX_SPI2_Init(void)
   hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi2.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi2.Init.NSS = SPI_NSS_SOFT;
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
   hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -410,6 +420,37 @@ static void MX_SPI2_Init(void)
   /* USER CODE BEGIN SPI2_Init 2 */
 
   /* USER CODE END SPI2_Init 2 */
+
+}
+
+/**
+  * @brief TIM10 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM10_Init(void)
+{
+
+  /* USER CODE BEGIN TIM10_Init 0 */
+
+  /* USER CODE END TIM10_Init 0 */
+
+  /* USER CODE BEGIN TIM10_Init 1 */
+
+  /* USER CODE END TIM10_Init 1 */
+  htim10.Instance = TIM10;
+  htim10.Init.Prescaler = 35999;
+  htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim10.Init.Period = 39999;
+  htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV4;
+  htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM10_Init 2 */
+
+  /* USER CODE END TIM10_Init 2 */
 
 }
 
@@ -641,6 +682,15 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
     default:
       DBUG("Unknown GPIO interrupt (pin: %u)", GPIO_Pin);
       return;
+  }
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  if(htim == &htim10){
+    DBUG("TIM10 Expired");
+    // TODO: Sync FS
+//    FATFS_sync(NULL);
   }
 }
 /* USER CODE END 4 */

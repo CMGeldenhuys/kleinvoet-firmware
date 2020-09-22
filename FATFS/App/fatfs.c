@@ -124,6 +124,7 @@ int FATFS_mount ()
 #endif
 
     // Change directory
+    // TODO: Log recording dir
     ret = f_chdir(path);
     if (ret != FR_OK) return FATFS_errHandle_(ret);
 
