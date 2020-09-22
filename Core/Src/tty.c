@@ -66,6 +66,10 @@ __weak int TTY_greet_ ()
   Serial_write(tty.serial, oli, sizeof(oli));
   Serial_println(tty.serial, "VERSION: " VERSION);
   Serial_println(tty.serial, "AUTHORS: " AUTHORS);
+
+  char uuid[sizeof("UUID: 00000000-00000000-00000000")];
+  sprintf(uuid, "UUID: %08X-%08X-%08X", STM32_UUID[0], STM32_UUID[1], STM32_UUID[2]);
+  Serial_println(tty.serial, uuid);
 }
 
 int TTY_yield ()

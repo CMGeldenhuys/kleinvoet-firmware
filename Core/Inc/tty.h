@@ -47,6 +47,8 @@ extern "C" {
 #define TTY_VT100_CLEAR_SCREEN "\e[2J"
 #define TTY_VT100_COLOR_DEFAULT "\e[39m"
 
+#define STM32_UUID ((uint32_t *)0x1FFF7A10)
+
 typedef struct {
     const char *name;
 
