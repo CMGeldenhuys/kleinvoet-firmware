@@ -82,7 +82,7 @@ int LOG_timestamp_ (const char *funcName, LOG_Lvl_e lvl, char *buf)
   HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BCD);
 #ifdef LOG_COLOR
   return snprintf(buf, LOG_MSG_INFO_LEN,
-                  "[%s%4s:%-16.16s] %02x-%02x-%02x %02x:%02x:%02x.%-3lu %s- ",
+                  "%s[%4s:%-16.16s] %02x-%02x-%02x %02x:%02x:%02x.%-3lu %s- ",
                   LOG_color_code_[lvl],
                   LOG_Lvl_str_[lvl], funcName,
                   sDate.Year, sDate.Month, sDate.Date,

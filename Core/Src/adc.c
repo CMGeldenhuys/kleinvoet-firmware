@@ -7,7 +7,7 @@
 
 static inline int32_t ADC_bswap32_24_ (uint8_t const frame[3]);
 
-void ADC_sample_ ();
+static inline void ADC_sample_ ();
 
 ADC_t adc = {0};
 
@@ -19,7 +19,7 @@ int ADC_init (SPI_HandleTypeDef *interface)
   // TODO: Get rid of magic numbers\
   // TODO: Add recorder ID
   adc.wav.fname         = "REC";
-  adc.wav.sampleRate    = 16000; // sps
+  adc.wav.sampleRate    = 4000; // sps
   adc.wav.nChannels     = 4;
   adc.wav.bitsPerSample = 24;
   adc.wav.blockSize     = 32; // bits
@@ -69,7 +69,7 @@ int ADC_yield ()
   }
 
   if (adc.storePtr != NULL) {
-    WAVE_appendData(&adc.wav, adc.storePtr, ADC_RX_LEN / 2 * (adc.wav.blockSize / 8), 1);
+    WAVE_appendData(&adc.wav, adc.storePtr, ADC_RX_LEN * ADC_NUM_CH * sizeof(int32_t) / 2, 1);
     DBUG("Persisting ADC buffer");
     adc.storePtr = NULL;
   }
@@ -83,7 +83,7 @@ static inline int32_t ADC_bswap32_24_ (uint8_t const frame[3])
          | (unsigned) frame[2];
 }
 
-void ADC_sample_ ()
+static inline void ADC_sample_ ()
 {
   ADC_CS_ENABLE();
   HAL_SPI_Receive(adc.spi, (uint8_t *) adc.spiRx, (ADC_FRAME_NUM * ADC_FRAME_SIZE), ADC_TIMEOUT);

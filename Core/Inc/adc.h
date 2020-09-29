@@ -165,6 +165,7 @@ typedef enum {
     ADC_FIRST_READ       = 0x00000001U,
     ADC_FIRST_READ_READY = ADC_READY | ADC_FIRST_READ,
     ADC_IDLE             = 0x00000000U,
+    ADC_SAMPLE_READY     = 0x00000004U,
     ADC_RESET
 } ADC_state_e;
 
