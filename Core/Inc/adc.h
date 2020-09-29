@@ -173,7 +173,7 @@ typedef struct {
     SPI_HandleTypeDef *spi;
     uint8_t           spiRx[ADC_FRAME_NUM][ADC_FRAME_SIZE];
     ADC_state_e       state;
-    int32_t           rx[ADC_RX_LEN][ADC_NUM_CH];
+    uint8_t           rx[ADC_RX_LEN][ADC_NUM_CH][ADC_FRAME_SIZE];
     size_t            rxPos;
     size_t            sampleCount;
     uint32_t          *storePtr;

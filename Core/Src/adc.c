@@ -22,7 +22,7 @@ int ADC_init (SPI_HandleTypeDef *interface)
   adc.wav.sampleRate    = 4000; // sps
   adc.wav.nChannels     = 4;
   adc.wav.bitsPerSample = 24;
-  adc.wav.blockSize     = 32; // bits
+  adc.wav.blockSize     = 24; // bits
 
   WAVE_createFile(&adc.wav);
 
@@ -69,7 +69,7 @@ int ADC_yield ()
   }
 
   if (adc.storePtr != NULL) {
-    WAVE_appendData(&adc.wav, adc.storePtr, ADC_RX_LEN * ADC_NUM_CH * sizeof(int32_t) / 2, 1);
+    WAVE_appendData(&adc.wav, adc.storePtr, ADC_RX_LEN * ADC_NUM_CH * ADC_FRAME_SIZE/2, 1);
     DBUG("Persisting ADC buffer");
     adc.storePtr = NULL;
   }
@@ -91,7 +91,10 @@ static inline void ADC_sample_ ()
 
   // Convert from Big Endian to Little Endian and persist
   for (size_t i = 0; i < ADC_NUM_CH; i++) {
-    adc.rx[adc.rxPos][i] = ADC_bswap32_24_(adc.spiRx[i + ADC_RESPONSE_LEN]);
+    // TODO: Improve...
+    adc.rx[adc.rxPos][i][2] = adc.spiRx[i + ADC_RESPONSE_LEN][0];
+    adc.rx[adc.rxPos][i][1] = adc.spiRx[i + ADC_RESPONSE_LEN][1];
+    adc.rx[adc.rxPos][i][0] = adc.spiRx[i + ADC_RESPONSE_LEN][2];
   }
 
   // Increment counters
