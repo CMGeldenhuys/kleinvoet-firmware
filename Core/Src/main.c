@@ -154,6 +154,10 @@ int main(void)
   hiwdg.Init.Prescaler = IWDG_PRESCALER_32;
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK) Error_Handler();
 
+  // Enable sensors
+  INFO("Enabling sensors");
+  HAL_GPIO_WritePin(SENSOR_EN_GPIO_Port, SENSOR_EN_Pin, GPIO_PIN_SET);
+
   // Enable FS flush timer
   HAL_TIM_Base_Start_IT(&htim10);
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_RESET);
@@ -563,10 +567,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(CAL_EN_GPIO_Port, CAL_EN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, CAL_EN_Pin|SENSOR_EN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, SENSOR_EN_Pin|ADC_nCS_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(ADC_nCS_GPIO_Port, ADC_nCS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, SDIO_CD_OUT_Pin|LED_STATUS_Pin, GPIO_PIN_RESET);
