@@ -125,7 +125,8 @@ int GPS_rxByte_ (uint8_t c)
     // Sync 1
     case GPS_IDLE: {
       // Cache sample when time code was received
-      gps.adcTimestamp = adc.sampleCount;
+      // TODO: ADC fix up
+//      gps.adcTimestamp = adc.sampleCount;
 
       // Received start byte
       if (c == GPS_SYNC_1_) gps.rx.state = GPS_RX_SYNC_2;

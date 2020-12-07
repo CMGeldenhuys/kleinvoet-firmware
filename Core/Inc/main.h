@@ -58,6 +58,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define RTC_CAL_Pin GPIO_PIN_13
+#define RTC_CAL_GPIO_Port GPIOC
 #define OSC_LSE_IN_Pin GPIO_PIN_14
 #define OSC_LSE_IN_GPIO_Port GPIOC
 #define OSC_LSE_OUT_Pin GPIO_PIN_15
@@ -66,6 +68,10 @@ void Error_Handler(void);
 #define OSC_HSE_IN_GPIO_Port GPIOH
 #define OSC_HSE_OUT_Pin GPIO_PIN_1
 #define OSC_HSE_OUT_GPIO_Port GPIOH
+#define SDIO_CD_Pin GPIO_PIN_0
+#define SDIO_CD_GPIO_Port GPIOC
+#define ADC_SAI_SD_A_Pin GPIO_PIN_1
+#define ADC_SAI_SD_A_GPIO_Port GPIOC
 #define GPS_TX_Pin GPIO_PIN_0
 #define GPS_TX_GPIO_Port GPIOA
 #define GPS_RX_Pin GPIO_PIN_1
@@ -74,46 +80,30 @@ void Error_Handler(void);
 #define VCP_TX_GPIO_Port GPIOA
 #define VCP_RX_Pin GPIO_PIN_3
 #define VCP_RX_GPIO_Port GPIOA
-#define CAL_SIG_Pin GPIO_PIN_4
-#define CAL_SIG_GPIO_Port GPIOA
-#define FLASH_SCK_Pin GPIO_PIN_5
-#define FLASH_SCK_GPIO_Port GPIOA
-#define FLASH_MISO_Pin GPIO_PIN_6
-#define FLASH_MISO_GPIO_Port GPIOA
-#define FLASH_MOSI_Pin GPIO_PIN_7
-#define FLASH_MOSI_GPIO_Port GPIOA
-#define CAL_EN_Pin GPIO_PIN_4
-#define CAL_EN_GPIO_Port GPIOC
-#define SENSOR_EN_Pin GPIO_PIN_5
-#define SENSOR_EN_GPIO_Port GPIOC
+#define LED_STATUS_Pin GPIO_PIN_5
+#define LED_STATUS_GPIO_Port GPIOA
+#define LED_STATUS_1_Pin GPIO_PIN_6
+#define LED_STATUS_1_GPIO_Port GPIOA
+#define USR_BTN_Pin GPIO_PIN_7
+#define USR_BTN_GPIO_Port GPIOA
 #define GPS_nSAFEBOOT_Pin GPIO_PIN_0
 #define GPS_nSAFEBOOT_GPIO_Port GPIOB
 #define V_MONITOR_Pin GPIO_PIN_1
 #define V_MONITOR_GPIO_Port GPIOB
 #define GPS_WAKE_Pin GPIO_PIN_10
 #define GPS_WAKE_GPIO_Port GPIOB
-#define ADC_nDRDY_Pin GPIO_PIN_12
-#define ADC_nDRDY_GPIO_Port GPIOB
-#define ADC_nDRDY_EXTI_IRQn EXTI15_10_IRQn
-#define ADC_SCK_Pin GPIO_PIN_13
-#define ADC_SCK_GPIO_Port GPIOB
-#define ADC_MISO_Pin GPIO_PIN_14
-#define ADC_MISO_GPIO_Port GPIOB
-#define ADC_MOSI_Pin GPIO_PIN_15
-#define ADC_MOSI_GPIO_Port GPIOB
-#define ADC_nCS_Pin GPIO_PIN_6
-#define ADC_nCS_GPIO_Port GPIOC
-#define ADC_CLK_Pin GPIO_PIN_7
-#define ADC_CLK_GPIO_Port GPIOC
-#define SDIO_CD_IN_Pin GPIO_PIN_8
-#define SDIO_CD_IN_GPIO_Port GPIOA
-#define SDIO_CD_OUT_Pin GPIO_PIN_9
-#define SDIO_CD_OUT_GPIO_Port GPIOA
-#define LED_STATUS_Pin GPIO_PIN_15
-#define LED_STATUS_GPIO_Port GPIOA
-#define USR_BTN_Pin GPIO_PIN_8
-#define USR_BTN_GPIO_Port GPIOB
-#define USR_BTN_EXTI_IRQn EXTI9_5_IRQn
+#define ADC_SAI_BCLK_Pin GPIO_PIN_12
+#define ADC_SAI_BCLK_GPIO_Port GPIOB
+#define ADC_nRST_Pin GPIO_PIN_7
+#define ADC_nRST_GPIO_Port GPIOC
+#define ADC_SAI_SD_B_Pin GPIO_PIN_9
+#define ADC_SAI_SD_B_GPIO_Port GPIOA
+#define ADC_CTRL_SCL_Pin GPIO_PIN_6
+#define ADC_CTRL_SCL_GPIO_Port GPIOB
+#define ADC_CTRL_SDA_Pin GPIO_PIN_7
+#define ADC_CTRL_SDA_GPIO_Port GPIOB
+#define ADC_SAI_FS_Pin GPIO_PIN_9
+#define ADC_SAI_FS_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
