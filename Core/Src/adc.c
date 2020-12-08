@@ -9,8 +9,24 @@ ADC_t adc = {0};
 
 int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInterface)
 {
+
   adc.control = controlInterface;
   adc.audioPort = audioInterface;
+
+
+  uint8_t tmp = ADC_readRegister(ADC_REG_M_POWER);
+  INFO("M_POWER - 0x%02X", tmp);
+
+
+  tmp = ADC_readRegister(0x10);
+  INFO("0x10 - 0x%02X", tmp);
+
+  tmp = ADC_readRegister(0x15);
+  INFO("0x15 - 0x%02X", tmp);
+
+  for(;;);
+
+
 
   return 1;
 }
@@ -40,9 +56,10 @@ int ADC_yield ()
 uint8_t ADC_readRegister(uint8_t registerAddr)
 {
   uint8_t rx = 0;
-  HAL_I2C_Mem_Read(adc.control, ADC_I2C_ADDR,
+  HAL_StatusTypeDef  ret = HAL_I2C_Mem_Read(adc.control, ADC_I2C_ADDR,
                    registerAddr, ADC_REG_SIZE,
                    &rx, 1, ADC_MAX_DELAY);
+  if(ret != HAL_OK) ERR("I2C error");
   // if failed then return zeros
   // todo: better error handling
   return rx;
