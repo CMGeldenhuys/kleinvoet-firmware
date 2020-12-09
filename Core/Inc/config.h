@@ -9,6 +9,8 @@
 extern "C" {
 #endif
 
+#define ADC_MAX_DELAY 100
+
 #define AUTHORS "CM Geldenhuys"
 
 #define VERSION_MAJOR "0"
@@ -18,7 +20,7 @@ extern "C" {
 
 #define VERSION VERSION_MAJOR "." VERSION_MINOR "." VERSION_PATCH "-" VERSION_RC
 
-#define LOG_LEVEL_INFO
+#define LOG_LEVEL_DEBUG
 
 #ifdef __cplusplus
 }
