@@ -7,6 +7,8 @@
 
 ADC_t adc = {0};
 
+volatile uint32_t tmp[256] = {0};
+
 int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInterface)
 {
 
@@ -31,8 +33,8 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
                     | ADC_ADC_EN1_ON);
 
   ADC_writeRegister(ADC_REG_SAI_CTRL0,
-                    ADC_SDATA_FMT_I2S
-                    | ADC_SAI_TDM2
+                    ADC_SDATA_FMT_RJ_24
+                    | ADC_SAI_TDM4
                     | ADC_FS_8_12);
 
   ADC_writeRegister(ADC_REG_SAI_CTRL1,
@@ -62,7 +64,9 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
       return -1;
     }
   }
-  for(;;);
+
+  HAL_SAI_Receive_DMA(audioInterface, (uint8_t *)tmp, 64);
+//  for(;;);
   return 1;
 }
 
@@ -97,14 +101,14 @@ uint8_t ADC_readRegister(uint8_t registerAddr)
   if(ret != HAL_OK) ERR("I2C error");
   // if failed then return zeros
   // todo: better error handling
-  DBUG("> I2C 0x%02X|0x%02X", registerAddr, rx);
+  INFO("> I2C 0x%02X|0x%02X", registerAddr, rx);
   return rx;
 }
 
 int ADC_writeRegister(uint8_t registerAddr, uint8_t data)
 {
   HAL_StatusTypeDef ret;
-  DBUG("< I2C 0x%02X|0x%02X", registerAddr, data);
+  INFO("< I2C 0x%02X|0x%02X", registerAddr, data);
   ret = HAL_I2C_Mem_Write(adc.control, ADC_I2C_ADDR,
                           registerAddr, ADC_REG_SIZE,
                           &data, 1,
@@ -129,4 +133,19 @@ int ADC_powerDown()
 {
   WARN("Powering down ADC subsystems");
   return ADC_writeRegister(ADC_REG_M_POWER, ADC_PWUP_PWDWN);
+}
+
+void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai)
+{
+  HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
+}
+
+void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef *hsai)
+{
+  HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
+
+}
+
+void HAL_SAI_ErrorCallback(SAI_HandleTypeDef *hsai) {
+  ERR("SAI Problem!");
 }
