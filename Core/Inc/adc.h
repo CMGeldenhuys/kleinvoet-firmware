@@ -23,7 +23,8 @@
 
 typedef enum {
     ADC_UNDEF,
-    ADC_IDLE
+    ADC_IDLE,
+    ADC_DATA_READY
 } ADC_state_e;
 
 typedef struct {

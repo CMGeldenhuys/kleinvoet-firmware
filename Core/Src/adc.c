@@ -14,7 +14,7 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
 
   adc.control = controlInterface;
   adc.audioPort = audioInterface;
-
+  adc.state = ADC_UNDEF;
   ADC_reset();
 
   ADC_writeRegister(ADC_REG_PLL_CONTROL,
@@ -64,14 +64,17 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
       return -1;
     }
   }
-
   HAL_SAI_Receive_DMA(audioInterface, (uint8_t *)tmp, 64);
 //  for(;;);
+  adc.state = ADC_IDLE;
   return 1;
 }
 
 int ADC_yield ()
 {
+  if (adc.state == ADC_DATA_READY) {
+    adc.state = ADC_IDLE;
+  }
 //  // TODO: Handle buffer overrun
 //  // Half Complete
 //  if (adc.rxPos == ADC_RX_LEN / 2) {
@@ -105,6 +108,7 @@ uint8_t ADC_readRegister(uint8_t registerAddr)
   return rx;
 }
 
+// TODO: Create verified write that checks if wire was successful
 int ADC_writeRegister(uint8_t registerAddr, uint8_t data)
 {
   HAL_StatusTypeDef ret;
@@ -137,11 +141,26 @@ int ADC_powerDown()
 
 void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai)
 {
+  if(adc.state == ADC_IDLE) {
+    adc.state = ADC_DATA_READY;
+  }
+  else {
+    ERR("Samples missed!");
+  }
   HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
 }
 
 void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef *hsai)
 {
+  // TODO: If recording
+  if(adc.state == ADC_IDLE) {
+    adc.state = ADC_DATA_READY;
+  }
+  else {
+    ERR("Samples missed!");
+  }
+
+  // TODO: Only toggle while recording
   HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
 
 }
