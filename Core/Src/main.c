@@ -68,6 +68,7 @@ DMA_HandleTypeDef hdma_uart4_rx;
 DMA_HandleTypeDef hdma_usart2_rx;
 
 /* USER CODE BEGIN PV */
+extern ADC_t adc;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -170,15 +171,16 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  ADC_setState(ADC_REC);
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "EndlessLoop"
   while (1) {
     // Kick watchdog
     HAL_IWDG_Refresh(&hiwdg);
 
+    ADC_yield();
     TTY_yield();
     GPS_yield();
-    ADC_yield();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

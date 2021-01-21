@@ -22,9 +22,11 @@
 #define ADC_I2C_ADDR      (ADC_I2C_ADDR_BASE | ADC_I2C_ADDR1 | ADC_I2C_ADDR0)
 
 typedef enum {
-    ADC_UNDEF,
-    ADC_IDLE,
-    ADC_DATA_READY
+    ADC_UNDEF = 0x00U,
+    ADC_REC,
+    ADC_CPLT_HALF,
+    ADC_CPLT,
+    ADC_N_REC
 } ADC_state_e;
 
 typedef struct {
@@ -46,6 +48,7 @@ int ADC_writeRegister(uint8_t registerAddr, uint8_t data);
 void ADC_reset();
 int ADC_powerUp();
 int ADC_powerDown();
+int ADC_setState(ADC_state_e state);
 
 int ADC_yield ();
 

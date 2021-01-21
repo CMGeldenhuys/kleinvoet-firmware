@@ -5,9 +5,9 @@
 #include "adc.h"
 #include "logger.h"
 
-ADC_t adc = {0};
+static ADC_t adc = {0};
 
-volatile uint32_t tmp[256] = {0};
+volatile uint32_t tmp[64] = {0};
 
 int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInterface)
 {
@@ -64,17 +64,33 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
       return -1;
     }
   }
-  HAL_SAI_Receive_DMA(audioInterface, (uint8_t *)tmp, 64);
 //  for(;;);
-  adc.state = ADC_IDLE;
+  adc.state = ADC_N_REC;
   return 1;
 }
 
 int ADC_yield ()
 {
-  if (adc.state == ADC_DATA_READY) {
-    adc.state = ADC_IDLE;
+
+  switch (adc.state) {
+    case ADC_CPLT: {
+      INFO("DMA Buffer full");
+      adc.state = ADC_REC;
+      break;
+    }
+
+    case ADC_CPLT_HALF: {
+      INFO("DMA Buffer half full");
+      adc.state = ADC_REC;
+      break;
+    }
+
+    case ADC_N_REC: {
+      WARN("Not recording");
+      break;
+    }
   }
+
 //  // TODO: Handle buffer overrun
 //  // Half Complete
 //  if (adc.rxPos == ADC_RX_LEN / 2) {
@@ -139,29 +155,67 @@ int ADC_powerDown()
   return ADC_writeRegister(ADC_REG_M_POWER, ADC_PWUP_PWDWN);
 }
 
+int ADC_setState(ADC_state_e state)
+{
+  if(adc.state == ADC_UNDEF) return 0;
+  else adc.state = state;
+
+  if(adc.state == ADC_N_REC){
+    //stop recording
+    HAL_SAI_DMAStop(adc.audioPort);
+  }
+  else if(adc.state == ADC_REC) {
+    // Start Recording
+    // Size is defined as frames and not bytes
+    HAL_SAI_Receive_DMA(adc.audioPort, (uint8_t *)tmp, 64);
+  }
+}
+
+
 void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai)
 {
-  if(adc.state == ADC_IDLE) {
-    adc.state = ADC_DATA_READY;
+
+  switch(adc.state) {
+    case ADC_REC: {
+      adc.state = ADC_CPLT;
+      HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
+      break;
+    }
+
+    case ADC_N_REC: {
+      WARN("Not recording");
+      break;
+    }
+
+    default:{
+      ERR("Samples missed!");
+      break;
+    }
   }
-  else {
-    ERR("Samples missed!");
-  }
-  HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
+
 }
 
 void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef *hsai)
 {
-  // TODO: If recording
-  if(adc.state == ADC_IDLE) {
-    adc.state = ADC_DATA_READY;
-  }
-  else {
-    ERR("Samples missed!");
+  switch(adc.state) {
+    case ADC_REC: {
+      adc.state = ADC_CPLT_HALF;
+      HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
+      break;
+    }
+
+    case ADC_N_REC: {
+      WARN("Not recording");
+      break;
+    }
+
+    default:{
+      ERR("Samples missed!");
+      break;
+    }
   }
 
-  // TODO: Only toggle while recording
-  HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
+
 
 }
 
