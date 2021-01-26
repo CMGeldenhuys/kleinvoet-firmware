@@ -21,18 +21,55 @@
 #define ADC_I2C_ADDR_BASE 0b00100010U
 #define ADC_I2C_ADDR      (ADC_I2C_ADDR_BASE | ADC_I2C_ADDR1 | ADC_I2C_ADDR0)
 
+#define ADC_is_recording      (adc.state.mode == ADC_REC)
+#define ADC_is_interrupt_set  (adc.state.flags.rec & ADC_FLAG_CPLT_INTERRUPT)
+#define ADC_is_err_set        (adc.state.flags.err & ADC_FLAG_ERR)
+
+#define ADC_clear_flag_cplt   (adc.state.flags.rec &= ~ADC_FLAG_CPLT_FIELD)
+#define ADC_clear_flag_err    (adc.state.flags.err &= ~ADC_FLAG_ERR_FIELD)
+
+#define ADC_FLAG_CPLT_INTERRUPT (ADC_CPLT_HALF & ADC_CPLT_FULL)
+#define ADC_FLAG_CPLT_FIELD     (ADC_CPLT_HALF | ADC_CPLT_FULL)
+
+#define ADC_FLAG_ERR            (ADC_ERR_N_REC & ADC_ERR_SAMPLE_MISSED)
+#define ADC_FLAG_ERR_FIELD      (ADC_ERR_N_REC | ADC_ERR_SAMPLE_MISSED)
+
 typedef enum {
     ADC_UNDEF = 0x00U,
     ADC_REC,
-    ADC_CPLT_HALF,
-    ADC_CPLT,
-    ADC_N_REC
-} ADC_state_e;
+    ADC_SETUP,
+    ADC_IDLE,
+} ADC_state_major_e;
+
+typedef enum {
+    ADC_CPLT_HALF         = 0b00000101U,
+    ADC_CPLT_FULL         = 0b00000110U,
+    // ADC_CPLT_INTERRUPT          ^^^
+} ADC_state_flag_rec_e;
+
+typedef enum {
+    ADC_ERR_SAMPLE_MISSED = 0b10010000U,
+    ADC_ERR_N_REC         = 0b10100000U,
+    // ADC_ERR                ^^^^
+} ADC_state_flag_err_e;
+
+typedef union {
+    ADC_state_flag_rec_e rec;
+    ADC_state_flag_err_e err;
+} ADC_state_flags_u;
 
 typedef struct {
-    I2C_HandleTypeDef *control;
-    SAI_HandleTypeDef *audioPort;
-    ADC_state_e       state;
+    ADC_state_major_e mode;
+    ADC_state_flags_u flags;
+} ADC_state_t;
+
+
+typedef struct {
+    I2C_HandleTypeDef  *control;
+    SAI_HandleTypeDef  *audioPort;
+    ADC_state_t         state;
+    size_t              samplesMissed;
+    size_t              nSamples;
 //    uint8_t           rx[ADC_RX_LEN][ADC_NUM_CH][ADC_FRAME_SIZE];
 //    size_t            rxPos;
 //    size_t            sampleCount;
@@ -48,7 +85,7 @@ int ADC_writeRegister(uint8_t registerAddr, uint8_t data);
 void ADC_reset();
 int ADC_powerUp();
 int ADC_powerDown();
-int ADC_setState(ADC_state_e state);
+ADC_state_major_e ADC_setState(ADC_state_major_e state);
 
 int ADC_yield ();
 

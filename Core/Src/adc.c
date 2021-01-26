@@ -6,15 +6,18 @@
 #include "logger.h"
 
 static ADC_t adc = {0};
+#define ADC_DMA_LEN 64
+static uint32_t tmp[ADC_DMA_LEN] = {0};
+static uint32_t tmp_cpy[ADC_DMA_LEN];
 
-volatile uint32_t tmp[64] = {0};
+void _ADC_SAI_Interrupt(ADC_state_flag_rec_e caller);
 
 int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInterface)
 {
 
   adc.control = controlInterface;
   adc.audioPort = audioInterface;
-  adc.state = ADC_UNDEF;
+  ADC_setState(ADC_SETUP);
   ADC_reset();
 
   ADC_writeRegister(ADC_REG_PLL_CONTROL,
@@ -65,31 +68,66 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
     }
   }
 //  for(;;);
-  adc.state = ADC_N_REC;
+  ADC_setState(ADC_IDLE);
   return 1;
 }
 
 int ADC_yield ()
 {
 
-  switch (adc.state) {
-    case ADC_CPLT: {
-      INFO("DMA Buffer full");
-      adc.state = ADC_REC;
+  if(ADC_is_err_set) {
+    // Since `adc.state.flags` is a union and thus shares state with other enums its important to '&' with the bit field
+    switch(adc.state.flags.err & ADC_FLAG_ERR_FIELD) {
+      case ADC_ERR_N_REC: {
+        WARN("Not recording with ADC running");
+        ADC_setState(ADC_UNDEF);
+        break;
+      }
+
+      case ADC_ERR_SAMPLE_MISSED: {
+        WARN("Samples missed: %d", adc.samplesMissed);
+        // TODO: tag samples missed
+        // TODO: if more than % missed samples then reset device
+        break;
+      }
+
+      default: WARN("Uncaught error 0x%02X", adc.state.flags);
+    }
+    ADC_clear_flag_err;
+  }
+
+
+  switch (adc.state.mode) {
+    case ADC_REC: {
+      if(ADC_is_interrupt_set) {
+        DBUG("Flush buffer");
+        memcpy(tmp_cpy, tmp, ADC_DMA_LEN);
+//        ADC_clear_flag_cplt;
+      }
       break;
     }
 
-    case ADC_CPLT_HALF: {
-      INFO("DMA Buffer half full");
-      adc.state = ADC_REC;
-      break;
-    }
-
-    case ADC_N_REC: {
-      WARN("Not recording");
-      break;
+    case ADC_UNDEF: {
+      ERR("ADC in undefined state!");
+      // TODO: Better state recovery...
+      for(;;);
     }
   }
+
+//  switch (adc.state) {
+//    case ADC_CPLT: {
+//      DBUG("DMA Buffer full");
+//      adc.state = ADC_REC;
+//      break;
+//    }
+//
+//    case ADC_CPLT_HALF: {
+//      DBUG("DMA Buffer half full");
+//      adc.state = ADC_REC;
+//      break;
+//    }
+//  }
+
 
 //  // TODO: Handle buffer overrun
 //  // Half Complete
@@ -155,68 +193,59 @@ int ADC_powerDown()
   return ADC_writeRegister(ADC_REG_M_POWER, ADC_PWUP_PWDWN);
 }
 
-int ADC_setState(ADC_state_e state)
+ADC_state_major_e ADC_setState(ADC_state_major_e state)
 {
-  if(adc.state == ADC_UNDEF) return 0;
-  else adc.state = state;
+  adc.state.mode = state;
 
-  if(adc.state == ADC_N_REC){
+  if(adc.state.mode == ADC_IDLE){
+    INFO("Stop recording");
     //stop recording
     HAL_SAI_DMAStop(adc.audioPort);
   }
-  else if(adc.state == ADC_REC) {
+  else if(adc.state.mode == ADC_REC) {
     // Start Recording
+    INFO("Start recording");
     // Size is defined as frames and not bytes
     HAL_SAI_Receive_DMA(adc.audioPort, (uint8_t *)tmp, 64);
   }
+
+  switch (state) {
+    case ADC_UNDEF: DBUG("Entering state: ADC_UNDEF"); break;
+    case ADC_REC:   DBUG("Entering state: ADC_REC"); break;
+    case ADC_SETUP: DBUG("Entering state: ADC_SETUP"); break;
+    case ADC_IDLE:  DBUG("Entering state: ADC_IDLE"); break;
+  }
+
+  return adc.state.mode;
 }
 
+void _ADC_SAI_Interrupt(ADC_state_flag_rec_e caller)
+{
+  // Interrupt already set... Samples missed
+  if (ADC_is_interrupt_set) {
+    // TODO: size of DMA not just 1
+    adc.samplesMissed+=ADC_DMA_LEN;
+    adc.state.flags.err |= ADC_ERR_SAMPLE_MISSED;
+  }
+  else if (!ADC_is_recording) {
+    adc.state.flags.err |= ADC_ERR_N_REC;
+  }
+    // Recording state
+  else {
+    HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
+    // TODO: fix for caller
+    adc.state.flags.rec |= caller;
+  }
+}
 
 void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai)
 {
-
-  switch(adc.state) {
-    case ADC_REC: {
-      adc.state = ADC_CPLT;
-      HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
-      break;
-    }
-
-    case ADC_N_REC: {
-      WARN("Not recording");
-      break;
-    }
-
-    default:{
-      ERR("Samples missed!");
-      break;
-    }
-  }
-
+  _ADC_SAI_Interrupt(ADC_CPLT_HALF);
 }
 
 void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef *hsai)
 {
-  switch(adc.state) {
-    case ADC_REC: {
-      adc.state = ADC_CPLT_HALF;
-      HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
-      break;
-    }
-
-    case ADC_N_REC: {
-      WARN("Not recording");
-      break;
-    }
-
-    default:{
-      ERR("Samples missed!");
-      break;
-    }
-  }
-
-
-
+  _ADC_SAI_Interrupt(ADC_CPLT_HALF);
 }
 
 void HAL_SAI_ErrorCallback(SAI_HandleTypeDef *hsai) {
