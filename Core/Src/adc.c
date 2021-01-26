@@ -6,9 +6,6 @@
 #include "logger.h"
 
 static ADC_t adc = {0};
-#define ADC_DMA_LEN 64
-static uint32_t tmp[ADC_DMA_LEN] = {0};
-static uint32_t tmp_cpy[ADC_DMA_LEN];
 
 void _ADC_SAI_Interrupt(ADC_state_flag_rec_e caller);
 
@@ -18,6 +15,16 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   adc.control = controlInterface;
   adc.audioPort = audioInterface;
   ADC_setState(ADC_SETUP);
+
+  adc.wav.fname         = "REC";
+  adc.wav.sampleRate    = 8000; // sps
+  adc.wav.nChannels     = 2;
+  adc.wav.bitsPerSample = WAVE_FMT_BPS_24;
+  adc.wav.blockSize     = WAVE_FMT_BLOCK_SIZE_32; // bits
+
+  WAVE_createFile(&adc.wav);
+
+
   ADC_reset();
 
   ADC_writeRegister(ADC_REG_PLL_CONTROL,
@@ -67,7 +74,12 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
       return -1;
     }
   }
-//  for(;;);
+
+  adc.bufPos = (uint8_t*)adc.buf;
+  INFO("DMA Buffer size: %u bytes", sizeof(adc.dmaBuf));
+  INFO("Internal Buffer size: %u bytes", sizeof(adc.buf));
+
+
   ADC_setState(ADC_IDLE);
   return 1;
 }
@@ -100,9 +112,20 @@ int ADC_yield ()
   switch (adc.state.mode) {
     case ADC_REC: {
       if(ADC_is_interrupt_set) {
-        DBUG("Flush buffer");
-        memcpy(tmp_cpy, tmp, ADC_DMA_LEN);
-//        ADC_clear_flag_cplt;
+        DBUG("Flushing buffer");
+        // TODO: Do this with single buffer and in 'normal' dma mode
+        memcpy(adc.bufPos, adc.dmaBuf, ADC_DMA_BUF_LEN);
+        adc.bufPos += ADC_DMA_BUF_LEN;
+        ADC_clear_flag_cplt;
+        size_t len = adc.bufPos - adc.buf;
+        DBUG("len = %d", len);
+        if(len == ADC_BUF_LEN/2) {
+          WAVE_appendData(&adc.wav, adc.buf, ADC_BUF_LEN/2, 1);
+        }
+        else if(len == ADC_BUF_LEN) {
+          adc.bufPos = (uint8_t*)adc.buf;
+          WAVE_appendData(&adc.wav, adc.buf + ADC_BUF_LEN/2, ADC_BUF_LEN/2, 1);
+        }
       }
       break;
     }
@@ -114,39 +137,6 @@ int ADC_yield ()
     }
   }
 
-//  switch (adc.state) {
-//    case ADC_CPLT: {
-//      DBUG("DMA Buffer full");
-//      adc.state = ADC_REC;
-//      break;
-//    }
-//
-//    case ADC_CPLT_HALF: {
-//      DBUG("DMA Buffer half full");
-//      adc.state = ADC_REC;
-//      break;
-//    }
-//  }
-
-
-//  // TODO: Handle buffer overrun
-//  // Half Complete
-//  if (adc.rxPos == ADC_RX_LEN / 2) {
-//    if (adc.storePtr != NULL) ERR("Persistence buffer overrun");
-//    adc.storePtr = (uint32_t *) adc.rx;
-//  }
-//    // Full Complete
-//  else if (adc.rxPos == ADC_RX_LEN) {
-//    if (adc.storePtr != NULL) ERR("Persistence buffer overrun");
-//    adc.storePtr = (uint32_t *) adc.rx[ADC_RX_LEN / 2];
-//    adc.rxPos    = 0;
-//  }
-//
-//  if (adc.storePtr != NULL) {
-//    WAVE_appendData(&adc.wav, adc.storePtr, ADC_RX_LEN * ADC_NUM_CH * ADC_FRAME_SIZE/2, 1);
-//    DBUG("Persisting ADC buffer");
-//    adc.storePtr = NULL;
-//  }
 }
 
 uint8_t ADC_readRegister(uint8_t registerAddr)
@@ -206,7 +196,7 @@ ADC_state_major_e ADC_setState(ADC_state_major_e state)
     // Start Recording
     INFO("Start recording");
     // Size is defined as frames and not bytes
-    HAL_SAI_Receive_DMA(adc.audioPort, (uint8_t *)tmp, 64);
+    HAL_SAI_Receive_DMA(adc.audioPort, (uint8_t *)adc.dmaBuf, ADC_DMA_BUF_LEN);
   }
 
   switch (state) {
@@ -223,8 +213,7 @@ void _ADC_SAI_Interrupt(ADC_state_flag_rec_e caller)
 {
   // Interrupt already set... Samples missed
   if (ADC_is_interrupt_set) {
-    // TODO: size of DMA not just 1
-    adc.samplesMissed+=ADC_DMA_LEN;
+    adc.samplesMissed+=ADC_DMA_BUF_LEN;
     adc.state.flags.err |= ADC_ERR_SAMPLE_MISSED;
   }
   else if (!ADC_is_recording) {
@@ -232,8 +221,8 @@ void _ADC_SAI_Interrupt(ADC_state_flag_rec_e caller)
   }
     // Recording state
   else {
+    // TODO: Maybe empty buffer here incase samples lost...
     HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
-    // TODO: fix for caller
     adc.state.flags.rec |= caller;
   }
 }

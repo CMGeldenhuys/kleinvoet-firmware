@@ -430,6 +430,7 @@ PH1-OSC_OUT.GPIOParameters=GPIO_Label
 PA13.Locked=true
 PB7.Mode=I2C
 VP_IWDG_VS_IWDG.Signal=IWDG_VS_IWDG
+NVIC.EXTI9_5_IRQn=true\:0\:0\:false\:false\:true\:true\:true
 PA14.Signal=SYS_JTCK-SWCLK
 Dma.SDIO_TX.2.FIFOMode=DMA_FIFOMODE_ENABLE
 FATFS._USE_TRIM=1

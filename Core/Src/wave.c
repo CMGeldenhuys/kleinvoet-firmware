@@ -127,7 +127,7 @@ int WAVE_createHeader_ (WAVE_t *wav)
   fmt_chunk->AudioFormat   = WAVE_AUDIO_PCM;
   fmt_chunk->NumChannels   = wav->nChannels;
   fmt_chunk->SampleRate    = wav->sampleRate;
-  fmt_chunk->BlockAlign    = wav->nChannels * wav->blockSize / 8;
+  fmt_chunk->BlockAlign    = wav->blockSize;
   fmt_chunk->ByteRate      = wav->sampleRate * fmt_chunk->BlockAlign;
   fmt_chunk->BitsPerSample = wav->bitsPerSample;
 

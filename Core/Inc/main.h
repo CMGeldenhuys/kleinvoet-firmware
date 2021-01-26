@@ -86,6 +86,7 @@ void Error_Handler(void);
 #define LED_STATUS_1_GPIO_Port GPIOA
 #define USR_BTN_Pin GPIO_PIN_7
 #define USR_BTN_GPIO_Port GPIOA
+#define USR_BTN_EXTI_IRQn EXTI9_5_IRQn
 #define GPS_nSAFEBOOT_Pin GPIO_PIN_0
 #define GPS_nSAFEBOOT_GPIO_Port GPIOB
 #define V_MONITOR_Pin GPIO_PIN_1
