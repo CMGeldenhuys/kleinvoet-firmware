@@ -9,12 +9,13 @@
 #include "wave.h"
 
 #ifndef ADC_DMA_BUF_LEN
-#define ADC_DMA_BUF_LEN (512) // 512 bytes
+#define ADC_DMA_BUF_LEN (ADC_BUF_LEN) // 512 bytes
 #endif
 
 #ifndef ADC_BUF_LEN
-#define ADC_BUF_LEN (16384)
+#define ADC_BUF_LEN (8192)
 #endif
+
 
 #ifndef ADC_I2C_ADDR0
 #define ADC_I2C_ADDR0 0b00000000U
@@ -32,6 +33,8 @@
 #define ADC_is_recording      (adc.state.mode == ADC_REC)
 #define ADC_is_interrupt_set  (adc.state.flags.rec & ADC_FLAG_CPLT_INTERRUPT)
 #define ADC_is_err_set        (adc.state.flags.err & ADC_FLAG_ERR)
+#define ADC_is_cplt_half      (adc.state.flags.rec & ADC_CPLT_HALF)
+#define ADC_is_cplt_full      (adc.state.flags.rec & ADC_CPLT_FULL)
 
 #define ADC_clear_flag_cplt   (adc.state.flags.rec &= ~ADC_FLAG_CPLT_FIELD)
 #define ADC_clear_flag_err    (adc.state.flags.err &= ~ADC_FLAG_ERR_FIELD)
@@ -78,10 +81,11 @@ typedef struct {
     ADC_state_t         state;
     size_t              samplesMissed;
     size_t              nSamples;
-    uint8_t            *bufPos;
+//    uint8_t            *dmaBuf;
     WAVE_t              wav;
-    uint32_t            dmaBuf[ADC_DMA_BUF_LEN / sizeof(uint32_t)];
-    const uint8_t       buf[ADC_BUF_LEN];
+    uint8_t            *bufDirty;
+    const uint32_t      dmaBuf[ADC_DMA_BUF_LEN];
+    const uint32_t      buf[ADC_BUF_LEN];
 } ADC_t;
 
 

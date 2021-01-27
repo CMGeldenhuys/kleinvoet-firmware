@@ -7,7 +7,7 @@
 
 static ADC_t adc = {0};
 
-void _ADC_SAI_Interrupt(ADC_state_flag_rec_e caller);
+static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller);
 
 int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInterface)
 {
@@ -19,8 +19,8 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   adc.wav.fname         = "REC";
   adc.wav.sampleRate    = 8000; // sps
   adc.wav.nChannels     = 2;
-  adc.wav.bitsPerSample = WAVE_FMT_BPS_24;
-  adc.wav.blockSize     = WAVE_FMT_BLOCK_SIZE_32; // bits
+  adc.wav.bitsPerSample = 24;
+  adc.wav.blockSize     = 4U; // bits
 
   WAVE_createFile(&adc.wav);
 
@@ -75,7 +75,8 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
     }
   }
 
-  adc.bufPos = (uint8_t*)adc.buf;
+//  adc.dmaBuf = (uint8_t*)adc.buf;
+  adc.bufDirty = (uint8_t*) adc.buf;
   INFO("DMA Buffer size: %u bytes", sizeof(adc.dmaBuf));
   INFO("Internal Buffer size: %u bytes", sizeof(adc.buf));
 
@@ -112,20 +113,15 @@ int ADC_yield ()
   switch (adc.state.mode) {
     case ADC_REC: {
       if(ADC_is_interrupt_set) {
-        DBUG("Flushing buffer");
-        // TODO: Do this with single buffer and in 'normal' dma mode
-        memcpy(adc.bufPos, adc.dmaBuf, ADC_DMA_BUF_LEN);
-        adc.bufPos += ADC_DMA_BUF_LEN;
+        INFO("Flushing buffer");
+        const size_t dmaLen = sizeof(adc.dmaBuf) / 2;
+        if (ADC_is_cplt_half) {
+          WAVE_appendData(&adc.wav, adc.dmaBuf, dmaLen, 1);
+        }
+        else if(ADC_is_cplt_full) {
+          WAVE_appendData(&adc.wav, adc.dmaBuf + dmaLen, dmaLen, 1);
+        }
         ADC_clear_flag_cplt;
-        size_t len = adc.bufPos - adc.buf;
-        DBUG("len = %d", len);
-        if(len == ADC_BUF_LEN/2) {
-          WAVE_appendData(&adc.wav, adc.buf, ADC_BUF_LEN/2, 1);
-        }
-        else if(len == ADC_BUF_LEN) {
-          adc.bufPos = (uint8_t*)adc.buf;
-          WAVE_appendData(&adc.wav, adc.buf + ADC_BUF_LEN/2, ADC_BUF_LEN/2, 1);
-        }
       }
       break;
     }
@@ -187,16 +183,17 @@ ADC_state_major_e ADC_setState(ADC_state_major_e state)
 {
   adc.state.mode = state;
 
-  if(adc.state.mode == ADC_IDLE){
-    INFO("Stop recording");
+  if(state == ADC_IDLE){
+    INFO("Recorder IDLE");
+    // TODO: Change to DMA pause and resume for better performance
     //stop recording
     HAL_SAI_DMAStop(adc.audioPort);
   }
-  else if(adc.state.mode == ADC_REC) {
+  else if(state == ADC_REC) {
     // Start Recording
     INFO("Start recording");
     // Size is defined as frames and not bytes
-    HAL_SAI_Receive_DMA(adc.audioPort, (uint8_t *)adc.dmaBuf, ADC_DMA_BUF_LEN);
+    HAL_SAI_Receive_DMA(adc.audioPort, (uint8_t *) adc.dmaBuf, ADC_DMA_BUF_LEN);
   }
 
   switch (state) {
@@ -209,32 +206,43 @@ ADC_state_major_e ADC_setState(ADC_state_major_e state)
   return adc.state.mode;
 }
 
-void _ADC_SAI_Interrupt(ADC_state_flag_rec_e caller)
+static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller)
 {
   // Interrupt already set... Samples missed
   if (ADC_is_interrupt_set) {
-    adc.samplesMissed+=ADC_DMA_BUF_LEN;
+    adc.samplesMissed += ADC_DMA_BUF_LEN;
     adc.state.flags.err |= ADC_ERR_SAMPLE_MISSED;
   }
   else if (!ADC_is_recording) {
     adc.state.flags.err |= ADC_ERR_N_REC;
   }
-    // Recording state
+  // Recording state
   else {
-    // TODO: Maybe empty buffer here incase samples lost...
     HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
     adc.state.flags.rec |= caller;
+//    adc.dmaBuf += ADC_DMA_BUF_LEN;
+
+//    const size_t len = adc.dmaBuf - adc.buf;
+//    if(len == ADC_BUF_LEN) {
+//      adc.dmaBuf = (uint8_t *) adc.buf;
+//    }
+//
+////    adc.nSamples += ADC_DMA_BUF_LEN;
+//      HAL_StatusTypeDef stat = HAL_SAI_Receive_DMA(adc.audioPort, adc.dmaBuf, ADC_DMA_BUF_LEN);
+//    if( stat != HAL_OK){
+//      ERR("HAL ERR");
+//    }
   }
 }
 
 void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai)
 {
-  _ADC_SAI_Interrupt(ADC_CPLT_HALF);
+  ADC_SAI_Interrupt_(ADC_CPLT_FULL);
 }
 
 void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef *hsai)
 {
-  _ADC_SAI_Interrupt(ADC_CPLT_HALF);
+  ADC_SAI_Interrupt_(ADC_CPLT_HALF);
 }
 
 void HAL_SAI_ErrorCallback(SAI_HandleTypeDef *hsai) {
