@@ -83,9 +83,9 @@ typedef struct {
     size_t              nSamples;
 //    uint8_t            *dmaBuf;
     WAVE_t              wav;
-    uint8_t            *bufDirty;
-    const uint32_t      dmaBuf[ADC_DMA_BUF_LEN];
-    const uint32_t      buf[ADC_BUF_LEN];
+//    uint8_t            *bufDirty;
+     uint32_t      dmaBuf[ADC_DMA_BUF_LEN];
+//    const uint32_t      buf[ADC_BUF_LEN];
 } ADC_t;
 
 

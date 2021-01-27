@@ -8,6 +8,8 @@
 static ADC_t adc = {0};
 
 static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller);
+inline void ADC_32To24Blocks_(uint8_t *to, const uint32_t *from, size_t len);
+static inline void ADC_persistBuf_(uint32_t * buf, size_t len);
 
 int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInterface)
 {
@@ -18,9 +20,9 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
 
   adc.wav.fname         = "REC";
   adc.wav.sampleRate    = 8000; // sps
-  adc.wav.nChannels     = 2;
+  adc.wav.nChannels     = 4;
   adc.wav.bitsPerSample = 24;
-  adc.wav.blockSize     = 4U; // bits
+  adc.wav.blockSize     = 6U; // bits
 
   WAVE_createFile(&adc.wav);
 
@@ -76,10 +78,9 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   }
 
 //  adc.dmaBuf = (uint8_t*)adc.buf;
-  adc.bufDirty = (uint8_t*) adc.buf;
+//  adc.bufDirty = (uint8_t*) adc.buf;
   INFO("DMA Buffer size: %u bytes", sizeof(adc.dmaBuf));
-  INFO("Internal Buffer size: %u bytes", sizeof(adc.buf));
-
+//  INFO("Internal Buffer size: %u bytes", sizeof(adc.buf));
 
   ADC_setState(ADC_IDLE);
   return 1;
@@ -115,12 +116,8 @@ int ADC_yield ()
       if(ADC_is_interrupt_set) {
         INFO("Flushing buffer");
         const size_t dmaLen = sizeof(adc.dmaBuf) / 2;
-        if (ADC_is_cplt_half) {
-          WAVE_appendData(&adc.wav, adc.dmaBuf, dmaLen, 1);
-        }
-        else if(ADC_is_cplt_full) {
-          WAVE_appendData(&adc.wav, adc.dmaBuf + dmaLen, dmaLen, 1);
-        }
+        if (ADC_is_cplt_half) ADC_persistBuf_(adc.dmaBuf, dmaLen);
+        else if(ADC_is_cplt_full) ADC_persistBuf_(adc.dmaBuf + dmaLen, dmaLen);
         ADC_clear_flag_cplt;
       }
       break;
@@ -133,6 +130,22 @@ int ADC_yield ()
     }
   }
 
+}
+
+static inline void ADC_persistBuf_(uint32_t * buf, size_t len)
+{
+  ADC_32To24Blocks_((uint8_t *)buf, buf, len);
+  WAVE_appendData(&adc.wav, buf, len, 1);
+}
+
+inline void ADC_32To24Blocks_(uint8_t *to, const uint32_t *from, size_t len)
+{
+  const size_t del = 3;
+  for(size_t idx = 0;
+      idx < len;
+      idx+=3, from++, to += del) {
+    memcpy(to, from, del);
+  }
 }
 
 uint8_t ADC_readRegister(uint8_t registerAddr)
