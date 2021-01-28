@@ -13,7 +13,7 @@
 #endif
 
 #ifndef ADC_BUF_LEN
-#define ADC_BUF_LEN (8192)
+#define ADC_BUF_LEN (512)
 #endif
 
 
