@@ -21,7 +21,7 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
 
   adc.wav.fname         = "REC";
   adc.wav.sampleRate    = 8000; // sps
-  adc.wav.nChannels     = 1;
+  adc.wav.nChannels     = 2;
   adc.wav.bitsPerSample = 24;
   adc.wav.blockSize     = 3U * adc.wav.nChannels; // bits
 
@@ -87,14 +87,15 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   ADC_setState(ADC_IDLE);
   // TODO: Remove
 
+#if ADC_E2E_SYNTH
   {
     INFO("Creating synth");
-    const size_t nChannels    = 1;
-    const float freq[]        = {2e3f};
+    const size_t nChannels    = 2;
+    const float freq[]        = {2e3f, 7e3f};
     const size_t fs           = 8000;
     const size_t   blockSize  = 512;
     const size_t   loop       = 100;
-    const uint32_t amplitude  = 1U<<16U;
+    const uint32_t amplitude  = 1U<<23U;
     const float  pi           = 3.1452f;
     const size_t len          = blockSize * nChannels * sizeof(int32_t);
     int32_t * data            = (int32_t *)malloc(len);
@@ -117,7 +118,7 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
     INFO("FIN -> %.2f secs", (float)(1.0f*loop*blockSize/fs));
     for(;;);
   }
-
+#endif
 
 
   return 1;
