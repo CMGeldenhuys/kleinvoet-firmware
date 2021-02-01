@@ -10,7 +10,7 @@ static ADC_t adc = {0};
 
 static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller);
 inline void ADC_32To24Blocks_(uint8_t *to, const uint32_t *from, size_t len);
-void ADC_persistBuf_(uint32_t * buf, size_t len);
+void ADC_persistBuf_(void * buf, size_t len);
 
 int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInterface)
 {
@@ -170,9 +170,9 @@ int ADC_yield ()
 
 }
 
-void ADC_persistBuf_(uint32_t * buf, size_t len)
+void ADC_persistBuf_(void * buf, size_t len)
 {
-  ADC_32To24Blocks_((uint8_t *)buf, buf, len);
+  ADC_32To24Blocks_(buf, buf, len);
   WAVE_appendData(&adc.wav, buf, len * 3/4, 1);
 }
 
