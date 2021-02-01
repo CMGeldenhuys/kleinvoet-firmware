@@ -89,28 +89,28 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
 
   {
     INFO("Creating synth");
-    const size_t nChannels = 1;
-    const float freq[] = {2e3f};
-    const size_t fs        = 8000;
-    const size_t   blockSize = 512;
-    const size_t   loop      = 100;
-    const uint32_t amplitude = 1U<<15U;
-    const float  pi        = 3.1452f;
-    const size_t len       = blockSize * nChannels * sizeof(uint32_t);
-    uint32_t * data = (uint32_t *)malloc(len);
+    const size_t nChannels    = 1;
+    const float freq[]        = {2e3f};
+    const size_t fs           = 8000;
+    const size_t   blockSize  = 512;
+    const size_t   loop       = 100;
+    const uint32_t amplitude  = 1U<<16U;
+    const float  pi           = 3.1452f;
+    const size_t len          = blockSize * nChannels * sizeof(int32_t);
+    int32_t * data            = (int32_t *)malloc(len);
 
-    for (size_t l = 1; l <= loop; l++){
-      for (int n = 0; n < blockSize; n++) {
+    for (size_t l = 0; l < loop; l++){
+      for (size_t n = 0; n < blockSize; n++) {
         for (size_t c = 0; c < nChannels; c++){
-          const float theta = 2.0f*pi*(float)n*l*freq[c]/fs;
-          const int16_t val = (int16_t) (amplitude * sinf(theta));
-          *(data + (n * nChannels + c)) = (uint32_t) val;
+          const float theta = 2.0f*pi*(float)(n+l*blockSize)*freq[c]/fs;
+          const int32_t val = (int32_t) (amplitude * sinf(theta));
+          *(data + (n * nChannels + c)) = val;
 //          if ( c == 0)  *(data + (n * nChannels + c)) = __bswap32(0xFF00BEEFU);
 //          else          *(data + (n * nChannels + c)) = __bswap32(0xFFDEAD00U);
         }
 
       }
-      if(l % 5 == 0) INFO("... done (%d)", l);
+      if(loop < 5 || l % 5 == 0) INFO("... done (%d)", l);
       ADC_persistBuf_((uint32_t*) data, len);
     }
 
