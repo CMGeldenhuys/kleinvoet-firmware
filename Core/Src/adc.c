@@ -20,7 +20,7 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   ADC_setState(ADC_SETUP);
 
   adc.wav.fname         = "REC";
-  adc.wav.sampleRate    = 8000; // sps
+  adc.wav.sampleRate    = 8000/2; // sps
   adc.wav.nChannels     = 2;
   adc.wav.bitsPerSample = 24;
   adc.wav.blockSize     = 3U * adc.wav.nChannels; // bits
