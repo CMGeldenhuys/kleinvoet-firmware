@@ -31,18 +31,16 @@
 #define ADC_I2C_ADDR      (ADC_I2C_ADDR_BASE | ADC_I2C_ADDR1 | ADC_I2C_ADDR0)
 
 #define ADC_is_recording      (adc.state.mode == ADC_REC)
-#define ADC_is_interrupt_set  (adc.state.flags.rec & ADC_FLAG_CPLT_INTERRUPT)
-#define ADC_is_err_set        (adc.state.flags.err & ADC_FLAG_ERR)
+#define ADC_is_interrupt_set  (adc.state.flags.rec & ADC_FLAG_CPLT_FIELD)
+#define ADC_is_err_set        (adc.state.flags.err & ADC_FLAG_ERR_FIELD)
 #define ADC_is_cplt_half      (adc.state.flags.rec & ADC_CPLT_HALF)
 #define ADC_is_cplt_full      (adc.state.flags.rec & ADC_CPLT_FULL)
 
 #define ADC_clear_flag_cplt   (adc.state.flags.rec &= ~ADC_FLAG_CPLT_FIELD)
 #define ADC_clear_flag_err    (adc.state.flags.err &= ~ADC_FLAG_ERR_FIELD)
 
-#define ADC_FLAG_CPLT_INTERRUPT (ADC_CPLT_HALF & ADC_CPLT_FULL)
 #define ADC_FLAG_CPLT_FIELD     (ADC_CPLT_HALF | ADC_CPLT_FULL)
 
-#define ADC_FLAG_ERR            (ADC_ERR_N_REC & ADC_ERR_SAMPLE_MISSED)
 #define ADC_FLAG_ERR_FIELD      (ADC_ERR_N_REC | ADC_ERR_SAMPLE_MISSED)
 
 typedef enum {
@@ -53,25 +51,25 @@ typedef enum {
 } ADC_state_major_e;
 
 typedef enum {
-    ADC_CPLT_HALF         = 0b00000101U,
-    ADC_CPLT_FULL         = 0b00000110U,
-    // ADC_CPLT_INTERRUPT          ^^^
+    ADC_CPLT_HALF         = 0b00000001U,
+    ADC_CPLT_FULL         = 0b00000010U,
+    // ADC_CPLT_INTERRUPT           ^^
 } ADC_state_flag_rec_e;
 
 typedef enum {
-    ADC_ERR_SAMPLE_MISSED = 0b10010000U,
-    ADC_ERR_N_REC         = 0b10100000U,
+    ADC_ERR_SAMPLE_MISSED = 0b00010000U,
+    ADC_ERR_N_REC         = 0b00100000U,
     // ADC_ERR                ^^^^
 } ADC_state_flag_err_e;
 
-typedef union {
+typedef struct {
     ADC_state_flag_rec_e rec;
     ADC_state_flag_err_e err;
-} ADC_state_flags_u;
+} ADC_state_flags_t;
 
 typedef struct {
     ADC_state_major_e mode;
-    ADC_state_flags_u flags;
+    ADC_state_flags_t flags;
 } ADC_state_t;
 
 

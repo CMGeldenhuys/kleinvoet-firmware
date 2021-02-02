@@ -46,7 +46,7 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
                     | ADC_ADC_EN1_ON);
 
   ADC_writeRegister(ADC_REG_SAI_CTRL0,
-                    ADC_SDATA_FMT_RJ_24
+                    ADC_SDATA_FMT_LJ
                     | ADC_SAI_TDM4
                     | ADC_FS_8_12);
 
@@ -54,7 +54,7 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
                     ADC_SDATA_SEL_2
                     | ADC_SLOT_WIDTH_32
                     | ADC_DATA_WIDTH_24
-                    | ADC_LR_MODE_50
+                    | ADC_LR_MODE_PULSE
                     | ADC_SAI_MSB_MSB
                     | ADC_BCLKRATE_32
                     | ADC_SAI_MS_MASTER);
@@ -62,7 +62,7 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   ADC_writeRegister(ADC_REG_MISC_CONTROL,
                     ADC_SUM_MODE_2
                     | ADC_MMUTE_NONE
-                    | ADC_DC_CAL_NO);
+                    | ADC_DC_CAL_PERF);
 
   if(ADC_powerUp() <= 0) {
     ERR("Failed to power up ADC Subsystems");
@@ -85,9 +85,8 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   HAL_SAI_DisableRxMuteMode(adc.audioPort);
 
   ADC_setState(ADC_IDLE);
-  // TODO: Remove
 
-#if ADC_E2E_SYNTH
+#ifdef ADC_E2E_SYNTH
   {
     INFO("Creating synth");
     const size_t nChannels    = 2;
@@ -152,10 +151,14 @@ int ADC_yield ()
   switch (adc.state.mode) {
     case ADC_REC: {
       if(ADC_is_interrupt_set) {
-        DBUG("Flushing buffer");
         const size_t dmaLen = sizeof(adc.dmaBuf) / 2;
-        if (ADC_is_cplt_half) ADC_persistBuf_(adc.dmaBuf, dmaLen);
-        else if(ADC_is_cplt_full) ADC_persistBuf_(adc.dmaBuf + dmaLen, dmaLen);
+        uint8_t * dmaBuf = ADC_is_cplt_half
+                ? (uint8_t*)adc.dmaBuf
+                : (uint8_t*)adc.dmaBuf + dmaLen;
+
+        INFO("Flushing buffer (0x%08X -> %d)", dmaBuf, dmaLen);
+        ADC_persistBuf_(dmaBuf, dmaLen);
+        INFO("Done");
         ADC_clear_flag_cplt;
       }
       break;
@@ -286,8 +289,16 @@ static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller)
   }
   // Recording state
   else {
-    HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
+//    HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
     adc.state.flags.rec |= caller;
+    if(caller == ADC_CPLT_HALF)
+      HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_SET);
+    else
+      HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_RESET);
+//    if(ADC_is_cplt_half)
+//      HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_SET);
+//    else if(ADC_is_cplt_full)
+//      HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_RESET);
 //    adc.dmaBuf += ADC_DMA_BUF_LEN;
 
 //    const size_t len = adc.dmaBuf - adc.buf;
