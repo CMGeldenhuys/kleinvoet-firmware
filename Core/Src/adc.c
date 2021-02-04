@@ -9,7 +9,7 @@
 static ADC_t adc = {0};
 
 static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller);
-inline void ADC_32To24Blocks_(uint8_t *to, const uint32_t *from, size_t len);
+inline void ADC_32To24Blocks_(uint8_t *to, const uint32_t *from, size_t len, uint8_t lsb);
 void ADC_persistBuf_(void * buf, size_t len);
 
 int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInterface)
@@ -22,8 +22,8 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   adc.wav.fname         = "REC";
   adc.wav.sampleRate    = 48000; // sps
   adc.wav.nChannels     = 2;
-  adc.wav.bitsPerSample = 32;
-  adc.wav.blockSize     = 4U * adc.wav.nChannels; // bits
+  adc.wav.bitsPerSample = 24;
+  adc.wav.blockSize     = 3U * adc.wav.nChannels; // bits
 
   WAVE_createFile(&adc.wav);
 
@@ -46,7 +46,11 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
                     | ADC_ADC_EN1_ON);
 
   ADC_writeRegister(ADC_REG_SAI_CTRL0,
-                    ADC_SDATA_FMT_RJ_24
+                    ADC_SDATA_FMT_I2S
+                    // Note: the SAI interface does not leave the bits in the
+                    // location they were received. It ALWAYS left justifies
+                    // them to in the FIFO. Also note `Data size` of the SAI
+                    // since the fifo only shifts in so many bits and then stops
                     | ADC_SAI_TDM4
                     | ADC_FS_32_48); // This register seems to subdivide FS?
                     // Does not actually correspond to FS...
@@ -88,6 +92,8 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
 
   ADC_setState(ADC_IDLE);
 
+
+
 #ifdef ADC_E2E_SYNTH
   {
     INFO("Creating synth");
@@ -120,7 +126,6 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
     for(;;);
   }
 #endif
-
 
   return 1;
 }
@@ -176,11 +181,11 @@ int ADC_yield ()
 
 void ADC_persistBuf_(void * buf, size_t len)
 {
-//  ADC_32To24Blocks_(buf, buf, len);
-  WAVE_appendData(&adc.wav, buf, len, 1);
+  ADC_32To24Blocks_(buf, buf, len, 0);
+  WAVE_appendData(&adc.wav, buf, len*3/4, 1);
 }
 
-inline void ADC_32To24Blocks_(uint8_t *to, const uint32_t *from, size_t len)
+inline void ADC_32To24Blocks_(uint8_t *to, const uint32_t *from, size_t len, uint8_t lsb)
 {
   const size_t del = 3;
   // Some awesome headache C pointer magic to introduce a one byte 'phase' shift in the from pointer;
@@ -198,13 +203,22 @@ inline void ADC_32To24Blocks_(uint8_t *to, const uint32_t *from, size_t len)
   // After  : ... [00][BE][EF][00][DE][AD][DE][AD] ...
   //                                       ^       ^---from
   //                                       |---to
-  from = (const uint32_t *)((uint8_t*)(from) + 1);
+  // LSB = 0 : 0xFF000000 -> drops first byte
+  // LSB = 1 : 0x000000FF -> drops last byte
+  from = (const uint32_t *)((uint8_t*)(from) + lsb);
   for(size_t idx = 0;
       idx < len;
       idx+=3, from++, to += del) {
     // Use `memmove` instead of `memcpy` because is overlap safe
     memmove(to, from, del);
   }
+
+//    for(size_t i = 0; i < len; i += 4,  from++, to += 3) {
+//      const uint32_t val = *from & 0x00FFFFFFU; // take 24 bits
+//      *to       = (val & 0x000000FFU) >>  0U;
+//      *(to + 1) = (val & 0x0000FF00U) >>  8U;
+//      *(to + 2) = (val & 0x00FF0000U) >> 16U;
+//    }
 }
 
 uint8_t ADC_readRegister(uint8_t registerAddr)

@@ -431,7 +431,7 @@ static void MX_SAI1_Init(void)
   hsai_BlockB1.Instance = SAI1_Block_B;
   hsai_BlockB1.Init.Protocol = SAI_FREE_PROTOCOL;
   hsai_BlockB1.Init.AudioMode = SAI_MODESLAVE_RX;
-  hsai_BlockB1.Init.DataSize = SAI_DATASIZE_32;
+  hsai_BlockB1.Init.DataSize = SAI_DATASIZE_24;
   hsai_BlockB1.Init.FirstBit = SAI_FIRSTBIT_MSB;
   hsai_BlockB1.Init.ClockStrobing = SAI_CLOCKSTROBING_FALLINGEDGE;
   hsai_BlockB1.Init.Synchro = SAI_ASYNCHRONOUS;
