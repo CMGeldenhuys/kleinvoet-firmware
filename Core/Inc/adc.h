@@ -13,7 +13,7 @@
 #endif
 
 #ifndef ADC_BUF_LEN
-#define ADC_BUF_LEN (1024)
+#define ADC_BUF_LEN (16384)
 #endif
 
 
@@ -82,7 +82,7 @@ typedef struct {
 //    uint8_t            *dmaBuf;
     WAVE_t              wav;
 //    uint8_t            *bufDirty;
-     uint32_t      dmaBuf[ADC_DMA_BUF_LEN];
+     int32_t      dmaBuf[ADC_DMA_BUF_LEN];
 //    const uint32_t      buf[ADC_BUF_LEN];
 } ADC_t;
 

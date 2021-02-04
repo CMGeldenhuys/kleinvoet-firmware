@@ -20,10 +20,10 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   ADC_setState(ADC_SETUP);
 
   adc.wav.fname         = "REC";
-  adc.wav.sampleRate    = 8000/2; // sps
+  adc.wav.sampleRate    = 48000; // sps
   adc.wav.nChannels     = 2;
-  adc.wav.bitsPerSample = 24;
-  adc.wav.blockSize     = 3U * adc.wav.nChannels; // bits
+  adc.wav.bitsPerSample = 32;
+  adc.wav.blockSize     = 4U * adc.wav.nChannels; // bits
 
   WAVE_createFile(&adc.wav);
 
@@ -33,7 +33,7 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   ADC_writeRegister(ADC_REG_PLL_CONTROL,
                     ADC_PLL_MUTE_ON |
                     ADC_CLK_S_MCLK |
-                    ADC_MCS_768);
+                    ADC_MCS_256);
 
   ADC_writeRegister(ADC_REG_BLOCK_POWER_SAI,
                     ADC_LR_POL_LH
@@ -46,9 +46,11 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
                     | ADC_ADC_EN1_ON);
 
   ADC_writeRegister(ADC_REG_SAI_CTRL0,
-                    ADC_SDATA_FMT_LJ
+                    ADC_SDATA_FMT_RJ_24
                     | ADC_SAI_TDM4
-                    | ADC_FS_8_12);
+                    | ADC_FS_32_48); // This register seems to subdivide FS?
+                    // Does not actually correspond to FS...
+                    // Leaving at default
 
   ADC_writeRegister(ADC_REG_SAI_CTRL1,
                     ADC_SDATA_SEL_2
@@ -62,7 +64,7 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   ADC_writeRegister(ADC_REG_MISC_CONTROL,
                     ADC_SUM_MODE_2
                     | ADC_MMUTE_NONE
-                    | ADC_DC_CAL_PERF);
+                    | ADC_DC_CAL_NO);
 
   if(ADC_powerUp() <= 0) {
     ERR("Failed to power up ADC Subsystems");
@@ -156,9 +158,8 @@ int ADC_yield ()
                 ? (uint8_t*)adc.dmaBuf
                 : (uint8_t*)adc.dmaBuf + dmaLen;
 
-        INFO("Flushing buffer (0x%08X -> %d)", dmaBuf, dmaLen);
+        DBUG("Flushing buffer (0x%08X -> %d)", dmaBuf, dmaLen);
         ADC_persistBuf_(dmaBuf, dmaLen);
-        INFO("Done");
         ADC_clear_flag_cplt;
       }
       break;
@@ -175,8 +176,8 @@ int ADC_yield ()
 
 void ADC_persistBuf_(void * buf, size_t len)
 {
-  ADC_32To24Blocks_(buf, buf, len);
-  WAVE_appendData(&adc.wav, buf, len * 3/4, 1);
+//  ADC_32To24Blocks_(buf, buf, len);
+  WAVE_appendData(&adc.wav, buf, len, 1);
 }
 
 inline void ADC_32To24Blocks_(uint8_t *to, const uint32_t *from, size_t len)
