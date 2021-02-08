@@ -12,11 +12,12 @@ static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller);
 inline void ADC_32To24Blocks_(uint8_t *to, const uint32_t *from, size_t len, uint8_t lsb);
 void ADC_persistBuf_(void * buf, size_t len);
 
-int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInterface)
+int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInterface, TIM_HandleTypeDef *timInterface)
 {
 
   adc.control = controlInterface;
   adc.audioPort = audioInterface;
+  adc.tim = timInterface;
   ADC_setState(ADC_SETUP);
 
   adc.wav.fname         = "REC";
@@ -164,8 +165,8 @@ int ADC_yield ()
                 : (uint8_t*)adc.dmaBuf + dmaLen;
 
         DBUG("Flushing buffer (0x%08X -> %d)", dmaBuf, dmaLen);
-        adc.nSamples += dmaLen;
         ADC_persistBuf_(dmaBuf, dmaLen);
+        INFO("(%d :: %d) -> %d", adc.nSamples, adc.tim->Instance->CNT, adc.nSamples - adc.tim->Instance->CNT);
         ADC_clear_flag_cplt;
       }
       break;
@@ -275,7 +276,7 @@ ADC_state_major_e ADC_setState(ADC_state_major_e state)
     // Size is defined as frames and not bytes
     // This is due to the FIFO buffer used
     HAL_SAI_Receive_DMA(adc.audioPort, adc.dmaBuf, ADC_DMA_N_SAMPLES);
-    // TODO: Enable timer for tracking samples
+    HAL_TIM_Base_Start(adc.tim);
   }
 
   switch (state) {
@@ -292,7 +293,9 @@ static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller)
 {
   // Interrupt already set... Samples missed
   if (ADC_is_interrupt_set) {
-    adc.samplesMissed += ADC_DMA_N_SAMPLES;
+    // Always half of buffer expired
+    // Divided by number of channels
+    adc.samplesMissed += ADC_DMA_N_SAMPLES / 2 / 2;
     adc.state.flags.err |= ADC_ERR_SAMPLE_MISSED;
   }
   else if (!ADC_is_recording) {
@@ -300,28 +303,15 @@ static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller)
   }
   // Recording state
   else {
-//    HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
+    // TODO: get rid of magic numbers
+    // Always half of buffer expired
+    // Divided by number of channels
+    adc.nSamples += ADC_DMA_N_SAMPLES / 2 / 2;
     adc.state.flags.rec |= caller;
     if(caller == ADC_CPLT_HALF)
       HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_SET);
     else
       HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_RESET);
-//    if(ADC_is_cplt_half)
-//      HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_SET);
-//    else if(ADC_is_cplt_full)
-//      HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_RESET);
-//    adc.dmaBuf += ADC_DMA_BUF_LEN;
-
-//    const size_t len = adc.dmaBuf - adc.buf;
-//    if(len == ADC_BUF_LEN) {
-//      adc.dmaBuf = (uint8_t *) adc.buf;
-//    }
-//
-////    adc.nSamples += ADC_DMA_BUF_LEN;
-//      HAL_StatusTypeDef stat = HAL_SAI_Receive_DMA(adc.audioPort, adc.dmaBuf, ADC_DMA_BUF_LEN);
-//    if( stat != HAL_OK){
-//      ERR("HAL ERR");
-//    }
   }
 }
 

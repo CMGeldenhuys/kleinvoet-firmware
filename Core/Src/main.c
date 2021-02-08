@@ -157,7 +157,7 @@ int main(void)
   INFO("Done waiting for GPS");
   HAL_IWDG_Refresh(&hiwdg);
   if (GPS_init(&huart4) <= 0) Error_Handler();
-  if (ADC_init(&hi2c1, &hsai_BlockB1) <= 0) Error_Handler();
+  if (ADC_init(&hi2c1, &hsai_BlockB1, &htim2) <= 0) Error_Handler();
 
   // Change watch dog timeout from ~32 sec to ~4
   hiwdg.Init.Prescaler = IWDG_PRESCALER_32;
@@ -169,7 +169,6 @@ int main(void)
 
   // Enable FS flush timer
   HAL_TIM_Base_Start_IT(&htim10);
-  HAL_TIM_Base_Start(&htim2);
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_RESET);
   /* USER CODE END 2 */
 

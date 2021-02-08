@@ -73,6 +73,7 @@ typedef struct {
 typedef struct {
     I2C_HandleTypeDef  *control;
     SAI_HandleTypeDef  *audioPort;
+    TIM_HandleTypeDef  *tim;
     ADC_state_t         state;
     size_t              samplesMissed;
     size_t              nSamples;
@@ -81,7 +82,7 @@ typedef struct {
 } ADC_t;
 
 
-int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInterface);
+int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInterface, TIM_HandleTypeDef *timInterface);
 
 uint8_t ADC_readRegister(uint8_t registerAddr);
 int ADC_writeRegister(uint8_t registerAddr, uint8_t data);
