@@ -133,6 +133,10 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
 int ADC_yield ()
 {
 
+  // TODO: Track delta between DMA samples and TIM samples
+  // If drift becomes to large one can warn that the MCU is running too slow or
+  // some tasks are taking too long
+
   if(ADC_is_err_set) {
     // Since `adc.state.flags` is a union and thus shares state with other enums its important to '&' with the bit field
     switch(adc.state.flags.err & ADC_FLAG_ERR_FIELD) {
@@ -166,7 +170,7 @@ int ADC_yield ()
 
         DBUG("Flushing buffer (0x%08X -> %d)", dmaBuf, dmaLen);
         ADC_persistBuf_(dmaBuf, dmaLen);
-        INFO("(%d :: %d) -> %d", adc.nSamples, adc.tim->Instance->CNT, adc.nSamples - adc.tim->Instance->CNT);
+        DBUG("DMA Samples:%d, TIM Samples:%d, delta: %d", adc.nSamples, adc.tim->Instance->CNT, adc.nSamples - adc.tim->Instance->CNT);
         ADC_clear_flag_cplt;
       }
       break;
@@ -291,11 +295,20 @@ ADC_state_major_e ADC_setState(ADC_state_major_e state)
 
 static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller)
 {
+  // TODO: get rid of magic numbers
+  // Always half of buffer expired
+  // Divided by number of channels
+  const size_t nSamples = ADC_DMA_N_SAMPLES / 2 / 2;
+
   // Interrupt already set... Samples missed
   if (ADC_is_interrupt_set) {
-    // Always half of buffer expired
-    // Divided by number of channels
-    adc.samplesMissed += ADC_DMA_N_SAMPLES / 2 / 2;
+    adc.samplesMissed += nSamples;
+
+    // Sync DMA and TIM
+    // TODO: This might cause some headaches with timestamping
+    // An alternative approach would be to timestamp based on both TIM and DMA sample pos
+    adc.tim->Instance->CNT -= nSamples;
+
     adc.state.flags.err |= ADC_ERR_SAMPLE_MISSED;
   }
   else if (!ADC_is_recording) {
@@ -303,10 +316,7 @@ static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller)
   }
   // Recording state
   else {
-    // TODO: get rid of magic numbers
-    // Always half of buffer expired
-    // Divided by number of channels
-    adc.nSamples += ADC_DMA_N_SAMPLES / 2 / 2;
+    adc.nSamples += nSamples;
     adc.state.flags.rec |= caller;
     if(caller == ADC_CPLT_HALF)
       HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_SET);
