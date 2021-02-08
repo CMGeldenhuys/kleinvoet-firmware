@@ -9,13 +9,10 @@
 #include "wave.h"
 
 #ifndef ADC_DMA_BUF_LEN
-#define ADC_DMA_BUF_LEN (ADC_BUF_LEN) // 512 bytes
+#define ADC_DMA_BUF_LEN  (0x10000)
 #endif
 
-#ifndef ADC_BUF_LEN
-#define ADC_BUF_LEN (16384)
-#endif
-
+#define ADC_DMA_N_SAMPLES (ADC_DMA_BUF_LEN / sizeof(uint32_t))
 
 #ifndef ADC_I2C_ADDR0
 #define ADC_I2C_ADDR0 0b00000000U
@@ -79,11 +76,8 @@ typedef struct {
     ADC_state_t         state;
     size_t              samplesMissed;
     size_t              nSamples;
-//    uint8_t            *dmaBuf;
     WAVE_t              wav;
-//    uint8_t            *bufDirty;
-     int32_t      dmaBuf[ADC_DMA_BUF_LEN];
-//    const uint32_t      buf[ADC_BUF_LEN];
+     uint8_t           *dmaBuf;
 } ADC_t;
 
 
@@ -95,7 +89,6 @@ void ADC_reset();
 int ADC_powerUp();
 int ADC_powerDown();
 ADC_state_major_e ADC_setState(ADC_state_major_e state);
-void ADC_incSample(void);
 
 int ADC_yield ();
 

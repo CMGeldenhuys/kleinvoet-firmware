@@ -84,15 +84,14 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
     }
   }
 
-//  adc.dmaBuf = (uint8_t*)adc.buf;
-//  adc.bufDirty = (uint8_t*) adc.buf;
-  INFO("DMA Buffer size: %u bytes", sizeof(adc.dmaBuf));
-//  INFO("Internal Buffer size: %u bytes", sizeof(adc.buf));
+  INFO("Allocating DMA Buffer size: %u bytes", ADC_DMA_BUF_LEN);
+  adc.dmaBuf = (uint8_t *) malloc(ADC_DMA_BUF_LEN);
+
+  // Disable any mute mode as this can cause problems in the future
+  // TODO: if implemented would require more OOP statemachine
   HAL_SAI_DisableRxMuteMode(adc.audioPort);
 
   ADC_setState(ADC_IDLE);
-
-
 
 #ifdef ADC_E2E_SYNTH
   {
@@ -143,7 +142,8 @@ int ADC_yield ()
       }
 
       case ADC_ERR_SAMPLE_MISSED: {
-        WARN("Samples missed: %d", adc.samplesMissed);
+        const float lossRate = adc.samplesMissed * 100.0f / adc.nSamples;
+        WARN("Samples missed: %d (%.2f%%)", adc.samplesMissed, lossRate);
         // TODO: tag samples missed
         // TODO: if more than % missed samples then reset device
         break;
@@ -158,12 +158,13 @@ int ADC_yield ()
   switch (adc.state.mode) {
     case ADC_REC: {
       if(ADC_is_interrupt_set) {
-        const size_t dmaLen = sizeof(adc.dmaBuf) / 2;
+        const size_t dmaLen = ADC_DMA_BUF_LEN/ 2;
         uint8_t * dmaBuf = ADC_is_cplt_half
                 ? (uint8_t*)adc.dmaBuf
                 : (uint8_t*)adc.dmaBuf + dmaLen;
 
         DBUG("Flushing buffer (0x%08X -> %d)", dmaBuf, dmaLen);
+        adc.nSamples += dmaLen;
         ADC_persistBuf_(dmaBuf, dmaLen);
         ADC_clear_flag_cplt;
       }
@@ -212,13 +213,6 @@ inline void ADC_32To24Blocks_(uint8_t *to, const uint32_t *from, size_t len, uin
     // Use `memmove` instead of `memcpy` because is overlap safe
     memmove(to, from, del);
   }
-
-//    for(size_t i = 0; i < len; i += 4,  from++, to += 3) {
-//      const uint32_t val = *from & 0x00FFFFFFU; // take 24 bits
-//      *to       = (val & 0x000000FFU) >>  0U;
-//      *(to + 1) = (val & 0x0000FF00U) >>  8U;
-//      *(to + 2) = (val & 0x00FF0000U) >> 16U;
-//    }
 }
 
 uint8_t ADC_readRegister(uint8_t registerAddr)
@@ -279,7 +273,9 @@ ADC_state_major_e ADC_setState(ADC_state_major_e state)
     // Start Recording
     INFO("Recording started");
     // Size is defined as frames and not bytes
-    HAL_SAI_Receive_DMA(adc.audioPort, (uint8_t *) adc.dmaBuf, ADC_DMA_BUF_LEN);
+    // This is due to the FIFO buffer used
+    HAL_SAI_Receive_DMA(adc.audioPort, adc.dmaBuf, ADC_DMA_N_SAMPLES);
+    // TODO: Enable timer for tracking samples
   }
 
   switch (state) {
@@ -296,7 +292,7 @@ static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller)
 {
   // Interrupt already set... Samples missed
   if (ADC_is_interrupt_set) {
-    adc.samplesMissed += ADC_DMA_BUF_LEN;
+    adc.samplesMissed += ADC_DMA_N_SAMPLES;
     adc.state.flags.err |= ADC_ERR_SAMPLE_MISSED;
   }
   else if (!ADC_is_recording) {
@@ -326,16 +322,6 @@ static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller)
 //    if( stat != HAL_OK){
 //      ERR("HAL ERR");
 //    }
-  }
-}
-
-void ADC_incSample(void)
-{
-  DBUG("ADC FS pin toggled");
-
-  // Only Inc while ADC is recording
-  if(adc.state.mode == ADC_REC) {
-    adc.nSamples++;
   }
 }
 
