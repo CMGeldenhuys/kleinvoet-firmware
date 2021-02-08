@@ -60,6 +60,7 @@ SD_HandleTypeDef hsd;
 DMA_HandleTypeDef hdma_sdio_rx;
 DMA_HandleTypeDef hdma_sdio_tx;
 
+TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim10;
 
 UART_HandleTypeDef huart4;
@@ -84,6 +85,7 @@ static void MX_IWDG_Init(void);
 static void MX_TIM10_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_SAI1_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 /* USER CODE END PFP */
 
@@ -129,6 +131,7 @@ int main(void)
   MX_TIM10_Init();
   MX_I2C1_Init();
   MX_SAI1_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
   // TODO: Remove
@@ -166,6 +169,7 @@ int main(void)
 
   // Enable FS flush timer
   HAL_TIM_Base_Start_IT(&htim10);
+  HAL_TIM_Base_Start(&htim2);
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_RESET);
   /* USER CODE END 2 */
 
@@ -181,6 +185,7 @@ int main(void)
     ADC_yield();
     TTY_yield();
     GPS_yield();
+//    INFO("TIM2: %d", __HAL_TIM_GetCounter(&htim2));
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -489,6 +494,54 @@ static void MX_SDIO_SD_Init(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 0;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 4294967295;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_ETRMODE2;
+  sClockSourceConfig.ClockPolarity = TIM_CLOCKPOLARITY_NONINVERTED;
+  sClockSourceConfig.ClockPrescaler = TIM_CLOCKPRESCALER_DIV1;
+  sClockSourceConfig.ClockFilter = 0;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
   * @brief TIM10 Initialization Function
   * @param None
   * @retval None
@@ -691,9 +744,10 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 //      return;
     case USR_BTN_Pin:
       INFO("User button pressed");
-      FATFS_sync(NULL);
+//      FATFS_sync(NULL);
       // TODO: In global state machine stop recording
       return;
+
     default:
       DBUG("Unknown GPIO interrupt (pin: %u)", GPIO_Pin);
       return;
@@ -703,7 +757,7 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   if(htim == &htim10){
-    DBUG("TIM10 Expired");
+//    INFO("TIM10 Expired");
     // TODO: Sync FS
 //    FATFS_sync(NULL);
   }

@@ -95,6 +95,7 @@ void ADC_reset();
 int ADC_powerUp();
 int ADC_powerDown();
 ADC_state_major_e ADC_setState(ADC_state_major_e state);
+void ADC_incSample(void);
 
 int ADC_yield ();
 

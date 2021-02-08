@@ -329,6 +329,16 @@ static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller)
   }
 }
 
+void ADC_incSample(void)
+{
+  DBUG("ADC FS pin toggled");
+
+  // Only Inc while ADC is recording
+  if(adc.state.mode == ADC_REC) {
+    adc.nSamples++;
+  }
+}
+
 void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai)
 {
   ADC_SAI_Interrupt_(ADC_CPLT_FULL);
