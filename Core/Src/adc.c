@@ -178,8 +178,15 @@ int ADC_yield ()
 
     case ADC_UNDEF: {
       ERR("ADC in undefined state!");
-      // TODO: Better state recovery...
-      for(;;);
+      Error_Handler();
+      break;
+    }
+
+    case ADC_IDLE: break;
+
+    case ADC_SETUP: {
+      WARN("ADC not ready!");
+      break;
     }
   }
 
@@ -264,9 +271,8 @@ int ADC_powerDown()
   return ADC_writeRegister(ADC_REG_M_POWER, ADC_PWUP_PWDWN);
 }
 
-ADC_state_major_e ADC_setState(ADC_state_major_e state)
+int ADC_setState(ADC_state_major_e state)
 {
-  adc.state.mode = state;
 
   if(state == ADC_IDLE){
     INFO("Recorder IDLE");
@@ -279,8 +285,12 @@ ADC_state_major_e ADC_setState(ADC_state_major_e state)
     INFO("Recording started");
     // Size is defined as frames and not bytes
     // This is due to the FIFO buffer used
-    HAL_SAI_Receive_DMA(adc.audioPort, adc.dmaBuf, ADC_DMA_N_SAMPLES);
-    HAL_TIM_Base_Start(adc.tim);
+    HAL_StatusTypeDef ret;
+    ret = HAL_SAI_Receive_DMA(adc.audioPort, adc.dmaBuf, ADC_DMA_N_SAMPLES);
+    if(ret != HAL_OK) return -1;
+
+    ret = HAL_TIM_Base_Start(adc.tim);
+    if(ret != HAL_OK) return -2;
   }
 
   switch (state) {
@@ -288,9 +298,11 @@ ADC_state_major_e ADC_setState(ADC_state_major_e state)
     case ADC_REC:   DBUG("Entering state: ADC_REC"); break;
     case ADC_SETUP: DBUG("Entering state: ADC_SETUP"); break;
     case ADC_IDLE:  DBUG("Entering state: ADC_IDLE"); break;
+    default:        DBUG("Entering unknown state"); break;
   }
 
-  return adc.state.mode;
+  adc.state.mode = state;
+  return 1;
 }
 
 static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller)

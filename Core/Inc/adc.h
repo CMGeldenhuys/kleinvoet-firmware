@@ -27,18 +27,20 @@
 #define ADC_I2C_ADDR_BASE 0b00100010U
 #define ADC_I2C_ADDR      (ADC_I2C_ADDR_BASE | ADC_I2C_ADDR1 | ADC_I2C_ADDR0)
 
+#define U_(__OP__) ((unsigned)((__OP__)))
+
 #define ADC_is_recording      (adc.state.mode == ADC_REC)
 #define ADC_is_interrupt_set  (adc.state.flags.rec & ADC_FLAG_CPLT_FIELD)
 #define ADC_is_err_set        (adc.state.flags.err & ADC_FLAG_ERR_FIELD)
-#define ADC_is_cplt_half      (adc.state.flags.rec & ADC_CPLT_HALF)
-#define ADC_is_cplt_full      (adc.state.flags.rec & ADC_CPLT_FULL)
+#define ADC_is_cplt_half      (adc.state.flags.rec & U_(ADC_CPLT_HALF))
+#define ADC_is_cplt_full      (adc.state.flags.rec & U_(ADC_CPLT_FULL))
 
 #define ADC_clear_flag_cplt   (adc.state.flags.rec &= ~ADC_FLAG_CPLT_FIELD)
 #define ADC_clear_flag_err    (adc.state.flags.err &= ~ADC_FLAG_ERR_FIELD)
 
-#define ADC_FLAG_CPLT_FIELD     (ADC_CPLT_HALF | ADC_CPLT_FULL)
+#define ADC_FLAG_CPLT_FIELD     (U_(ADC_CPLT_HALF) | U_(ADC_CPLT_FULL))
 
-#define ADC_FLAG_ERR_FIELD      (ADC_ERR_N_REC | ADC_ERR_SAMPLE_MISSED)
+#define ADC_FLAG_ERR_FIELD      (U_(ADC_ERR_N_REC) | U_(ADC_ERR_SAMPLE_MISSED))
 
 typedef enum {
     ADC_UNDEF = 0x00U,
@@ -89,7 +91,7 @@ int ADC_writeRegister(uint8_t registerAddr, uint8_t data);
 void ADC_reset();
 int ADC_powerUp();
 int ADC_powerDown();
-ADC_state_major_e ADC_setState(ADC_state_major_e state);
+int ADC_setState(ADC_state_major_e state);
 
 int ADC_yield ();
 

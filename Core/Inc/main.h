@@ -58,8 +58,6 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define RTC_CAL_Pin GPIO_PIN_13
-#define RTC_CAL_GPIO_Port GPIOC
 #define OSC_LSE_IN_Pin GPIO_PIN_14
 #define OSC_LSE_IN_GPIO_Port GPIOC
 #define OSC_LSE_OUT_Pin GPIO_PIN_15

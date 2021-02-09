@@ -239,7 +239,7 @@ int TTY_testArgs(int argc, char *args[])
 }
 
 
-#ifdef DEBUG
+#ifdef LOG_DEST_TTY
 int LOG_write (uint8_t *buf, size_t len)
 {
   return Serial_write(tty.serial, buf, len);

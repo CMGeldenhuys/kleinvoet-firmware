@@ -372,6 +372,7 @@ int FATFS_sync (FIL *fp)
   }
   // Sync all tracked files
   else {
+    // TODO: (FIX) for some reason kills device
     INFO("Syncing all tracked files");
     for(size_t i = 0; i < _FS_LOCK; i++) {
       fp = files[i];
@@ -435,7 +436,7 @@ int CMD_cat(int argc, char * args[])
 }
 
 /* LOG CODE START Application */
-#ifndef DEBUG
+#ifdef LOG_DEST_FILE
 
 int LOG_write (uint8_t *buf, size_t len)
 {

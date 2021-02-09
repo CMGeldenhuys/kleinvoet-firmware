@@ -24,6 +24,10 @@
 #include "stm32f4xx_hal.h"
 #include "config.h"
 
+#if !defined(LOG_DEST_TTY) && !defined(LOG_DEST_FILE)
+#define LOG_DEST_TTY
+#endif
+
 // Default logging level if not defined
 #if !defined(LOG_LEVEL_DEBUG) && !defined(LOG_LEVEL_INFO) && !defined(LOG_LEVEL_WARN)
 #if defined(DEBUG)

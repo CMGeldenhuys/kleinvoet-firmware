@@ -167,10 +167,6 @@ int main(void)
   hiwdg.Init.Prescaler = IWDG_PRESCALER_32;
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK) Error_Handler();
 
-  // Enable sensors
-//  INFO("Enabling sensors");
-//  HAL_GPIO_WritePin(SENSOR_EN_GPIO_Port, SENSOR_EN_Pin, GPIO_PIN_SET);
-
   // Enable FS flush timer
   HAL_TIM_Base_Start_IT(&htim10);
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_RESET);
@@ -178,8 +174,11 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  ADC_setState(ADC_REC);
+  if(ADC_setState(ADC_REC) <= 0) Error_Handler();
   HAL_ADC_Start(&hadc1);
+
+  // Store logs
+  LOG_flush();
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "EndlessLoop"
   while (1) {
@@ -191,15 +190,16 @@ int main(void)
     TTY_yield();
     GPS_yield();
 
-    if(__HAL_ADC_GET_FLAG(&hadc1, ADC_FLAG_EOC)) {
-      const uint16_t v_monitor = HAL_ADC_GetValue(&hadc1);
-      // V_ADC = 3.3v
-      // Full Range (12-bit) = 4096
-      // Voltage divider = 2:1
-      const float val = (float)v_monitor * 3.3f / 4096 * 2;
-      INFO("V_bat: %.4f", val);
-      HAL_ADC_Start(&hadc1);
-    }
+    // TODO: Move bat monitor to own file
+//    if(__HAL_ADC_GET_FLAG(&hadc1, ADC_FLAG_EOC)) {
+//      const uint16_t v_monitor = HAL_ADC_GetValue(&hadc1);
+//      // V_ADC = 3.3v
+//      // Full Range (12-bit) = 4096
+//      // Voltage divider = 2:1
+//      const float val = (float)v_monitor * 3.3f / 4096 * 2;
+//      INFO("V_bat: %.4f", val);
+//      HAL_ADC_Start(&hadc1);
+//    }
 
 
 
@@ -318,7 +318,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_9;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -470,12 +470,6 @@ static void MX_RTC_Init(void)
   sDate.Year = 0x0;
 
   if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Enable Calibrartion
-  */
-  if (HAL_RTCEx_SetCalibrationOutPut(&hrtc, RTC_CALIBOUTPUT_512HZ) != HAL_OK)
   {
     Error_Handler();
   }
@@ -771,8 +765,8 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : USR_BTN_Pin */
   GPIO_InitStruct.Pin = USR_BTN_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(USR_BTN_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : GPS_nSAFEBOOT_Pin GPS_WAKE_Pin */
@@ -811,7 +805,7 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 //      return;
     case USR_BTN_Pin:
       INFO("User button pressed");
-//      FATFS_sync(NULL);
+      FATFS_sync(NULL);
       // TODO: In global state machine stop recording
       return;
 

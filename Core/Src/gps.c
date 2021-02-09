@@ -303,7 +303,8 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
       if (cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC) {
         // Previously not valid
         if (!gps.timeValid) {
-          HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+          // TODO: Move LED control to separate file!
+          HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
           GPS_updateRTC_(&hrtc, cmd_t);
 
           // Once fix & valid time then disable SAT msgs
@@ -322,7 +323,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
       }
         // If fix lost or never had ensure SAT is on as to show feedback of num sats
       else if (gps.timeValid) {
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
         GPS_sendCommand(&GPS_ENABLE_UBX_NAV_SAT.generic, 0, 0);
         gps.timeValid = 0;
       }
