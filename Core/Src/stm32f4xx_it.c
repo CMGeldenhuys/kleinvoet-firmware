@@ -92,6 +92,7 @@ void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
   ERR("Hard Fault Exception!");
+  Error_Handler();
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
@@ -107,6 +108,7 @@ void MemManage_Handler(void)
 {
   /* USER CODE BEGIN MemoryManagement_IRQn 0 */
   ERR("MemManage Exception!");
+  Error_Handler();
   /* USER CODE END MemoryManagement_IRQn 0 */
   while (1)
   {
@@ -122,6 +124,7 @@ void BusFault_Handler(void)
 {
   /* USER CODE BEGIN BusFault_IRQn 0 */
   ERR("Bus Fault Exception!");
+  Error_Handler();
   /* USER CODE END BusFault_IRQn 0 */
   while (1)
   {
@@ -137,6 +140,7 @@ void UsageFault_Handler(void)
 {
   /* USER CODE BEGIN UsageFault_IRQn 0 */
   ERR("Usage Fault Exception!");
+  Error_Handler();
   /* USER CODE END UsageFault_IRQn 0 */
   while (1)
   {
@@ -259,6 +263,20 @@ void TIM1_UP_TIM10_IRQHandler(void)
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 1 */
 
   /* USER CODE END TIM1_UP_TIM10_IRQn 1 */
+}
+
+/**
+  * @brief This function handles EXTI line[15:10] interrupts.
+  */
+void EXTI15_10_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI15_10_IRQn 0 */
+
+  /* USER CODE END EXTI15_10_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
+  /* USER CODE BEGIN EXTI15_10_IRQn 1 */
+
+  /* USER CODE END EXTI15_10_IRQn 1 */
 }
 
 /**

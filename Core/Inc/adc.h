@@ -50,8 +50,8 @@ typedef enum {
 } ADC_state_major_e;
 
 typedef enum {
-    ADC_CPLT_HALF         = 0b00000001U,
-    ADC_CPLT_FULL         = 0b00000010U,
+    ADC_CPLT_HALF = 0b00000001U,
+    ADC_CPLT_FULL = 0b00000010U,
     // ADC_CPLT_INTERRUPT           ^^
 } ADC_state_flag_rec_e;
 
@@ -73,25 +73,30 @@ typedef struct {
 
 
 typedef struct {
-    I2C_HandleTypeDef  *control;
-    SAI_HandleTypeDef  *audioPort;
-    TIM_HandleTypeDef  *tim;
-    ADC_state_t         state;
-    size_t              samplesMissed;
-    size_t              nSamples;
-    WAVE_t              wav;
-     uint8_t           *dmaBuf;
+    I2C_HandleTypeDef    *control;
+    SAI_HandleTypeDef    *audioPort;
+    TIM_HandleTypeDef    *tim;
+    volatile ADC_state_t state;
+    volatile size_t      samplesMissed;
+    volatile size_t      nSamples;
+    WAVE_t               wav;
+    uint8_t              *dmaBuf;
 } ADC_t;
 
 
 int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInterface, TIM_HandleTypeDef *timInterface);
 
-uint8_t ADC_readRegister(uint8_t registerAddr);
-int ADC_writeRegister(uint8_t registerAddr, uint8_t data);
-void ADC_reset();
-int ADC_powerUp();
-int ADC_powerDown();
-int ADC_setState(ADC_state_major_e state);
+uint8_t ADC_readRegister (uint8_t registerAddr);
+
+int ADC_writeRegister (uint8_t registerAddr, uint8_t data);
+
+void ADC_reset ();
+
+int ADC_powerUp ();
+
+int ADC_powerDown ();
+
+int ADC_setState (ADC_state_major_e state);
 
 int ADC_yield ();
 

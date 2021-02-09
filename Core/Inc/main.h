@@ -58,6 +58,9 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define GPS_SYNC_Pin GPIO_PIN_13
+#define GPS_SYNC_GPIO_Port GPIOC
+#define GPS_SYNC_EXTI_IRQn EXTI15_10_IRQn
 #define OSC_LSE_IN_Pin GPIO_PIN_14
 #define OSC_LSE_IN_GPIO_Port GPIOC
 #define OSC_LSE_OUT_Pin GPIO_PIN_15
@@ -101,6 +104,8 @@ void Error_Handler(void);
 #define ADC_CTRL_SCL_GPIO_Port GPIOB
 #define ADC_CTRL_SDA_Pin GPIO_PIN_7
 #define ADC_CTRL_SDA_GPIO_Port GPIOB
+#define ADC_FS_Pin GPIO_PIN_8
+#define ADC_FS_GPIO_Port GPIOB
 #define ADC_SAI_FS_Pin GPIO_PIN_9
 #define ADC_SAI_FS_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */

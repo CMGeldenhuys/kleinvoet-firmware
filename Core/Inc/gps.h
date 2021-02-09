@@ -123,7 +123,7 @@ typedef struct {
 
     size_t  adcTimestamp;
     uint8_t timeValid;
-    FIL *fp;
+    FIL     *fp;
 } GPS_t;
 
 typedef union {
@@ -292,7 +292,7 @@ typedef union {
 #define UBX_CFG_TP5_FLAGS_IS_FREQ         (0b00001000U)
 #define UBX_CFG_TP5_FLAGS_IS_LENGTH       (0b00010000U)
 #define UBX_CFG_TP5_FLAGS_ALIGN_TO_TOW    (0b00100000U)
-#define UBX_CFG_TP5_FLAGS_POLARITY_RISING        (0b01000000U)
+#define UBX_CFG_TP5_FLAGS_POLARITY_RISING (0b01000000U)
 #define UBX_CFG_TP5_FLAGS_GRID_UTC_GPS    (0b10000000U)
 #define UBX_CFG_TP5_TIMEPULSE             (0U)
 #define UBX_CFG_TP5_TIMEPULSE2            (1U)
@@ -556,14 +556,18 @@ static const UBX_CFG_TP5_t GPS_CONFIGURE_TIMEPULSE = {
 
         .tpIdx              = UBX_CFG_TP5_TIMEPULSE,
         .antCableDelay      = 50, // ns
-        .freqPeriod         = 4, // Hz
-        .pulseLenRatio      = 0, // us
+        .freqPeriod         = 1, // Hz
+        .freqPeriodLock     = 1,
+        .pulseLenRatio      = 500000, // us
+        .pulseLenRatioLock  = 50000,
         .userConfigDelay    = 0, // ns
         .flags              = UBX_CFG_TP5_FLAGS_ACTIVE
                               | UBX_CFG_TP5_FLAGS_LOCK_GPS_FREQ
+                              | UBX_CFG_TP5_FLAGS_LOCK_OTHER_SET
                               | UBX_CFG_TP5_FLAGS_IS_FREQ
                               | UBX_CFG_TP5_FLAGS_IS_LENGTH
                               | UBX_CFG_TP5_FLAGS_ALIGN_TO_TOW
+                              | UBX_CFG_TP5_FLAGS_POLARITY_RISING
 };
 
 

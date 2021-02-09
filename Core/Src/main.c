@@ -71,7 +71,7 @@ DMA_HandleTypeDef hdma_uart4_rx;
 DMA_HandleTypeDef hdma_usart2_rx;
 
 /* USER CODE BEGIN PV */
-extern ADC_t adc;
+int ready = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -138,6 +138,7 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_SET);
   // TODO: Remove
   // Place device in CAL mode
 //  HAL_GPIO_WritePin(CAL_EN_GPIO_Port, CAL_EN_Pin, GPIO_PIN_SET);
@@ -170,6 +171,8 @@ int main(void)
   // Enable FS flush timer
   HAL_TIM_Base_Start_IT(&htim10);
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_RESET);
+  ready = 1;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -750,6 +753,12 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(ADC_nRST_GPIO_Port, ADC_nRST_Pin, GPIO_PIN_SET);
 
+  /*Configure GPIO pin : GPS_SYNC_Pin */
+  GPIO_InitStruct.Pin = GPS_SYNC_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPS_SYNC_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pin : SDIO_CD_Pin */
   GPIO_InitStruct.Pin = SDIO_CD_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -794,20 +803,30 @@ static void MX_GPIO_Init(void)
   HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
 }
 
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 {
   switch (GPIO_Pin) {
-//    case ADC_nDRDY_Pin:
-//      ADC_callbackDRDY();
-//      return;
     case USR_BTN_Pin:
       INFO("User button pressed");
-      FATFS_sync(NULL);
+      LOG_flush();
       // TODO: In global state machine stop recording
       return;
+
+    case GPS_SYNC_Pin: {
+      // TODO: Breakout and improve
+      if(ready){
+        const GPIO_PinState syncPinState = HAL_GPIO_ReadPin(GPS_SYNC_GPIO_Port, GPS_SYNC_Pin);
+        DBUG("GPS sync pulse (%c)",  syncPinState ? 'H' : 'L');
+        HAL_GPIO_TogglePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin);
+      }
+      return;
+    }
 
     default:
       DBUG("Unknown GPIO interrupt (pin: %u)", GPIO_Pin);
@@ -835,9 +854,14 @@ void Error_Handler(void)
   /* User can add his own implementation to report the HAL error return state */
   // Try flush log to SD card
   LOG_flush();
+  HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_RESET);
   for (;;) {
     HAL_GPIO_TogglePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin);
-    HAL_Delay(100);
+    HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
+    // NOTE: DELAY WILL NOT WORK IF ERROR HANDLER IS CALL FROM WITHIN HIGH PRIORTY INTERRUPT!
+    HAL_Delay(250);
+
   }
   /* USER CODE END Error_Handler_Debug */
 }

@@ -84,7 +84,7 @@ int FATFS_mount ()
   if (ret == FR_OK) {
     FILINFO fno;
     char    path[sizeof("REC_000")] = "DEBUG";
-#ifndef DEBUG
+#ifdef LOG_DEST_FILE
     // TODO: Find a better way but this is just a quick fix
     // Look for folders across 0...999
     for (uint16_t idx = 0; idx <= 1000; idx++) {
@@ -128,7 +128,7 @@ int FATFS_mount ()
     ret = f_chdir(path);
     if (ret != FR_OK) return FATFS_errHandle_(ret);
 
-#ifndef DEBUG
+#ifdef LOG_DEST_FILE
     // Open all files
     // TODO: Move log handling out to own file
     LogFile = FATFS_malloc(1);
