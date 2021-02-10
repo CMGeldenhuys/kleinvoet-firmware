@@ -55,7 +55,13 @@ int TTY_init (UART_HandleTypeDef *uart)
   TTY_registerCommand("args", &TTY_testArgs);
 #endif
 
-  if (!*tty.PS) tty.PS = SERIAL_EOL "> ";
+  if (!*tty.PS) {
+#ifdef DEBUG
+    tty.PS = SERIAL_EOL "[DEBUG]> ";
+#else
+    tty.PS = SERIAL_EOL "> ";
+#endif
+  }
   TTY_PS_();
   return 1;
 }
