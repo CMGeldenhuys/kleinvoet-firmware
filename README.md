@@ -41,6 +41,9 @@ make
 sudo make install
 ```
 
+#### SVD
+The SVD file was downloaded from [this link](https://www.st.com/resource/en/svd/stm32f4_svd.zip). Currently using version 1.2
+
 #### IDE
 Recommended IDE would be between setting up and amazing _VIM_ experience. (DIY) 
 Or using _CLion_, for most of this project _CLion 2020.2_ was used. _CubeIDE_ 
