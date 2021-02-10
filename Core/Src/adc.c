@@ -292,13 +292,15 @@ int ADC_setState(ADC_state_major_e state)
     // Size is defined as frames and not bytes
     // This is due to the FIFO buffer used
     HAL_StatusTypeDef ret;
-    ret = HAL_SAI_Receive_DMA(adc.audioPort, adc.dmaBuf, ADC_DMA_N_SAMPLES);
+//    ret = HAL_SAI_Receive_DMA(adc.audioPort, adc.dmaBuf, ADC_DMA_N_SAMPLES);
+    ret = HAL_SAI_Receive(adc.audioPort, adc.dmaBuf, ADC_DMA_N_SAMPLES, HAL_MAX_DELAY);
     if(ret != HAL_OK) return -1;
 
     ret = HAL_TIM_Base_Start(adc.tim);
     if(ret != HAL_OK) return -2;
   }
 
+#ifdef LOG_LEVEL_DEBUG
   switch (state) {
     case ADC_UNDEF: DBUG("Entering state: ADC_UNDEF"); break;
     case ADC_REC:   DBUG("Entering state: ADC_REC"); break;
@@ -306,6 +308,7 @@ int ADC_setState(ADC_state_major_e state)
     case ADC_IDLE:  DBUG("Entering state: ADC_IDLE"); break;
     default:        DBUG("Entering unknown state"); break;
   }
+#endif
 
   adc.state.mode = state;
   return 1;
