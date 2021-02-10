@@ -25,7 +25,7 @@
 #include "config.h"
 
 #if !defined(LOG_DEST_TTY) && !defined(LOG_DEST_FILE)
-#define LOG_DEST_TTY
+#error "Please specify log device using 'LOG_DEST_****'"
 #endif
 
 // Default logging level if not defined

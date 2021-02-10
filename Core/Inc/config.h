@@ -23,7 +23,7 @@ extern "C" {
 // Set logging level
 #define LOG_LEVEL_INFO
 // Set Log destination
-#define LOG_DEST_TTY
+//#define LOG_DEST_TTY
 
 // Enable mock writing of WAVE file
 #define WAVE_MOCK_WRITES
