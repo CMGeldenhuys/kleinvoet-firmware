@@ -70,7 +70,7 @@
 #define LOG_EOL "\r\n"
 #endif
 
-#ifdef DEBUG
+#if defined(LOG_DEST_TTY) && !defined(LOG_COLOR_DISABLE)
 #define LOG_COLOR
 #endif
 

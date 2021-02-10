@@ -26,7 +26,7 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   adc.wav.bitsPerSample = 24;
   adc.wav.blockSize     = 3U * adc.wav.nChannels; // bits
 
-  WAVE_createFile(&adc.wav);
+  if(WAVE_createFile(&adc.wav) <= 0) return -1;
 
 
   ADC_reset();
@@ -88,6 +88,10 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   INFO("Allocating DMA Buffer size: %u bytes", ADC_DMA_BUF_LEN);
   adc.dmaBuf = (uint8_t *) malloc(ADC_DMA_BUF_LEN);
 
+  if(adc.dmaBuf == NULL){
+    ERR("Failed to allocate DMA buffer to heap!");
+    return -2;
+  }
   // Disable any mute mode as this can cause problems in the future
   // TODO: if implemented would require more OOP statemachine
   HAL_SAI_DisableRxMuteMode(adc.audioPort);
@@ -170,6 +174,7 @@ int ADC_yield ()
 
         DBUG("Flushing buffer (0x%08X -> %d)", dmaBuf, dmaLen);
         ADC_persistBuf_(dmaBuf, dmaLen);
+
         DBUG("DMA Samples:%d, TIM Samples:%d, delta: %d", adc.nSamples, adc.tim->Instance->CNT, adc.nSamples - adc.tim->Instance->CNT);
         ADC_clear_flag_cplt;
       }
@@ -190,6 +195,7 @@ int ADC_yield ()
     }
   }
 
+  return 1;
 }
 
 void ADC_persistBuf_(void * buf, size_t len)

@@ -84,7 +84,7 @@ int FATFS_mount ()
   if (ret == FR_OK) {
     FILINFO fno;
     char    path[sizeof("REC_000")] = "DEBUG";
-#ifdef LOG_DEST_FILE
+#ifndef DEBUG
     // TODO: Find a better way but this is just a quick fix
     // Look for folders across 0...999
     for (uint16_t idx = 0; idx <= 1000; idx++) {
@@ -264,7 +264,7 @@ int FATFS_close (FIL *fp)
 
 int FATFS_errHandle_ (FRESULT res)
 {
-#ifdef DEBUG
+#ifndef LOG_DEST_FILE
   switch (res) {
 
     case FR_OK: {
