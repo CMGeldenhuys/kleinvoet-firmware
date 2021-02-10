@@ -242,7 +242,7 @@ int GPS_rxByte_ (uint8_t c)
 
 int GPS_processCmd_ (GPS_UBX_cmd_t *cmd)
 {
-  INFO("> UBX 0x%02X|0x%02X (%uB)", cmd->cls, cmd->id, cmd->len);
+  DBUG("> UBX 0x%02X|0x%02X (%uB)", cmd->cls, cmd->id, cmd->len);
   switch (cmd->cls) {
     case UBX_NAV: {
       DBUG("NAV Msg recv (0x%02X | 0x%02X)", cmd->cls, cmd->id);
