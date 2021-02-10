@@ -73,6 +73,12 @@ int WAVE_writeHeader_ (WAVE_t *wav)
 
 int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
 {
+  // Disable actual writes to perserve SD
+#ifdef WAVE_MOCK_WRITES
+  HAL_Delay(50);
+  return 1;
+#endif
+
   if (len < FATFS_free()) {
     if (wav->header->RIFF_chunk.ChunkSize + len < WAVE_FILE_SPILT) {
       wav->header->RIFF_chunk.ChunkSize += len;

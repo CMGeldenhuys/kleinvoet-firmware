@@ -25,6 +25,9 @@ extern "C" {
 // Set Log destination
 #define LOG_DEST_TTY
 
+// Enable mock writing of WAVE file
+#define WAVE_MOCK_WRITES
+
 #ifdef __cplusplus
 }
 #endif
