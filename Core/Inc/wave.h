@@ -34,6 +34,10 @@ extern "C" {
 #define WAVE_FILE_SPLIT_MiB(b) ((unsigned)(WAVE_FILE_SPLIT_KiB(b)) << 10U)
 #define WAVE_FILE_SPLIT_GiB(b) ((unsigned)(WAVE_FILE_SPLIT_MiB(b)) << 10U)
 
+#define WAVE_B_to_KiB(__B__)    ((unsigned)((__B__))                 >> 10U)
+#define WAVE_B_to_MiB(__B__)    ((unsigned)(WAVE_B_to_KiB((__B__)))  >> 10U)
+#define WAVE_B_to_GiB(__B__)    ((unsigned)(WAVE_B_to_MiB((__B__)))  >> 10U)
+
 #ifndef WAVE_FILE_SPLIT
 #define WAVE_FILE_SPILT WAVE_FILE_SPLIT_MiB(256)
 #endif
@@ -93,12 +97,12 @@ typedef struct {
 typedef struct {
     WAVE_header_t *header;
     FIL           *fp;
-    const char *fname;
-    uint8_t  subfile;
-    uint32_t sampleRate;
-    uint16_t nChannels;
-    uint16_t blockSize;
-    uint16_t bitsPerSample;
+    const char    *fname;
+    uint8_t       subfile;
+    uint32_t      sampleRate;
+    uint16_t      nChannels;
+    uint16_t      blockSize;
+    uint16_t      bitsPerSample;
 }                 WAVE_t;
 
 int WAVE_createFile (WAVE_t *wav);

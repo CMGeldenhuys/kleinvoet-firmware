@@ -41,6 +41,11 @@ int TTY_init (UART_HandleTypeDef *uart)
   TTY_clearCommandBuffer_();
 
   TTY_greet_();
+
+#ifdef LOG_DEST_TTY
+  LOG_init();
+#endif
+
   TTY_registerCommand("greet", &TTY_greet_);
 
   // Register TTY default commands

@@ -21,7 +21,7 @@ extern "C" {
 #define VERSION VERSION_MAJOR "." VERSION_MINOR "." VERSION_PATCH "-" VERSION_RC
 
 // Set logging level
-#define LOG_LEVEL_DEBUG
+#define LOG_LEVEL_INFO
 // Set Log destination
 #define LOG_DEST_FILE
 

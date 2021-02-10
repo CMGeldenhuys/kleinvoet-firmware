@@ -138,6 +138,8 @@ int FATFS_mount ()
       //TODO: HANDLE FAIL TO OPEN
       return FATFS_errHandle_(ret);
     }
+
+    LOG_init();
 #endif
 
   }

@@ -11,8 +11,11 @@ int WAVE_writeHeader_ (WAVE_t *wav);
 int WAVE_createFile (WAVE_t *wav)
 {
   //TODO: Handle errors
-  DBUG("Will split on %lu bytes (%lu KiB | %lu MiB | %lu GiB)", WAVE_FILE_SPILT, WAVE_FILE_SPILT >> 10U,
-       WAVE_FILE_SPILT >> 10U, WAVE_FILE_SPILT >> 10U);
+  DBUG("Will split on %lu bytes (%lu KiB | %lu MiB | %lu GiB)",
+       WAVE_FILE_SPILT,
+       WAVE_B_to_KiB(WAVE_FILE_SPILT),
+       WAVE_B_to_MiB(WAVE_FILE_SPILT),
+       WAVE_B_to_GiB(WAVE_FILE_SPILT));
   if (wav->fp) WAVE_close(wav);
 
   DBUG("Allocating memory to WAVE file");

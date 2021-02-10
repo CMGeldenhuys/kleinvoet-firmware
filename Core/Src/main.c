@@ -147,7 +147,9 @@ int main(void)
   if (TTY_init(&huart2) <= 0) Error_Handler();
   if (FATFS_mount() <= 0) Error_Handler();
   INFO("Version: %s", VERSION);
-
+#ifdef DEBUG
+  WARN("Running with DEBUG flag enabled");
+#endif
   // Test Logging
   // TODO: Rather log actual level
   // logging error causes SD card to flush this results in watchdog timeout

@@ -12,6 +12,10 @@
 
 extern RTC_HandleTypeDef hrtc;
 
+// TODO: quick fix but should work for now
+static uint_least8_t ready = 0;
+static uint_least16_t missed = 0;
+
 static const char *LOG_Lvl_str_[] = {
         "DBUG",
         "INFO",
@@ -30,8 +34,32 @@ static const char *LOG_color_code_[] = {
 
 int LOG_timestamp_ (const char *funcName, LOG_Lvl_e lvl, char *buf);
 
+int LOG_init()
+{
+  ready = 1;
+  if(missed > 0) WARN("%d missed log entries before device was ready", missed);
+#if defined(LOG_LEVEL_ERROR)
+  ERR("Logger running at level 'ERR'");
+#elif defined(LOG_LEVEL_WARN)
+  WARN("Logger running at level 'WARN'");
+#elif defined(LOG_LEVEL_INFO)
+  INFO("Logger running at level 'INFO'");
+#elif defined(LOG_LEVEL_DEBUG)
+  DBUG("Logger running at level 'DEBUG'");
+#else
+DBUG("Logger running at unknown level");
+#endif
+  return ready;
+}
+
 int LOG_log (const char *funcName, LOG_Lvl_e lvl, char *fmt, ...)
 {
+  // prevent logging before log device is ready (FILE OR TTY)
+  if(!ready) {
+    missed++;
+    return  -1;
+  }
+
   va_list args;
   va_start(args, fmt);
 

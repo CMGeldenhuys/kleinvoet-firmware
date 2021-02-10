@@ -146,5 +146,7 @@ int LOG_write (uint8_t *buf, size_t len);
  */
 int LOG_flush ();
 
+int LOG_init();
+
 
 #endif //FIRMWARE_LOGGER_H
