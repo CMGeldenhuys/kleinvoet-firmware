@@ -8,16 +8,21 @@
 
 static ADC_t adc = {0};
 
-static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller);
-inline void ADC_32To24Blocks_(uint8_t *to, const uint32_t *from, size_t len, uint8_t lsb);
-void ADC_persistBuf_(void * buf, size_t len);
+// Stored in flash
+const static uint8_t ADC_MISSED_SAMPLES_ZERO[ADC_DMA_BUF_LEN / 2 * 3 / 4] = {0};
+
+static inline void ADC_SAI_Interrupt_ (ADC_state_flag_rec_e caller);
+
+inline void ADC_32To24Blocks_ (uint8_t *to, const uint32_t *from, size_t len, uint8_t lsb);
+
+void ADC_persistBuf_ (void *buf, size_t len);
 
 int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInterface, TIM_HandleTypeDef *timInterface)
 {
 
-  adc.control = controlInterface;
+  adc.control   = controlInterface;
   adc.audioPort = audioInterface;
-  adc.tim = timInterface;
+  adc.tim       = timInterface;
   ADC_setState(ADC_SETUP);
 
   adc.wav.fname         = "REC";
@@ -26,7 +31,7 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   adc.wav.bitsPerSample = 24;
   adc.wav.blockSize     = 3U * adc.wav.nChannels; // bits
 
-  if(WAVE_createFile(&adc.wav) <= 0) return -1;
+  if (WAVE_createFile(&adc.wav) <= 0) return -1;
 
 
   ADC_reset();
@@ -54,8 +59,8 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
                     // since the fifo only shifts in so many bits and then stops
                     | ADC_SAI_TDM4
                     | ADC_FS_32_48); // This register seems to subdivide FS?
-                    // Does not actually correspond to FS...
-                    // Leaving at default
+  // Does not actually correspond to FS...
+  // Leaving at default
 
   ADC_writeRegister(ADC_REG_SAI_CTRL1,
                     ADC_SDATA_SEL_2
@@ -71,15 +76,15 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
                     | ADC_MMUTE_NONE
                     | ADC_DC_CAL_NO);
 
-  if(ADC_powerUp() <= 0) {
+  if (ADC_powerUp() <= 0) {
     ERR("Failed to power up ADC Subsystems");
     return -2;
   }
 
   INFO("Waiting for PLL lock...");
   uint32_t tock = HAL_GetTick();
-  while(!ADC_CMD_IS_PLL_LOCKED()){
-    if((HAL_GetTick() - tock) > ADC_MAX_DELAY){
+  while (!ADC_CMD_IS_PLL_LOCKED()) {
+    if ((HAL_GetTick() - tock) > ADC_MAX_DELAY) {
       ERR("PLL failed to lock (timeout)");
       return -1;
     }
@@ -88,7 +93,7 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   INFO("Allocating DMA Buffer size: %u bytes", ADC_DMA_BUF_LEN);
   adc.dmaBuf = (uint8_t *) malloc(ADC_DMA_BUF_LEN);
 
-  if(adc.dmaBuf == NULL){
+  if (adc.dmaBuf == NULL) {
     ERR("Failed to allocate DMA buffer to heap!");
     return -2;
   }
@@ -141,9 +146,9 @@ int ADC_yield ()
   // If drift becomes to large one can warn that the MCU is running too slow or
   // some tasks are taking too long
 
-  if(ADC_is_err_set) {
+  if (ADC_is_err_set) {
     // Since `adc.state.flags` is a union and thus shares state with other enums its important to '&' with the bit field
-    switch(adc.state.flags.err & ADC_FLAG_ERR_FIELD) {
+    switch (adc.state.flags.err & ADC_FLAG_ERR_FIELD) {
       case ADC_ERR_N_REC: {
         WARN("Not recording with ADC running");
         ADC_setState(ADC_UNDEF);
@@ -153,12 +158,15 @@ int ADC_yield ()
       case ADC_ERR_SAMPLE_MISSED: {
         const float lossRate = adc.samplesMissed * 100.0f / adc.nSamples;
         WARN("Samples missed: %d (%.2f%%)", adc.samplesMissed, lossRate);
+        DBUG("Persisting zeros for missed samples");
+        WAVE_appendData(&adc.wav, ADC_MISSED_SAMPLES_ZERO, sizeof(ADC_MISSED_SAMPLES_ZERO), 1);
         // TODO: tag samples missed
         // TODO: if more than % missed samples then reset device
         break;
       }
 
-      default: WARN("Uncaught error 0x%02X", adc.state.flags);
+      default:
+        WARN("Uncaught error 0x%02X", adc.state.flags);
     }
     ADC_clear_flag_err;
   }
@@ -166,16 +174,17 @@ int ADC_yield ()
 
   switch (adc.state.mode) {
     case ADC_REC: {
-      if(ADC_is_interrupt_set) {
-        const size_t dmaLen = ADC_DMA_BUF_LEN/ 2;
-        uint8_t * dmaBuf = ADC_is_cplt_half
-                ? (uint8_t*)adc.dmaBuf
-                : (uint8_t*)adc.dmaBuf + dmaLen;
+      if (ADC_is_interrupt_set) {
+        const size_t dmaLen = ADC_DMA_BUF_LEN / 2;
+        uint8_t *dmaBuf = ADC_is_cplt_half
+                          ? (uint8_t *) adc.dmaBuf
+                          : (uint8_t *) adc.dmaBuf + dmaLen;
 
         DBUG("Flushing buffer (0x%08X -> %d)", dmaBuf, dmaLen);
         ADC_persistBuf_(dmaBuf, dmaLen);
 
-        DBUG("DMA Samples:%d, TIM Samples:%d, delta: %d", adc.nSamples, adc.tim->Instance->CNT, adc.nSamples - adc.tim->Instance->CNT);
+        DBUG("DMA Samples:%d, TIM Samples:%d, delta: %d", adc.nSamples, adc.tim->Instance->CNT,
+             adc.nSamples - adc.tim->Instance->CNT);
         ADC_clear_flag_cplt;
       }
       break;
@@ -187,7 +196,8 @@ int ADC_yield ()
       break;
     }
 
-    case ADC_IDLE: break;
+    case ADC_IDLE:
+      break;
 
     case ADC_SETUP: {
       WARN("ADC not ready!");
@@ -198,13 +208,13 @@ int ADC_yield ()
   return 1;
 }
 
-void ADC_persistBuf_(void * buf, size_t len)
+void ADC_persistBuf_ (void *buf, size_t len)
 {
   ADC_32To24Blocks_(buf, buf, len, 0);
-  WAVE_appendData(&adc.wav, buf, len*3/4, 1);
+  WAVE_appendData(&adc.wav, buf, len * 3 / 4, 1);
 }
 
-inline void ADC_32To24Blocks_(uint8_t *to, const uint32_t *from, size_t len, uint8_t lsb)
+inline void ADC_32To24Blocks_ (uint8_t *to, const uint32_t *from, size_t len, uint8_t lsb)
 {
   const size_t del = 3;
   // Some awesome headache C pointer magic to introduce a one byte 'phase' shift in the from pointer;
@@ -224,22 +234,22 @@ inline void ADC_32To24Blocks_(uint8_t *to, const uint32_t *from, size_t len, uin
   //                                       |---to
   // LSB = 0 : 0xFF000000 -> drops first byte
   // LSB = 1 : 0x000000FF -> drops last byte
-  from = (const uint32_t *)((uint8_t*)(from) + lsb);
-  for(size_t idx = 0;
-      idx < len;
-      idx+=3, from++, to += del) {
+  from = (const uint32_t *) ((uint8_t *) (from) + lsb);
+  for (size_t idx = 0;
+       idx < len;
+       idx += 3, from++, to += del) {
     // Use `memmove` instead of `memcpy` because is overlap safe
     memmove(to, from, del);
   }
 }
 
-uint8_t ADC_readRegister(uint8_t registerAddr)
+uint8_t ADC_readRegister (uint8_t registerAddr)
 {
-  uint8_t rx = 0;
-  HAL_StatusTypeDef  ret = HAL_I2C_Mem_Read(adc.control, ADC_I2C_ADDR,
-                   registerAddr, ADC_REG_SIZE,
-                   &rx, 1, ADC_MAX_DELAY);
-  if(ret != HAL_OK) ERR("I2C error");
+  uint8_t           rx  = 0;
+  HAL_StatusTypeDef ret = HAL_I2C_Mem_Read(adc.control, ADC_I2C_ADDR,
+                                           registerAddr, ADC_REG_SIZE,
+                                           &rx, 1, ADC_MAX_DELAY);
+  if (ret != HAL_OK) ERR("I2C error");
   // if failed then return zeros
   // todo: better error handling
   INFO("> I2C 0x%02X|0x%02X", registerAddr, rx);
@@ -247,7 +257,7 @@ uint8_t ADC_readRegister(uint8_t registerAddr)
 }
 
 // TODO: Create verified write that checks if wire was successful
-int ADC_writeRegister(uint8_t registerAddr, uint8_t data)
+int ADC_writeRegister (uint8_t registerAddr, uint8_t data)
 {
   HAL_StatusTypeDef ret;
   INFO("< I2C 0x%02X|0x%02X", registerAddr, data);
@@ -260,7 +270,7 @@ int ADC_writeRegister(uint8_t registerAddr, uint8_t data)
   return (ret == HAL_OK);
 }
 
-void ADC_reset()
+void ADC_reset ()
 {
   HAL_GPIO_WritePin(ADC_nRST_GPIO_Port, ADC_nRST_Pin, GPIO_PIN_RESET);
   INFO("Resetting ADC");
@@ -269,38 +279,38 @@ void ADC_reset()
   HAL_GPIO_WritePin(ADC_nRST_GPIO_Port, ADC_nRST_Pin, GPIO_PIN_SET);
 }
 
-int ADC_powerUp()
+int ADC_powerUp ()
 {
   INFO("Powering up ADC subsystems");
   return ADC_writeRegister(ADC_REG_M_POWER, ADC_PWUP);
 }
 
-int ADC_powerDown()
+int ADC_powerDown ()
 {
   WARN("Powering down ADC subsystems");
   return ADC_writeRegister(ADC_REG_M_POWER, ADC_PWUP_PWDWN);
 }
 
-int ADC_setState(ADC_state_major_e state)
+int ADC_setState (ADC_state_major_e state)
 {
 
-  if(state == ADC_IDLE){
+  if (state == ADC_IDLE) {
     INFO("Recorder IDLE");
     // TODO: Change to DMA pause and resume for better performance
     //stop recording
     HAL_SAI_DMAStop(adc.audioPort);
   }
-  else if(state == ADC_REC) {
+  else if (state == ADC_REC) {
     // Start Recording
     INFO("Recording started");
     // Size is defined as frames and not bytes
     // This is due to the FIFO buffer used
     HAL_StatusTypeDef ret;
     ret = HAL_SAI_Receive_DMA(adc.audioPort, adc.dmaBuf, ADC_DMA_N_SAMPLES);
-    if(ret != HAL_OK) return -1;
+    if (ret != HAL_OK) return -1;
 
     ret = HAL_TIM_Base_Start(adc.tim);
-    if(ret != HAL_OK) return -2;
+    if (ret != HAL_OK) return -2;
   }
 
 #ifdef LOG_LEVEL_DEBUG
@@ -317,7 +327,7 @@ int ADC_setState(ADC_state_major_e state)
   return 1;
 }
 
-static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller)
+static inline void ADC_SAI_Interrupt_ (ADC_state_flag_rec_e caller)
 {
   // TODO: get rid of magic numbers
   // Always half of buffer expired
@@ -327,18 +337,19 @@ static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller)
   // Interrupt already set... Samples missed
   if (ADC_is_interrupt_set) {
     adc.samplesMissed += nSamples;
-
+    adc.nSamples += nSamples;
     // Sync DMA and TIM
     // TODO: This might cause some headaches with timestamping
     // An alternative approach would be to timestamp based on both TIM and DMA sample pos
-    adc.tim->Instance->CNT -= nSamples;
+//    adc.tim->Instance->CNT -= nSamples;
+    // Rather handle diffrently. Instead of shifting counter save a blank frame?
 
     adc.state.flags.err |= ADC_ERR_SAMPLE_MISSED;
   }
   else if (!ADC_is_recording) {
     adc.state.flags.err |= ADC_ERR_N_REC;
   }
-  // Recording state
+    // Recording state
   else {
     adc.nSamples += nSamples;
     adc.state.flags.rec |= caller;
@@ -349,16 +360,17 @@ static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller)
   }
 }
 
-void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai)
+void HAL_SAI_RxCpltCallback (SAI_HandleTypeDef *hsai)
 {
   ADC_SAI_Interrupt_(ADC_CPLT_FULL);
 }
 
-void HAL_SAI_RxHalfCpltCallback(SAI_HandleTypeDef *hsai)
+void HAL_SAI_RxHalfCpltCallback (SAI_HandleTypeDef *hsai)
 {
   ADC_SAI_Interrupt_(ADC_CPLT_HALF);
 }
 
-void HAL_SAI_ErrorCallback(SAI_HandleTypeDef *hsai) {
+void HAL_SAI_ErrorCallback (SAI_HandleTypeDef *hsai)
+{
   ERR("SAI Problem! (0x%08x)", HAL_SAI_GetState(hsai));
 }
