@@ -57,6 +57,9 @@ include_directories(Core/Inc Drivers/STM32F4xx_HAL_Driver/Inc Drivers/STM32F4xx_
 # FATFS Inc
 include_directories(FATFS/App FATFS/Target)
 
+# FastFifo Inc
+include_directories(fifofast)
+
 file(GLOB_RECURSE SOURCES "Core/*.*" "FATFS/*.*" "Middlewares/*.*" "Drivers/*.*")
 
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F446RETX_FLASH.ld)

@@ -1,0 +1,3 @@
+[submodule "fifofast"]
+	path = fifofast
+	url = https://github.com/nqtronix/fifofast.git
