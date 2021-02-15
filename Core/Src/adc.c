@@ -255,6 +255,8 @@ int ADC_writeRegister(uint8_t registerAddr, uint8_t data)
                           registerAddr, ADC_REG_SIZE,
                           &data, 1,
                           ADC_MAX_DELAY);
+  // Allow time to latch
+  HAL_Delay(10);
   return (ret == HAL_OK);
 }
 
@@ -262,6 +264,8 @@ void ADC_reset()
 {
   HAL_GPIO_WritePin(ADC_nRST_GPIO_Port, ADC_nRST_Pin, GPIO_PIN_RESET);
   INFO("Resetting ADC");
+  // Allow time to latch
+  HAL_Delay(10);
   HAL_GPIO_WritePin(ADC_nRST_GPIO_Port, ADC_nRST_Pin, GPIO_PIN_SET);
 }
 
@@ -292,8 +296,7 @@ int ADC_setState(ADC_state_major_e state)
     // Size is defined as frames and not bytes
     // This is due to the FIFO buffer used
     HAL_StatusTypeDef ret;
-//    ret = HAL_SAI_Receive_DMA(adc.audioPort, adc.dmaBuf, ADC_DMA_N_SAMPLES);
-    ret = HAL_SAI_Receive(adc.audioPort, adc.dmaBuf, ADC_DMA_N_SAMPLES, HAL_MAX_DELAY);
+    ret = HAL_SAI_Receive_DMA(adc.audioPort, adc.dmaBuf, ADC_DMA_N_SAMPLES);
     if(ret != HAL_OK) return -1;
 
     ret = HAL_TIM_Base_Start(adc.tim);
@@ -339,10 +342,10 @@ static inline void ADC_SAI_Interrupt_(ADC_state_flag_rec_e caller)
   else {
     adc.nSamples += nSamples;
     adc.state.flags.rec |= caller;
-    if(caller == ADC_CPLT_HALF)
-      HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_SET);
-    else
-      HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin,
+                      caller == ADC_CPLT_HALF
+                      ? GPIO_PIN_SET
+                      : GPIO_PIN_RESET);
   }
 }
 
