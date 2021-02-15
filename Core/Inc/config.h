@@ -14,7 +14,7 @@ extern "C" {
 #define AUTHORS "CM Geldenhuys"
 
 #define VERSION_MAJOR "0"
-#define VERSION_MINOR "2"
+#define VERSION_MINOR "3"
 #define VERSION_PATCH "0"
 #define VERSION_RC "alpha"
 
@@ -26,7 +26,7 @@ extern "C" {
 #define LOG_DEST_TTY
 
 // Enable mock writing of WAVE file
-//#define WAVE_MOCK_WRITES
+#define WAVE_MOCK_WRITES
 
 #ifdef __cplusplus
 }

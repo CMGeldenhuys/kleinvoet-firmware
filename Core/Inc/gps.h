@@ -123,7 +123,6 @@ typedef struct {
 
     size_t  adcTimestamp;
     uint8_t timeValid;
-    FIL     *fp;
 } GPS_t;
 
 typedef union {

@@ -13,6 +13,7 @@
 #include "gps.h"
 #include "logger.h"
 #include "adc.h"
+#include "timestamp.h"
 
 static GPS_t             gps = {0};
 extern RTC_HandleTypeDef hrtc;
@@ -45,17 +46,6 @@ int GPS_init (UART_HandleTypeDef *uart)
   DBUG("Wrapping serial");
   if (Serial_wrap(&gps.serial, uart) <= 0) return -1;
 
-  DBUG("Allocating memory for timestamping file");
-  gps.fp = FATFS_malloc(1);
-  if (gps.fp == NULL) return -2;
-  DBUG("Open/creating file");
-  if (FATFS_open(
-          gps.fp,
-          "TS.CSV",
-          FA_CREATE_ALWAYS | FA_WRITE) <= 0)
-    return -2;
-  DBUG("Writing header to file");
-  f_printf(gps.fp, "\"Sample\",\"Date/Time\",\"GPS Time of Week\",\"Time Accuracy\"" FATFS_EOL);
   if (GPS_configureUBX_() <= 0) return -3;
   return 1;
 }
@@ -312,23 +302,24 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
 
           // Mark time as valid for next epoch
           gps.timeValid = 1;
+          TIME_timeValid();
         }
-        // Best attempt timestamping
-        DBUG("Timestamping");
-        f_printf(gps.fp, "%lu,%4u-%02u-%02u %02u:%02u:%02u.%lu,%lu,%lu" FATFS_EOL,
-                 gps.adcTimestamp,
-                 cmd_t->year, cmd_t->month, cmd_t->day,
-                 cmd_t->hour, cmd_t->min, cmd_t->sec, cmd_t->nano,
-                 cmd_t->iTOW, cmd_t->tAcc);
+        // Previous timestamp was valid
+        else {
+          // Best attempt timestamping
+          TIME_stamp(cmd_t);
+        }
+
       }
         // If fix lost or never had ensure SAT is on as to show feedback of num sats
       else if (gps.timeValid) {
 //        HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
         GPS_sendCommand(&GPS_ENABLE_UBX_NAV_SAT.generic, 0, 0);
         gps.timeValid = 0;
+        TIME_timeInvalid();
       }
       else {
-        DBUG("Not not valid and was previously not valid");
+        DBUG("Not valid and was previously not valid");
       }
 
 

@@ -28,6 +28,7 @@
 #include "logger.h"
 #include "gps.h"
 #include "adc.h"
+#include "timestamp.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -165,6 +166,7 @@ int main(void)
   HAL_IWDG_Refresh(&hiwdg);
   if (GPS_init(&huart4) <= 0) Error_Handler();
   if (ADC_init(&hi2c1, &hsai_BlockB1, &htim2) <= 0) Error_Handler();
+  if (TIME_init(&htim2) <= 0) Error_Handler();
 
   // Change watch dog timeout from ~32 sec to ~4
   hiwdg.Init.Prescaler = IWDG_PRESCALER_32;
@@ -826,6 +828,9 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
         const GPIO_PinState syncPinState = HAL_GPIO_ReadPin(GPS_SYNC_GPIO_Port, GPS_SYNC_Pin);
         DBUG("GPS sync pulse (%c)",  syncPinState ? 'H' : 'L');
         HAL_GPIO_TogglePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin);
+
+        // If on rising pulse
+        if(syncPinState == GPIO_PIN_SET) TIME_mark();
       }
       return;
     }
