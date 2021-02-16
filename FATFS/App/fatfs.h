@@ -69,7 +69,7 @@ int FATFS_close (FIL *fp);
 
 int FATFS_expand (FIL *fp, FSIZE_t fsize, BYTE opt);
 
-FIL *FATFS_malloc (BYTE sync);
+FIL *FATFS_malloc (BYTE trackFile);
 
 int FATFS_sync (FIL *fp);
 /* USER CODE END Prototypes */

@@ -116,6 +116,8 @@ int FATFS_mount ()
 #else
     // Check if debug dir exists
     ret = f_stat(path, &fno);
+    // TODO: Delete contents if exists
+    // Does not exist
     if (ret != FR_OK) {
       // If not create it
       ret = f_mkdir(path);
@@ -342,11 +344,11 @@ int FATFS_errHandle_ (FRESULT res)
   return 0;
 }
 
-FIL *FATFS_malloc (BYTE sync)
+FIL *FATFS_malloc (BYTE trackFile)
 {
   DBUG("Creating new file pointer");
   FIL *newFile = (FIL *) malloc(sizeof(FIL));
-  if (sync) {
+  if (trackFile) {
     DBUG("Storing reference to new file for sync");
     for (size_t i = 0; i < _FS_LOCK; i++) {
       if (files[i] == NULL) {
@@ -370,7 +372,11 @@ int FATFS_sync (FIL *fp)
   FRESULT ret;
   if (fp != NULL) {
     ret = f_sync(fp);
-    if (ret != FR_OK) return 0;
+    if(ret != FR_OK) {
+      if(f_error(fp)) ERR("Hard error on filesystem!");
+      return -1;
+    }
+    return 1;
   }
   // Sync all tracked files
   else {

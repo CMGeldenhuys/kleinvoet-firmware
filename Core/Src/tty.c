@@ -180,6 +180,8 @@ int TTY_printf (const char *fmt, ...)
   // Clamp length
   TTY_write((uint8_t *) workBuf_,
             len > TTY_SCREEN_WIDTH ? TTY_SCREEN_WIDTH : len);
+
+  va_end(args);
   return len > TTY_SCREEN_WIDTH ? -1 * len : len;
 }
 

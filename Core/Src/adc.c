@@ -5,6 +5,7 @@
 #include "adc.h"
 #include "logger.h"
 #include <math.h>
+#include "timestamp.h"
 
 static ADC_t adc = {0};
 
@@ -336,6 +337,7 @@ static inline void ADC_SAI_Interrupt_ (ADC_state_flag_rec_e caller)
 
   // Interrupt already set... Samples missed
   if (ADC_is_interrupt_set) {
+    TIME_meta("samples missed");
     adc.samplesMissed += nSamples;
     adc.nSamples += nSamples;
     // Sync DMA and TIM

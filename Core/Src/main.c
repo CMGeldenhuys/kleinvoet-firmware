@@ -60,8 +60,6 @@ SAI_HandleTypeDef hsai_BlockB1;
 DMA_HandleTypeDef hdma_sai1_b;
 
 SD_HandleTypeDef hsd;
-DMA_HandleTypeDef hdma_sdio_rx;
-DMA_HandleTypeDef hdma_sdio_tx;
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim10;
@@ -147,6 +145,22 @@ int main(void)
   HAL_RTC_WaitForSynchro(&hrtc);
   if (TTY_init(&huart2) <= 0) Error_Handler();
   if (FATFS_mount() <= 0) Error_Handler();
+//  {
+//    FIL *fp = FATFS_malloc(0);
+//    FATFS_open(fp, "test", FA_CREATE_ALWAYS | FA_WRITE);
+//    uint32_t tick = HAL_GetTick();
+//    int ret;
+//    ret = f_printf(fp, "Testing some new things out");
+//    INFO("fprintf %lu", HAL_GetTick() - tick);
+//    if(ret <= 0) WARN("write failed");
+//    tick = HAL_GetTick();
+////    f_sync(fp);
+//    ret = f_close(fp);
+//    INFO("fclose %lu", HAL_GetTick() - tick);
+//    if(ret != FR_OK) WARN("close failed");
+//
+//  }
+//  for(;;);
   INFO("Version: %s", VERSION);
 #ifdef DEBUG
   WARN("Running with DEBUG flag enabled");
@@ -196,7 +210,7 @@ int main(void)
     ADC_yield();
     TTY_yield();
     GPS_yield();
-
+    TIME_yield();
     // TODO: Move bat monitor to own file
 //    if(__HAL_ADC_GET_FLAG(&hadc1, ADC_FLAG_EOC)) {
 //      const uint16_t v_monitor = HAL_ADC_GetValue(&hadc1);
@@ -553,7 +567,7 @@ static void MX_SDIO_SD_Init(void)
   hsd.Init.ClockBypass = SDIO_CLOCK_BYPASS_DISABLE;
   hsd.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_DISABLE;
   hsd.Init.BusWide = SDIO_BUS_WIDE_1B;
-  hsd.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
+  hsd.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_ENABLE;
   hsd.Init.ClockDiv = 14;
   /* USER CODE BEGIN SDIO_Init 2 */
 
@@ -723,15 +737,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream5_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 3, 1);
   HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
-  /* DMA2_Stream3_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 1, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
   /* DMA2_Stream4_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream4_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream4_IRQn);
-  /* DMA2_Stream6_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream6_IRQn, 1, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream6_IRQn);
 
 }
 
@@ -818,6 +826,7 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
   switch (GPIO_Pin) {
     case USR_BTN_Pin:
       INFO("User button pressed");
+      TIME_flush(0);
       LOG_flush();
       // TODO: In global state machine stop recording
       return;
@@ -844,11 +853,15 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   if(htim == &htim10){
-//    INFO("TIM10 Expired");
-    // TODO: Sync FS
-//    FATFS_sync(NULL);
+    INFO("TIM10 Expired");
+    TIME_flush(0);
+    LOG_flush();
   }
 }
+
+// For fucntion `void Error_Handler(void)`
+// Have to place here due to MX cube code generation
+_Noreturn
 /* USER CODE END 4 */
 
 /**
@@ -860,6 +873,7 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   // Try flush log to SD card
+  TIME_flush(0);
   LOG_flush();
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_RESET);
@@ -867,7 +881,6 @@ void Error_Handler(void)
     HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
     // NOTE: DELAY WILL NOT WORK IF ERROR HANDLER IS CALL FROM WITHIN HIGH PRIORTY INTERRUPT!
     HAL_Delay(250);
-
   }
   /* USER CODE END Error_Handler_Debug */
 }

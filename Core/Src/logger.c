@@ -60,21 +60,24 @@ int LOG_log (const char *funcName, LOG_Lvl_e lvl, char *fmt, ...)
     return  -1;
   }
 
-  va_list args;
-  va_start(args, fmt);
-
   // Create working buffer
   char workBuf[LOG_MSG_INFO_LEN + LOG_MSG_LEN + sizeof(LOG_EOL)];
   int  infoLen = LOG_timestamp_(funcName, lvl, workBuf);
 
   if (infoLen <= 0) return infoLen;
 
+  va_list args;
+  va_start(args, fmt);
+
   // Clamp infoLen to max
   if (infoLen > LOG_MSG_INFO_LEN) infoLen = LOG_MSG_INFO_LEN;
 
   int msgLen = vsnprintf(workBuf + infoLen, LOG_MSG_LEN, fmt, args);
 
-  if (msgLen <= 0) return msgLen;
+  if (msgLen <= 0) {
+    va_end(args);
+    return msgLen;
+  }
 
   // Clamp msgLen to max
   if (msgLen > LOG_MSG_LEN) msgLen = LOG_MSG_LEN;
@@ -98,6 +101,7 @@ int LOG_log (const char *funcName, LOG_Lvl_e lvl, char *fmt, ...)
     // Write out Log cache/buffer
     LOG_flush();
   }
+  va_end(args);
   return bytesWritten;
 }
 
