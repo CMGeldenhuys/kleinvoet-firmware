@@ -459,7 +459,7 @@ int LOG_write (uint8_t *buf, size_t len)
 
 int LOG_flush ()
 {
-  return FATFS_sync(NULL);
+  return FATFS_sync(LogFile);
 }
 
 #endif

@@ -202,7 +202,7 @@ int TTY_processCommand_ (char * cmdStrBuffer)
 
     // Match command string
     if (strcmp(cmdStr, cmd->name) == 0) {
-      DBUG("Command received '%s'", cmd->name);
+      INFO("Command received '%s'", cmd->name);
       return (*(cmd->func))(argc, args);
     }
   }

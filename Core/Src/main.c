@@ -71,6 +71,8 @@ DMA_HandleTypeDef hdma_usart2_rx;
 
 /* USER CODE BEGIN PV */
 int ready = 0;
+// TODO: Just a quick fix
+int flushLog = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -211,6 +213,10 @@ int main(void)
     TTY_yield();
     GPS_yield();
     TIME_yield();
+    if(flushLog) {
+      LOG_flush();
+      flushLog = 0;
+    }
     // TODO: Move bat monitor to own file
 //    if(__HAL_ADC_GET_FLAG(&hadc1, ADC_FLAG_EOC)) {
 //      const uint16_t v_monitor = HAL_ADC_GetValue(&hadc1);
@@ -738,7 +744,7 @@ static void MX_DMA_Init(void)
   HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 3, 1);
   HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
   /* DMA2_Stream4_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream4_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA2_Stream4_IRQn, 0, 2);
   HAL_NVIC_EnableIRQ(DMA2_Stream4_IRQn);
 
 }
@@ -812,10 +818,10 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 3, 3);
   HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 1);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
@@ -827,7 +833,7 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
     case USR_BTN_Pin:
       INFO("User button pressed");
       TIME_flush(0);
-      LOG_flush();
+      flushLog = 1;
       // TODO: In global state machine stop recording
       return;
 
@@ -855,7 +861,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if(htim == &htim10){
     INFO("TIM10 Expired");
     TIME_flush(0);
-    LOG_flush();
+    flushLog = 1;
   }
 }
 
@@ -873,8 +879,9 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   // Try flush log to SD card
-  TIME_flush(0);
+  TTY_println("HALTED!");
   LOG_flush();
+  TIME_flush(1);
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_RESET);
   for (;;) {
