@@ -76,6 +76,8 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, __unused int waitAck, __unused in
   Serial_write(&gps.serial, (uint8_t *) cmd, GPS_cmdLen_(cmd));
   // Send checksum
   Serial_write(&gps.serial, (uint8_t *) &msg.CK_A, 2);
+
+  return 1;
 }
 
 inline size_t GPS_cmdLen_ (const GPS_UBX_cmd_t *cmd)
@@ -155,7 +157,7 @@ int GPS_rxByte_ (uint8_t c)
         gps.rx.idx   = 0;
       }
 
-      if(gps.rx.idx >= GPS_BUF_LEN) {
+      if (gps.rx.idx >= GPS_BUF_LEN) {
         WARN("Command buffer overflow!");
         gps.rx.state = GPS_IDLE;
       }
@@ -262,39 +264,32 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
   switch (cmd->id) {
 
     case UBX_NAV_CLK: {
-      INFO("UBX-NAV-CLK");
+      // Parse Command
       const UBX_NAV_CLK_t *cmd_t = (UBX_NAV_CLK_t *) &gps.rx.cmd._t;
-      DBUG("  iTOW: %lu", cmd_t->iTOW);
-      DBUG("  clkB: %l", cmd_t->clkB);
-      DBUG("  clkD: %l", cmd_t->clkD);
-      DBUG("  tAcc: %lu", cmd_t->tAcc);
-      DBUG("  fAcc: %lu", cmd_t->fAcc);
+
+      // Log Message
+      GPS_log_UBX_NAV_CLK(cmd_t);
+
       return UBX_NAV_CLK;
     }
 
     case UBX_NAV_TIMEUTC: {
+      // Parse serial command into struct
       const UBX_NAV_TIMEUTC_t *cmd_t = (UBX_NAV_TIMEUTC_t *) &gps.rx.cmd._t;
-      INFO("UBX-NAV-TIMEUTC (%s - 0x%08X)",
-           cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC ? "VALID" : "INVALID",
-           gps.adcTimestamp);
+      // Log out command received
+      GPS_log_UBX_NAV_TIMEUTC(cmd_t);
 
-      DBUG("  iTOW: %lu", cmd_t->iTOW);
-      DBUG("  tAcc: %lu", cmd_t->tAcc);
-      DBUG("  nano: %0l", cmd_t->nano);
-      DBUG("  year: %u", cmd_t->year);
-      DBUG("  month: %02u", cmd_t->month);
-      DBUG("  day: %02u", cmd_t->day);
-      DBUG("  hour: %02u", cmd_t->hour);
-      DBUG("  min: %02u", cmd_t->min);
-      DBUG("  sec: %02u", cmd_t->sec);
-      DBUG("  valid: 0x%02X", cmd_t->valid);
-
-      // TODO: Replace with constant blip
+      // If current cmd's time is valid
       if (cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC) {
+        // Keep track of number of valid samples within one status window
+        gps.timeValidN++;
+
+        // Time stamp previously marked sample with time received from GPS
+        TIME_stamp(cmd_t);
+
         // Previously not valid
         if (!gps.timeValid) {
-          // TODO: Move LED control to separate file!
-//          HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
+          // Update RTC with current GPS time
           GPS_updateRTC_(&hrtc, cmd_t);
 
           // Once fix & valid time then disable SAT msgs
@@ -302,66 +297,53 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
 
           // Mark time as valid for next epoch
           gps.timeValid = 1;
+          // Notify timestamping that time is locked
           TIME_timeValid();
         }
-        // Previous timestamp was valid
-        else {
-          // Best attempt timestamping
-          TIME_stamp(cmd_t);
-        }
+      }
+      else
+      {
+        // Keep track of the number of invalid time message in one status window
+        gps.timeInvalidN++;
 
+        // If current time is NOT valid and previous time is valid
+        // If fix lost ensure SAT is on as to show feedback of num sats
+        if (gps.timeValid) {
+          GPS_sendCommand(&GPS_ENABLE_UBX_NAV_SAT.generic, 0, 0);
+          gps.timeValid = 0;
+          TIME_timeInvalid();
+        }
+        // If time was never valid and is still not valid
+        else {
+          DBUG("Not valid and was previously not valid");
+        }
       }
-        // If fix lost or never had ensure SAT is on as to show feedback of num sats
-      else if (gps.timeValid) {
-//        HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
-        GPS_sendCommand(&GPS_ENABLE_UBX_NAV_SAT.generic, 0, 0);
-        gps.timeValid = 0;
-        TIME_timeInvalid();
-      }
-      else {
-        DBUG("Not valid and was previously not valid");
-      }
+
 
 
       return UBX_NAV_TIMEUTC;
     }
 
     case UBX_NAV_STATUS: {
-      INFO("UBX-NAV-STATUS");
       const UBX_NAV_STATUS_t *cmd_t = (UBX_NAV_STATUS_t *) &gps.rx.cmd._t;
-      DBUG("  iTOW: %lu", cmd_t->iTOW);
-      DBUG("  gpsFix: 0x%02X", cmd_t->gpsFix);
-      DBUG("  flags: 0x%02X", cmd_t->flags);
-      DBUG("  fixStat: 0x%02x", cmd_t->fixStat);
-      DBUG("  flags2: 0x%02X", cmd_t->flags2);
-      DBUG("  ttff: %lu", cmd_t->ttff);
-      DBUG("  msss: %lu", cmd_t->msss);
+
+      // Log message
+      GPS_log_UBX_NAV_STATUS(cmd_t);
+
+      // Reset counters for next status window
+      gps.timeInvalidN = 0;
+      gps.timeValidN = 0;
+
       return UBX_NAV_STATUS;
     }
 
     case UBX_NAV_SAT: {
+      // Parse command
       const UBX_NAV_SAT_t *cmd_t = (UBX_NAV_SAT_t *) &gps.rx.cmd._t;
-      INFO("UBX-NAV-SAT (%u)", cmd_t->numSvs);
 
-      DBUG("  iTOW: %lu", cmd_t->iTOW);
-      DBUG("  version: %u", cmd_t->version);
-      DBUG("  numSvs: %u", cmd_t->numSvs);
+      // Log message
+      GPS_log_UBX_NAV_SAT(cmd_t);
 
-      for (uint8_t i = 0; i < cmd_t->numSvs; i++) {
-        DBUG("  ---- Svs %u ----", i);
-        DBUG("    gnssId: %u", cmd_t->svs[i].gnssId);
-        DBUG("    svId: %u", cmd_t->svs[i].svId);
-        DBUG("    cno: %u", cmd_t->svs[i].cno);
-        DBUG("    elev: %d", cmd_t->svs[i].elev);
-        DBUG("    azim: %d", cmd_t->svs[i].azim);
-        DBUG("    prRes: %d", cmd_t->svs[i].prRes);
-        DBUG("    flags: 0x%02X", cmd_t->svs[i].flags);
-        // TODO: Make this non blocking??
-        // Need 'outer' state machine that controls LED status with main yield
-//        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-//        HAL_Delay(100);
-//        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-      }
       return UBX_NAV_SAT;
     }
 
@@ -425,7 +407,7 @@ int GPS_updateRTC_ (RTC_HandleTypeDef *rtc, const UBX_NAV_TIMEUTC_t *cmd)
     return -1;
   }
 
-  sDate.Year    = cmd->year % 2000; // Will probably break but not now...
+  sDate.Year    = cmd->year % 2000; // Will probably break but not now... or at least soon xD
   sDate.Month   = RTC_ByteToBcd2(cmd->month);
   sDate.Date    = cmd->day;
   sDate.WeekDay = dow(cmd->year, cmd->month, cmd->day);

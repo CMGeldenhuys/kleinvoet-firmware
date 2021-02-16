@@ -9,7 +9,8 @@
 volatile timestamp_t ts = {0};
 
 // Declare new FIFO
-_fff_declare(uint32_t, fifo_uint32, TIME_MARK_LEN);
+_fff_declare(uint32_t, fifo_uint32,
+TIME_MARK_LEN);
 
 int TIME_init (const TIM_HandleTypeDef *tim)
 {
@@ -45,32 +46,36 @@ int TIME_init (const TIM_HandleTypeDef *tim)
 __attribute__((always_inline))
 inline void TIME_timeValid ()
 {
+  INFO("Time locked");
+  _fff_reset((ts.fifo));
   ts.timeLocked = 1;
 }
 
 __attribute__((always_inline))
 inline void TIME_timeInvalid ()
 {
+  INFO("Time no longer valid");
   ts.timeLocked = 0;
 }
 
 __attribute__((always_inline))
 inline void TIME_mark ()
 {
-  if (ts.timeLocked) {
-    DBUG("new sample marked");
-    const uint32_t sample = ts.tim->Instance->CNT;
-    if (_fff_is_full((ts.fifo))) {
-      WARN("FIFO full, timestamp missed!");
-    }
+  if (!ts.timeLocked) return;
+  const uint32_t sample = ts.tim->Instance->CNT;
+  if (_fff_is_full((ts.fifo))) {
+    WARN("FIFO full, timestamp missed!");
+  }
+  else {
     _fff_write((ts.fifo), sample);
+    DBUG("new sample marked (%d)", _fff_mem_free((ts.fifo)));
   }
 }
 
 __attribute__((always_inline))
 inline void TIME_stamp (const UBX_NAV_TIMEUTC_t *cmd)
 {
-  DBUG("new sample stamped");
+  if (!ts.timeLocked) return;
   if (_fff_is_empty((ts.fifo))) {
     WARN("FIFO empty, no sample to mark...");
   }
@@ -81,6 +86,7 @@ inline void TIME_stamp (const UBX_NAV_TIMEUTC_t *cmd)
              cmd->year, cmd->month, cmd->day,
              cmd->hour, cmd->min, cmd->sec, cmd->nano,
              cmd->tAcc, "");
+    DBUG("new sample stamped (%d)", _fff_mem_level((ts.fifo)));
   }
 
 }

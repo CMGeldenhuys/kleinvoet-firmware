@@ -121,8 +121,9 @@ typedef struct {
 
     GPS_state_e state;
 
-    size_t  adcTimestamp;
     uint8_t timeValid;
+    uint_least16_t timeValidN;
+    uint_least16_t timeInvalidN;
 } GPS_t;
 
 typedef union {
@@ -535,7 +536,7 @@ static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_TIMEUTC = {
 
         .msgClass = UBX_NAV,
         .msgID    = 0x21,
-        .rate     = 10u
+        .rate     = 1u
 };
 
 static const UBX_CFG_MSG_t GPS_DISABLE_UBX_NAV_SAT = {
@@ -608,6 +609,68 @@ int GPS_init (UART_HandleTypeDef *uart);
 int GPS_yield ();
 
 int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck, int retryOnNack);
+
+#define GPS_log_UBX_NAV_TIMEUTC(cmd_t) \
+({ \
+    DBUG("UBX-NAV-TIMEUTC (%s)", \
+         cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC \
+         ? "VALID" \
+         : "INVALID");                \
+                                      \
+    DBUG("  iTOW: %lu", cmd_t->iTOW); \
+    DBUG("  tAcc: %lu", cmd_t->tAcc); \
+    DBUG("  nano: %0l", cmd_t->nano); \
+    DBUG("  year: %u", cmd_t->year); \
+    DBUG("  month: %02u", cmd_t->month); \
+    DBUG("  day: %02u", cmd_t->day); \
+    DBUG("  hour: %02u", cmd_t->hour); \
+    DBUG("  min: %02u", cmd_t->min); \
+    DBUG("  sec: %02u", cmd_t->sec); \
+    DBUG("  valid: 0x%02X", cmd_t->valid); \
+})
+
+#define GPS_log_UBX_NAV_STATUS(cmd_t) \
+({                                    \
+  INFO("UBX-NAV-STATUS (V:%d, N:%d)", gps.timeValidN, gps.timeInvalidN); \
+  DBUG("  iTOW: %lu", cmd_t->iTOW); \
+  DBUG("  gpsFix: 0x%02X", cmd_t->gpsFix); \
+  DBUG("  flags: 0x%02X", cmd_t->flags); \
+  DBUG("  fixStat: 0x%02x", cmd_t->fixStat); \
+  DBUG("  flags2: 0x%02X", cmd_t->flags2); \
+  DBUG("  ttff: %lu", cmd_t->ttff); \
+  DBUG("  msss: %lu", cmd_t->msss); \
+})
+
+#define GPS_log_UBX_NAV_SAT(cmd_t) \
+({                                 \
+  INFO("UBX-NAV-SAT (%u)", cmd_t->numSvs); \
+  \
+  DBUG("  iTOW: %lu", cmd_t->iTOW); \
+  DBUG("  version: %u", cmd_t->version); \
+  DBUG("  numSvs: %u", cmd_t->numSvs); \
+  \
+  for (uint8_t i = 0; i < cmd_t->numSvs; i++) { \
+    DBUG("  ---- Svs %u ----", i); \
+    DBUG("    gnssId: %u", cmd_t->svs[i].gnssId); \
+    DBUG("    svId: %u", cmd_t->svs[i].svId); \
+    DBUG("    cno: %u", cmd_t->svs[i].cno); \
+    DBUG("    elev: %d", cmd_t->svs[i].elev); \
+    DBUG("    azim: %d", cmd_t->svs[i].azim); \
+    DBUG("    prRes: %d", cmd_t->svs[i].prRes); \
+    DBUG("    flags: 0x%02X", cmd_t->svs[i].flags); \
+  } \
+})
+
+#define GPS_log_UBX_NAV_CLK(cmd_t) \
+({                                 \
+  INFO("UBX-NAV-CLK"); \
+  DBUG("  iTOW: %lu", cmd_t->iTOW); \
+  DBUG("  clkB: %l", cmd_t->clkB); \
+  DBUG("  clkD: %l", cmd_t->clkD); \
+  DBUG("  tAcc: %lu", cmd_t->tAcc); \
+  DBUG("  fAcc: %lu", cmd_t->fAcc); \
+})
+
 
 #ifdef __cplusplus
 }
