@@ -831,7 +831,9 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 {
   switch (GPIO_Pin) {
     case USR_BTN_Pin:
+#ifdef LOG_DEST_TTY
       INFO("User button pressed");
+#endif
       TIME_flush(0);
       flushLog = 1;
       // TODO: In global state machine stop recording
@@ -859,7 +861,9 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   if(htim == &htim10){
+#ifdef LOG_DEST_TTY
     INFO("TIM10 Expired");
+#endif
     TIME_flush(0);
     flushLog = 1;
   }
