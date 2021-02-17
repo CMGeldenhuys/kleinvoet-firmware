@@ -10,6 +10,11 @@ int WAVE_writeHeader_ (WAVE_t *wav);
 
 int WAVE_createFile (WAVE_t *wav)
 {
+#ifdef WAVE_MOCK_WRITES
+  WARN("MOCK WRITES ENABLED!");
+  return 1;
+#endif
+
   //TODO: Handle errors
   DBUG("Will split on %lu bytes (%lu KiB | %lu MiB | %lu GiB)",
        WAVE_FILE_SPILT,
