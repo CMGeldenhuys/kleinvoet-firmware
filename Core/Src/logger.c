@@ -72,9 +72,7 @@ int LOG_log (const char *funcName, LOG_Lvl_e lvl, char *fmt, ...)
 
   log.locked = 1;
 
-  // Create working buffer
-  char workBuf[LOG_MSG_INFO_LEN + LOG_MSG_LEN + sizeof(LOG_EOL)];
-  int  infoLen = LOG_timestamp_(funcName, lvl, workBuf);
+  int  infoLen = LOG_timestamp_(funcName, lvl, log.workBuf);
 
   if (infoLen <= 0) return infoLen;
 
@@ -84,7 +82,7 @@ int LOG_log (const char *funcName, LOG_Lvl_e lvl, char *fmt, ...)
   // Clamp infoLen to max
   if (infoLen > LOG_MSG_INFO_LEN) infoLen = LOG_MSG_INFO_LEN;
 
-  int msgLen = vsnprintf(workBuf + infoLen, LOG_MSG_LEN, fmt, args);
+  int msgLen = vsnprintf(log.workBuf + infoLen, LOG_MSG_LEN, fmt, args);
 
   if (msgLen <= 0) {
     va_end(args);
@@ -98,16 +96,16 @@ int LOG_log (const char *funcName, LOG_Lvl_e lvl, char *fmt, ...)
   // Compute message length (faster than using strlen)
   size_t len = msgLen + infoLen;
 
-  strcat(workBuf + len, LOG_EOL);
+  strcat(log.workBuf + len, LOG_EOL);
   len += sizeof(LOG_EOL);
 
   // Persist Log entry
   // -1 : remove NULL term from string
   size_t tmp;
-  if ((tmp = strlen(workBuf)) != len - 1) {
+  if ((tmp = strlen(log.workBuf)) != len - 1) {
     ERR("Fokop %u", tmp);
   }
-  int bytesWritten = LOG_write((uint8_t *) workBuf, len - 1);
+  int bytesWritten = LOG_write((uint8_t *) log.workBuf, len - 1);
 
   if (bytesWritten > 0 && lvl == LOG_ERR) {
     // On Err force Log cache to be written

@@ -119,6 +119,7 @@ typedef struct {
     LOG_writer_t writer;
     char * const workbuffer;
     _fff_declare(LOG_msg_t, fifo, LOG_BUF_LEN);
+    char workBuf[LOG_MSG_INFO_LEN + LOG_MSG_LEN + sizeof(LOG_EOL)];
 }           LOG_t;
 
 /**
