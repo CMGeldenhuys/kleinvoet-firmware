@@ -47,8 +47,10 @@ int LOG_init()
 #elif defined(LOG_LEVEL_DEBUG)
   DBUG("Logger running at level 'DEBUG'");
 #else
-DBUG("Logger running at unknown level");
+  DBUG("Logger running at unknown level");
 #endif
+  INFO("LOG_msg_t: %lu", sizeof(LOG_msg_t));
+  INFO("LOG_t: %lu", sizeof(LOG_t));
   return ready;
 }
 

@@ -23,8 +23,9 @@
 #include <string.h>
 #include "stm32f4xx_hal.h"
 #include "config.h"
+#include "fifofast.h"
 
-#if !defined(LOG_DEST_TTY) && !defined(LOG_DEST_FILE)
+#if !defined(LOG_DEST_TTY) && !defined(LOG_DEST_FILE) && !defined(LOG_DISABLE)
 #error "Please specify log device using 'LOG_DEST_****'"
 #endif
 
@@ -58,7 +59,7 @@
 #define ERR(msg, ...) LOG_log(__func__, LOG_ERR, (msg), ##__VA_ARGS__)
 
 #ifndef LOG_BUF_LEN
-#define LOG_BUF_LEN 64
+#define LOG_BUF_LEN 32
 #endif
 
 /// Maximum user log message length.
@@ -83,7 +84,7 @@
 
 #define LOG_COLOR_LEN (sizeof(LOG_COLOR_FG_DEFAULT) + sizeof(LOG_COLOR_RESET) - 2)
 
-#else
+#else // ! LOG_COLOR
 #define LOG_COLOR_LEN 0
 #endif
 
@@ -100,6 +101,19 @@ typedef enum {
     LOG_WARN,    /**< Warning level of severity*/
     LOG_ERR      /**< Error level of severity*/
 } LOG_Lvl_e;
+
+typedef struct {
+    const LOG_Lvl_e lvl;
+    const char *func;
+    const RTC_DateTypeDef date;
+    const RTC_TimeTypeDef time;
+    const char msg[64];
+} LOG_msg_t;
+
+
+typedef struct {
+  _fff_declare(LOG_msg_t, fifo, LOG_BUF_LEN);
+} LOG_t;
 
 /**
  * @brief Log message function.
@@ -146,7 +160,7 @@ int LOG_write (uint8_t *buf, size_t len);
  */
 int LOG_flush ();
 
-int LOG_init();
+int LOG_init ();
 
 
 #endif //FIRMWARE_LOGGER_H
