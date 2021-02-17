@@ -196,6 +196,9 @@ int TTY_processCommand_ (char * cmdStrBuffer)
 
   TTY_splitArgs_(cmdStrBuffer, &cmdStr, &argc, args);
 
+  // Command null or empty
+  if(!cmdStr || strcmp(cmdStr, "") == 0) return 0;
+
   for (size_t idx = 0; idx < TTY_CMD_LST; idx++) {
     // Lookup command
     TTY_Command_t *cmd = &tty.commandList[idx];
