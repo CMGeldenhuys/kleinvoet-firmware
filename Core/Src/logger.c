@@ -12,9 +12,7 @@
 
 extern RTC_HandleTypeDef hrtc;
 
-// TODO: quick fix but should work for now
-static uint_least8_t ready = 0;
-static uint_least16_t missed = 0;
+static LOG_t log = {0};
 
 static const char *LOG_Lvl_str_[] = {
         "DBUG",
@@ -32,12 +30,12 @@ static const char *LOG_color_code_[] = {
 };
 #endif
 
-int LOG_timestamp_ (const char *funcName, LOG_Lvl_e lvl, char *buf);
+static int LOG_timestamp_ (const char *funcName, LOG_Lvl_e lvl, char *buf);
 
 int LOG_init()
 {
-  ready = 1;
-  if(missed > 0) WARN("%d missed log entries before device was ready", missed);
+  log.ready = 1;
+
 #if defined(LOG_LEVEL_ERROR)
   ERR("Logger running at level 'ERR'");
 #elif defined(LOG_LEVEL_WARN)
@@ -49,18 +47,30 @@ int LOG_init()
 #else
   DBUG("Logger running at unknown level");
 #endif
+  log.locked = 1;
   INFO("LOG_msg_t: %lu", sizeof(LOG_msg_t));
   INFO("LOG_t: %lu", sizeof(LOG_t));
-  return ready;
+  log.locked  = 0;
+  INFO("Work buffer size: %lu", LOG_MSG_INFO_LEN + LOG_MSG_LEN + sizeof(LOG_EOL));
+
+  return 1;
 }
 
 int LOG_log (const char *funcName, LOG_Lvl_e lvl, char *fmt, ...)
 {
   // prevent logging before log device is ready (FILE OR TTY)
-  if(!ready) {
-    missed++;
+  if(!log.ready || log.locked) {
+    log.missed++;
     return  -1;
   }
+
+  if(log.missed > 0) {
+    const uint_least16_t missed = log.missed;
+    log.missed = 0;
+    WARN("%d missed log entries before device was ready", missed);
+  }
+
+  log.locked = 1;
 
   // Create working buffer
   char workBuf[LOG_MSG_INFO_LEN + LOG_MSG_LEN + sizeof(LOG_EOL)];
@@ -78,6 +88,7 @@ int LOG_log (const char *funcName, LOG_Lvl_e lvl, char *fmt, ...)
 
   if (msgLen <= 0) {
     va_end(args);
+    log.locked = 0;
     return msgLen;
   }
 
@@ -103,11 +114,13 @@ int LOG_log (const char *funcName, LOG_Lvl_e lvl, char *fmt, ...)
     // Write out Log cache/buffer
     LOG_flush();
   }
+
+  log.locked = 0;
   va_end(args);
   return bytesWritten;
 }
 
-int LOG_timestamp_ (const char *funcName, LOG_Lvl_e lvl, char *buf)
+static int LOG_timestamp_ (const char *funcName, LOG_Lvl_e lvl, char *buf)
 {
   RTC_TimeTypeDef sTime = {0};
   RTC_DateTypeDef sDate = {0};

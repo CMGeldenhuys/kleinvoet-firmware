@@ -103,17 +103,23 @@ typedef enum {
 } LOG_Lvl_e;
 
 typedef struct {
-    const LOG_Lvl_e lvl;
-    const char *func;
+    const LOG_Lvl_e       lvl;
+    const char            *func;
     const RTC_DateTypeDef date;
     const RTC_TimeTypeDef time;
-    const char msg[64];
+    const char            msg[64];
 } LOG_msg_t;
 
+typedef int (*LOG_writer_t) (void *buf, size_t len);
 
 typedef struct {
-  _fff_declare(LOG_msg_t, fifo, LOG_BUF_LEN);
-} LOG_t;
+    uint_least8_t ready;
+    uint_least8_t locked;
+    uint_least16_t missed;
+    LOG_writer_t writer;
+    char * const workbuffer;
+    _fff_declare(LOG_msg_t, fifo, LOG_BUF_LEN);
+}           LOG_t;
 
 /**
  * @brief Log message function.
