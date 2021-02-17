@@ -217,17 +217,6 @@ int main(void)
       LOG_flush();
       flushLog = 0;
     }
-    // TODO: Move bat monitor to own file
-//    if(__HAL_ADC_GET_FLAG(&hadc1, ADC_FLAG_EOC)) {
-//      const uint16_t v_monitor = HAL_ADC_GetValue(&hadc1);
-//      // V_ADC = 3.3v
-//      // Full Range (12-bit) = 4096
-//      // Voltage divider = 2:1
-//      const float val = (float)v_monitor * 3.3f / 4096 * 2;
-//      INFO("V_bat: %.4f", val);
-//      HAL_ADC_Start(&hadc1);
-//    }
-
 
 
     /* USER CODE END WHILE */
@@ -318,6 +307,7 @@ static void MX_ADC1_Init(void)
 
   /* USER CODE END ADC1_Init 0 */
 
+  ADC_AnalogWDGConfTypeDef AnalogWDGConfig = {0};
   ADC_ChannelConfTypeDef sConfig = {0};
 
   /* USER CODE BEGIN ADC1_Init 1 */
@@ -326,7 +316,7 @@ static void MX_ADC1_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = DISABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
@@ -338,6 +328,17 @@ static void MX_ADC1_Init(void)
   hadc1.Init.DMAContinuousRequests = DISABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure the analog watchdog
+  */
+  AnalogWDGConfig.WatchdogMode = ADC_ANALOGWATCHDOG_SINGLE_REG;
+  AnalogWDGConfig.HighThreshold = 2700;
+  AnalogWDGConfig.LowThreshold = 2300;
+  AnalogWDGConfig.Channel = ADC_CHANNEL_9;
+  AnalogWDGConfig.ITMode = ENABLE;
+  if (HAL_ADC_AnalogWDGConfig(&hadc1, &AnalogWDGConfig) != HAL_OK)
   {
     Error_Handler();
   }
@@ -860,13 +861,30 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  if(htim == &htim10){
+  if(htim == &htim10) {
 #ifdef LOG_DEST_TTY
-    INFO("TIM10 Expired");
+    DBUG("TIM10 Expired");
 #endif
     TIME_flush(0);
     flushLog = 1;
+
+    // Run ADC conversion for ADC watchdog
+    HAL_ADC_Start(&hadc1);
   }
+  else {
+    WARN("Unknown timer expired");
+  }
+}
+
+void HAL_ADC_LevelOutOfWindowCallback (ADC_HandleTypeDef *hadc)
+{
+  const uint16_t v_monitor = HAL_ADC_GetValue(hadc);
+  // V_ADC = 3.3v
+  // Full Range (12-bit) = 4096
+  // Voltage divider = 2:1
+  const float    val       = (float) v_monitor * 3.3f / 4096 * 2;
+  // Analog watch dog triggered
+  WARN("VBAT = %.2f!", val);
 }
 
 // For fucntion `void Error_Handler(void)`
