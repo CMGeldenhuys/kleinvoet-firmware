@@ -124,7 +124,7 @@ void TIME_yield ()
   if (!_fff_is_empty((ts.fifo.metastamp))) {
     const metastamp_t meta = _fff_read((ts.fifo.metastamp));
     INFO("Processing metastamp (%s)", meta.comment);
-    if(f_printf(ts.fp, "%lu,,,\"%s\"" FATFS_EOL, meta.sample, meta.comment) <= 0 ){
+    if(f_printf(ts.fp, "%lu,,,%s" FATFS_EOL, meta.sample, meta.comment) <= 0 ){
       WARN("failed write");
     }
 
