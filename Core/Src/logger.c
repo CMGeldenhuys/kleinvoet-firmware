@@ -12,7 +12,18 @@
 
 extern RTC_HandleTypeDef hrtc;
 
-static LOG_t log = {0};
+static LOG_t log = {
+        .ready = 0,
+        .locked = 0,
+        .missed = 0,
+        .writer = {
+                .flush = LOG_flush,
+                .write = LOG_write,
+        },
+        .fifo = {0,0,0,{}},
+        .workBuf = {}
+};
+
 
 static const char *LOG_Lvl_str_[] = {
         "DBUG",
@@ -47,10 +58,8 @@ int LOG_init()
 #else
   DBUG("Logger running at unknown level");
 #endif
-  log.locked = 1;
   INFO("LOG_msg_t: %lu", sizeof(LOG_msg_t));
   INFO("LOG_t: %lu", sizeof(LOG_t));
-  log.locked  = 0;
   INFO("Work buffer size: %lu", LOG_MSG_INFO_LEN + LOG_MSG_LEN + sizeof(LOG_EOL));
 
   return 1;
@@ -105,9 +114,9 @@ int LOG_log (const char *funcName, LOG_Lvl_e lvl, char *fmt, ...)
   if ((tmp = strlen(log.workBuf)) != len - 1) {
     ERR("Fokop %u", tmp);
   }
-  int bytesWritten = LOG_write((uint8_t *) log.workBuf, len - 1);
+  int bytesWritten = log.writer.write((uint8_t *) log.workBuf, len - 1);
 
-  if (bytesWritten > 0 && lvl == LOG_ERR) {
+  if (lvl == LOG_ERR && bytesWritten > 0) {
     // On Err force Log cache to be written
     // Write out Log cache/buffer
     LOG_flush();

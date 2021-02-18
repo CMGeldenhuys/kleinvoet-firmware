@@ -64,7 +64,7 @@
 
 /// Maximum user log message length.
 #ifndef LOG_MSG_LEN
-#define LOG_MSG_LEN 1024
+#define LOG_MSG_LEN 66
 #endif
 
 #ifndef LOG_EOL
@@ -110,14 +110,19 @@ typedef struct {
     const char            msg[64];
 } LOG_msg_t;
 
-typedef int (*LOG_writer_t) (void *buf, size_t len);
+typedef int (*LOG_write_f) (uint8_t *buf, size_t len);
+typedef int (*LOG_flush_f) (void);
+
+typedef struct {
+    LOG_write_f write;
+    LOG_flush_f flush;
+} LOG_writer_t;
 
 typedef struct {
     uint_least8_t ready;
     uint_least8_t locked;
     uint_least16_t missed;
     LOG_writer_t writer;
-    char * const workbuffer;
     _fff_declare(LOG_msg_t, fifo, LOG_BUF_LEN);
     char workBuf[LOG_MSG_INFO_LEN + LOG_MSG_LEN + sizeof(LOG_EOL)];
 }           LOG_t;
