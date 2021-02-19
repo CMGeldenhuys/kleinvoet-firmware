@@ -33,6 +33,24 @@
 #include "logger.h"
 
 #define FATFS_EOL SERIAL_EOL
+
+#ifndef FATFS_SPEEDTEST_EPOCH
+#define FATFS_SPEEDTEST_EPOCH 1
+#endif
+
+#define KiB(_KiB_) ((unsigned)(_KiB_) << 10U)
+#define MiB(_MiB_) (       KiB(_MiB_) << 10U)
+#define GiB(_GiB_) (       MiB(_GiB_) << 10U)
+
+#define toKiB(_B_) ((unsigned)(_B_) >> 10U)
+#define toMiB(_B_) (     toKiB(_B_) >> 10U)
+#define toGiB(_B_) (     toMiB(_B_) >> 10U)
+typedef struct {
+    const size_t size;
+//    uint32_t read[FATFS_SPEEDTEST_EPOCH];
+//    uint32_t write[FATFS_SPEEDTEST_EPOCH];
+} speedtest_t;
+
 /* USER CODE END Includes */
 
 extern uint8_t retSD; /* Return value for SD */
@@ -54,6 +72,8 @@ int CMD_free (int argc, char *argv[]);
 int CMD_sync (int argc, char *args[]);
 
 int CMD_cat (int argc, char *args[]);
+
+int CMD_speedtest(__unused int argc, __unused char * args[]);
 
 int FATFS_open (FIL *fp, const TCHAR *path, BYTE mode);
 

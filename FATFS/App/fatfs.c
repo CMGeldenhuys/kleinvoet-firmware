@@ -1,3 +1,4 @@
+#include <sched.h>
 /**
   ******************************************************************************
   * @file   fatfs.c
@@ -30,6 +31,7 @@ extern RTC_HandleTypeDef hrtc;
 FIL *files[_FS_LOCK] = {0};
 
 int FATFS_errHandle_ (FRESULT res);
+static int FATFS_runSpeedtest_(speedtest_t * test);
 
 /* USER CODE END Variables */
 
@@ -149,6 +151,11 @@ int FATFS_mount ()
     //TODO: HANDLE FAILED MOUNT!
     return FATFS_errHandle_(ret);
   }
+
+#ifdef FATFS_RUN_SPEEDTEST
+  CMD_speedtest(0, NULL);
+#endif
+
 
   return 1;
 }
@@ -442,6 +449,83 @@ int CMD_cat(int argc, char * args[])
 
   return 1;
 }
+
+int CMD_speedtest(__unused int argc, __unused char * args[])
+{
+
+
+  speedtest_t  tests[] = {
+          {.size = 512},
+          {.size = KiB(1)},
+          {.size = KiB(4)},
+          {.size = KiB(16)},
+          {.size = KiB(32)},
+          {.size = KiB(64)},
+  };
+  const size_t testLen = sizeof(tests) / sizeof(speedtest_t);
+  TTY_println("Running speedtest on SD card:");
+#ifdef DEBUG
+  TTY_printf("Using %luB RAM for speedtests", sizeof(tests));
+#endif
+
+  // Run over all speedtests
+  for (size_t i = 0; i < testLen; i++) {
+    FATFS_runSpeedtest_(&tests[i]);
+    TTY_println("--------------------");
+  }
+
+  return 1;
+}
+
+static int FATFS_runSpeedtest_ (speedtest_t *test)
+{
+  // Just a random point in memory to read from. In this case the start of stack memory
+  const void *const readFrom = (void *) 0x20000000U;
+  const size_t size = test->size;
+  UINT         BW; // Keep track of total bytes writen
+  TTY_printf("\t%d KiB:" TTY_EOL, toKiB(size));
+
+  // Run each epoch
+  for (uint32_t e = 0; e < FATFS_SPEEDTEST_EPOCH; e++) {
+    TTY_printf("\t\t[%2d] -> ", e);
+
+    // Open temp. file for speedtest
+    FIL     speedtestFile;
+    FRESULT ret;
+    ret = f_open(&speedtestFile, "SPEEDTEST.BIN", FA_WRITE | FA_READ | FA_CREATE_ALWAYS);
+
+    // Failed to open file, can't run test
+    if (ret != FR_OK) {
+      TTY_println("FAILED");
+      continue;
+    }
+
+    // Start tick
+    const uint32_t tick = HAL_GetTick();
+    f_write(&speedtestFile, readFrom, size, &BW);
+    f_sync(&speedtestFile);
+    const uint32_t tock = HAL_GetTick();
+
+    // Successfully writen all data
+    if (BW == size) {
+      const uint32_t ms    = tock - tick;
+      const float    speed = (float) (size) / ms;
+      TTY_printf("%4.3f KB/s" TTY_EOL, speed);
+    }
+      // Something went wrong
+    else {
+      TTY_println("FAILED");
+    }
+
+    // Close file structure
+    f_close(&speedtestFile);
+    // Delete file
+    f_unlink("SPEEDTEST.BIN");
+  }
+
+  return 1;
+}
+
 
 /* LOG CODE START Application */
 #ifdef LOG_DEST_FILE

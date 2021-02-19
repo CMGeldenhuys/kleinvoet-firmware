@@ -28,6 +28,9 @@ extern "C" {
 // Enable mock writing of WAVE file
 #define WAVE_MOCK_WRITES
 
+// Run Speedtests at startup
+#define FATFS_RUN_SPEEDTEST
+
 #ifdef __cplusplus
 }
 #endif
