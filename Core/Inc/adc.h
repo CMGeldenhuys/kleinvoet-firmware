@@ -8,11 +8,29 @@
 #include "main.h"
 #include "wave.h"
 
+#ifndef ADC_FILENAME
+#define ADC_FILENAME "REC"
+#endif
+
+#ifndef ADC_SAMPLING_RATE
+#define ADC_SAMPLING_RATE 48000
+#endif
+
+#ifndef ADC_N_CHANNELS
+#define ADC_N_CHANNELS 2
+#endif
+
+#ifndef ADC_CRYSTAL_FREQ
+#define ADC_CRYSTAL_FREQ 12288000
+#endif
+
+
 #ifndef ADC_DMA_BUF_LEN
 #define ADC_DMA_BUF_LEN  (0x10000)
 #endif
 
-#define ADC_DMA_N_SAMPLES (ADC_DMA_BUF_LEN / sizeof(uint32_t))
+#define ADC_DMA_N_FRAMES (ADC_DMA_BUF_LEN / sizeof(uint32_t))
+#define ADC_DMA_N_SAMPLES (ADC_DMA_N_FRAMES / ADC_N_CHANNELS)
 
 #ifndef ADC_I2C_ADDR0
 #define ADC_I2C_ADDR0 0b00000000U

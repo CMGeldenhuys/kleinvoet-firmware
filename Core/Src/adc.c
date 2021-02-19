@@ -26,9 +26,9 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   adc.tim       = timInterface;
   ADC_setState(ADC_SETUP);
 
-  adc.wav.fname         = "REC";
-  adc.wav.sampleRate    = 48000; // sps
-  adc.wav.nChannels     = 2;
+  adc.wav.fname         = ADC_FILENAME;
+  adc.wav.sampleRate    = ADC_SAMPLING_RATE; // sps
+  adc.wav.nChannels     = ADC_N_CHANNELS;
   adc.wav.bitsPerSample = 24;
   adc.wav.blockSize     = 3U * adc.wav.nChannels; // bits
 
@@ -40,7 +40,20 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   ADC_writeRegister(ADC_REG_PLL_CONTROL,
                     ADC_PLL_MUTE_ON |
                     ADC_CLK_S_MCLK |
+#if   ADC_CRYSTAL_FREQ / ADC_SAMPLING_RATE == 128
+                    ADC_MCS_128);
+#elif ADC_CRYSTAL_FREQ / ADC_SAMPLING_RATE == 256
                     ADC_MCS_256);
+#elif ADC_CRYSTAL_FREQ / ADC_SAMPLING_RATE == 384
+                    ADC_MCS_384);
+#elif ADC_CRYSTAL_FREQ / ADC_SAMPLING_RATE == 512
+                    ADC_MCS_512);
+#elif ADC_CRYSTAL_FREQ / ADC_SAMPLING_RATE == 768
+                    ADC_MCS_768);
+#else
+#error "Unable to configure ADC sampling rate using current crystal"
+#endif
+
 
   ADC_writeRegister(ADC_REG_BLOCK_POWER_SAI,
                     ADC_LR_POL_LH
@@ -99,7 +112,7 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
     return -2;
   }
   // Disable any mute mode as this can cause problems in the future
-  // TODO: if implemented would require more OOP statemachine
+  // if implemented would require more OOP state machine
   HAL_SAI_DisableRxMuteMode(adc.audioPort);
 
   ADC_setState(ADC_IDLE);
@@ -307,7 +320,7 @@ int ADC_setState (ADC_state_major_e state)
     // Size is defined as frames and not bytes
     // This is due to the FIFO buffer used
     HAL_StatusTypeDef ret;
-    ret = HAL_SAI_Receive_DMA(adc.audioPort, adc.dmaBuf, ADC_DMA_N_SAMPLES);
+    ret = HAL_SAI_Receive_DMA(adc.audioPort, adc.dmaBuf, ADC_DMA_N_FRAMES);
     if (ret != HAL_OK) return -1;
 
     ret = HAL_TIM_Base_Start(adc.tim);
@@ -333,7 +346,7 @@ static inline void ADC_SAI_Interrupt_ (ADC_state_flag_rec_e caller)
   // TODO: get rid of magic numbers
   // Always half of buffer expired
   // Divided by number of channels
-  const size_t nSamples = ADC_DMA_N_SAMPLES / 2 / 2;
+  const size_t nSamples = ADC_DMA_N_FRAMES / 2 / 2;
 
   // Interrupt already set... Samples missed
   if (ADC_is_interrupt_set) {
