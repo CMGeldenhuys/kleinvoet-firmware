@@ -14,9 +14,9 @@ const static uint8_t ADC_MISSED_SAMPLES_ZERO[ADC_DMA_BUF_LEN / 2 * 3 / 4] = {0};
 
 static inline void ADC_SAI_Interrupt_ (ADC_state_flag_rec_e caller);
 
-inline void ADC_32To24Blocks_ (uint8_t *to, const uint32_t *from, size_t len, uint8_t lsb);
+static inline void ADC_32To24Blocks_ (uint8_t *to, const uint32_t *from, size_t len, uint8_t lsb);
 
-void ADC_persistBuf_ (void *buf, size_t len);
+static void ADC_persistBuf_ (void *buf, size_t len);
 
 int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInterface, TIM_HandleTypeDef *timInterface)
 {
@@ -170,11 +170,10 @@ int ADC_yield ()
       }
 
       case ADC_ERR_SAMPLE_MISSED: {
-        const float lossRate = adc.samplesMissed * 100.0f / adc.nSamples;
-        WARN("Samples missed: %d (%.2f%%)", adc.samplesMissed, lossRate);
+        const float lossRate = adc.nFrames * 100.0f / adc.nFrames;
+        WARN("Frames missed: %d (%.2f%%)", adc.nFramesMissed, lossRate);
         DBUG("Persisting zeros for missed samples");
         WAVE_appendData(&adc.wav, ADC_MISSED_SAMPLES_ZERO, sizeof(ADC_MISSED_SAMPLES_ZERO), 1);
-        // TODO: tag samples missed
         // TODO: if more than % missed samples then reset device
         break;
       }
@@ -222,13 +221,13 @@ int ADC_yield ()
   return 1;
 }
 
-void ADC_persistBuf_ (void *buf, size_t len)
+static void ADC_persistBuf_ (void *buf, size_t len)
 {
   ADC_32To24Blocks_(buf, buf, len, 0);
   WAVE_appendData(&adc.wav, buf, len * 3 / 4, 1);
 }
 
-inline void ADC_32To24Blocks_ (uint8_t *to, const uint32_t *from, size_t len, uint8_t lsb)
+static inline void ADC_32To24Blocks_ (uint8_t *to, const uint32_t *from, size_t len, uint8_t lsb)
 {
   const size_t del = 3;
   // Some awesome headache C pointer magic to introduce a one byte 'phase' shift in the from pointer;
@@ -320,7 +319,7 @@ int ADC_setState (ADC_state_major_e state)
     // Size is defined as frames and not bytes
     // This is due to the FIFO buffer used
     HAL_StatusTypeDef ret;
-    ret = HAL_SAI_Receive_DMA(adc.audioPort, adc.dmaBuf, ADC_DMA_N_FRAMES);
+    ret = HAL_SAI_Receive_DMA(adc.audioPort, adc.dmaBuf, ADC_N_FRAMES);
     if (ret != HAL_OK) return -1;
 
     ret = HAL_TIM_Base_Start(adc.tim);
@@ -343,21 +342,11 @@ int ADC_setState (ADC_state_major_e state)
 
 static inline void ADC_SAI_Interrupt_ (ADC_state_flag_rec_e caller)
 {
-  // TODO: get rid of magic numbers
-  // Always half of buffer expired
-  // Divided by number of channels
-  const size_t nSamples = ADC_DMA_N_FRAMES / 2 / 2;
-
   // Interrupt already set... Samples missed
   if (ADC_is_interrupt_set) {
     TIME_meta("samples missed");
-    adc.samplesMissed += nSamples;
-    adc.nSamples += nSamples;
-    // Sync DMA and TIM
-    // TODO: This might cause some headaches with timestamping
-    // An alternative approach would be to timestamp based on both TIM and DMA sample pos
-//    adc.tim->Instance->CNT -= nSamples;
-    // Rather handle diffrently. Instead of shifting counter save a blank frame?
+    adc.nFramesMissed++;
+    adc.nFrames++;
 
     adc.state.flags.err |= ADC_ERR_SAMPLE_MISSED;
   }
@@ -366,7 +355,7 @@ static inline void ADC_SAI_Interrupt_ (ADC_state_flag_rec_e caller)
   }
     // Recording state
   else {
-    adc.nSamples += nSamples;
+    adc.nFrames++;
     adc.state.flags.rec |= caller;
     HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin,
                       caller == ADC_CPLT_HALF
