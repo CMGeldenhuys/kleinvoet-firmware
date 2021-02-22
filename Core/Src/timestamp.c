@@ -12,7 +12,18 @@
 
 // NB: see _fff_init for initialisation
 // fifo = {0, 0, 0, {}}
-volatile timestamp_t ts = {0};
+volatile timestamp_t ts = {
+        .tim = 0,
+        .fp = 0,
+        .timeLocked = 0,
+        .schedule = {
+                .flushFile = 0
+        },
+        .fifo = {
+                .timestamp = {0, 0, 0, {}},
+                .metastamp = {0, 0, 0, {}}
+        }
+};
 
 int TIME_init (const TIM_HandleTypeDef *tim)
 {
