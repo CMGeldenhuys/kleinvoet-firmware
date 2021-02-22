@@ -157,7 +157,7 @@ int TTY_write (uint8_t *buf, size_t len)
   return Serial_write(tty.serial, buf, len);
 }
 
-int TTY_available ()
+size_t TTY_available ()
 {
   return Serial_available(tty.serial);
 }
@@ -167,14 +167,14 @@ uint8_t TTY_read ()
   return Serial_read(tty.serial);
 }
 
-int TTY_registerCommand (const char *command, int (*func) (__unused int argc, __unused char *argv[]))
+int TTY_registerCommand (const char *alias, REPL_cmd_t func)
 {
   static size_t idx = 0;
   // Run out of command space
   if (idx >= TTY_CMD_LST) return 0;
 
   tty.commandList[idx++] = (TTY_Command_t) {
-          .name = command,
+          .name = alias,
           .func = func
   };
   return idx;
