@@ -1,6 +1,12 @@
-//
-// Created by CM Geldenhuys on 2021/02/15.
-//
+/**
+ *
+ * @file timestamp.c
+ * @author CM Geldenhuys
+ * @date 15 Feb. 2021
+ *
+ * @headerfile timestamp.h "timestamp.h"
+ *
+ */
 
 #include "timestamp.h"
 
