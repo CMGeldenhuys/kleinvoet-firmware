@@ -4,9 +4,8 @@
  * @author CM Geldenhuys
  * @date 31 Aug. 2020
  *
- * @brief NMEA GPS parsing library.
+ * @brief UBX GPS parsing library for UBlox M8Q
  *
- * [Link](https://bit.ly/34NOscf) to NMEA protocol for U-Blox M8 module.
  *
  */
 
@@ -603,11 +602,34 @@ static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {
         &GPS_CONFIGURE_TIMEPULSE.generic
 };
 
-
+/**
+ * @brief Initialise GPS module
+ *
+ * @param [in] uart Communications serial port used
+ *
+ * @return Returns a value greater than  0 on success
+ */
 int GPS_init (UART_HandleTypeDef *uart);
 
+/**
+ * @brief Run state machine for current loop
+ *
+ * @return Returns value greater than 0 on success
+ */
 int GPS_yield ();
 
+/**
+ * @brief Send command to GPS over serial
+ *
+ * @param [in] cmd Message to send
+ * @param [in] waitAck Block and wait till message ACK is received
+ * @param [in] retryOnNack If command failed retry
+ *
+ * @return Returns value greater than 0 on success
+ *
+ * @note waitAck is not implemented
+ * @note retryOnNack is not implemented
+ */
 int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck, int retryOnNack);
 
 #define GPS_log_UBX_NAV_TIMEUTC(cmd_t) \
