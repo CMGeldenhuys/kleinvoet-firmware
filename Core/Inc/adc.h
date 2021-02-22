@@ -1,6 +1,17 @@
-//
-// Created by CM Geldenhuys on 2020/08/17.
-//
+/**
+ *
+ * @file adc.h
+ * @author CM Geldenhuys
+ * @date 17 Aug. 2020
+ *
+ * @brief ADC abstraction library
+ *
+ * This library abstracts away the low-level interactions with the
+ * [Analog Devices ADAU1978](https://www.analog.com/media/en/technical-documentation/data-sheets/ADAU1978.pdf).
+ * The library supports using IC2 as the control interface and SAI TDM as the
+ * audio interface.
+ *
+ */
 
 #ifndef ADC_H_
 #define ADC_H_
@@ -8,30 +19,42 @@
 #include "main.h"
 #include "wave.h"
 
+/// Filename of the recording
 #ifndef ADC_FILENAME
 #define ADC_FILENAME "REC"
 #endif
 
+/**
+ * @brief ADC samples per second
+ *
+ * @note Not actual ADC's internal sampling frequency since the ADC has a
+ * Sigma-Delta topology.
+ */
 #ifndef ADC_SAMPLING_RATE
 #define ADC_SAMPLING_RATE 48000
 #endif
 
+/// Number of ADC channels used
 #ifndef ADC_N_CHANNELS
 #define ADC_N_CHANNELS 2
 #endif
 
+/// Crystal oscillator frequency that drives ADC (used for clock calculations)
 #ifndef ADC_CRYSTAL_FREQ
 #define ADC_CRYSTAL_FREQ 12288000
 #endif
 
-
+/// Size of buffer to allocate to DMA requests
 #ifndef ADC_DMA_BUF_LEN
 #define ADC_DMA_BUF_LEN  (0x10000)
 #endif
 
+/// Number of frames based on size of DMA buffer
 #define ADC_N_FRAMES (ADC_DMA_BUF_LEN / sizeof(uint32_t))
+/// Number of samples stored in buffer
 #define ADC_N_SAMPLES (ADC_N_FRAMES / ADC_N_CHANNELS)
 
+/// ADC Address
 #ifndef ADC_I2C_ADDR0
 #define ADC_I2C_ADDR0 0b00000000U
 //                       ^
@@ -101,19 +124,69 @@ typedef struct {
     uint8_t              *dmaBuf;
 } ADC_t;
 
-
+/**
+ * @brief Initialise ADC module
+ *
+ * Reset ADC, configure ADC and turn on all submodules on board to the ADC. Also
+ * create and setup WAVE files to persist data to.
+ *
+ * @param [in] controlInterface Interface used to control ADC over I2C
+ * @param [in] audioInterface Interface used to receive audio information over SAI
+ * @param [in] timInterface Interface used to keep track of frame count
+ *
+ * @return Returns a value greater than 0 if successful
+ */
 int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInterface, TIM_HandleTypeDef *timInterface);
 
+/**
+ * @brief I2C abstraction used to read the value of a register
+ *
+ * @param [in] registerAddr Memory address of register on ADC
+ *
+ * @return Value of register
+ */
 uint8_t ADC_readRegister (uint8_t registerAddr);
 
+/**
+ * @brief I2C abstraction used to write to a register on the ADC
+ *
+ * @param [in] registerAddr Memory address of register on ADC
+ * @param [in] data Data to be written to register
+ *
+ * @return Returns a value greater then 0 if successful
+ */
 int ADC_writeRegister (uint8_t registerAddr, uint8_t data);
 
+/**
+ * @brief Toggles GPIO attached to PD/RST pin of ADC
+ */
 void ADC_reset ();
 
+/**
+ * @brief Writes power up command to ADC register
+ *
+ * @see ADC_writeRegister(uint8_t, uint8_t)
+ *
+ * @return Returns result of write
+ */
 int ADC_powerUp ();
 
+/**
+ * @brief Writes power down command to ADC register
+ *
+ * @see ADC_writeRegister(uint8_t, uint8_t)
+ *
+ * @return Returns result of write
+ */
 int ADC_powerDown ();
 
+/**
+ * @brief Set state of internal state machine
+ *
+ * @param [in] state State to transition to
+ *
+ * @return Returns a value greater than 0 if successful
+ */
 int ADC_setState (ADC_state_major_e state);
 
 int ADC_yield ();

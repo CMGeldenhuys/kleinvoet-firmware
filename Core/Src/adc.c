@@ -1,6 +1,12 @@
-//
-// Created by devsploit on 2020/08/17.
-//
+/**
+ *
+ * @file adc.c
+ * @author CM Geldenhuys
+ * @date 17 Aug. 2020
+ *
+ * @headerfile adc.h "adc.h"
+ *
+ */
 
 #include "adc.h"
 #include "logger.h"
