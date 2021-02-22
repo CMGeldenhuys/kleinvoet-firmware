@@ -1,6 +1,6 @@
 /**
  *
- * @file timestamp.c
+ * @file timestamp.h
  * @author CM Geldenhuys
  * @date 15 Feb. 2021
  *
