@@ -1,6 +1,15 @@
-//
-// Created by CM Geldenhuys on 2020/08/11.
-//
+/**
+ *
+ * @file wave.h
+ * @author CM Geldenhuys
+ * @date 12 Aug. 2020
+ *
+ * @brief WAVE audio file management
+ *
+ * A means to abstract away the creation and of Microsoft WAVE files and its
+ * interactions.
+ *
+ */
 
 #ifndef WAVE_H_
 #define WAVE_H_
@@ -105,10 +114,34 @@ typedef struct {
     uint16_t      bitsPerSample;
 }                 WAVE_t;
 
+/**
+ * @brief Create WAVE file structure
+ *
+ * @param [in] wav Reference to WAVE object
+ *
+ * @return Returns a value greater than 0 if successful
+ */
 int WAVE_createFile (WAVE_t *wav);
 
+/**
+ * @brief Append data to the specified file
+ *
+ * @param [in] wav Reference to WAVE object
+ * @param [in] buff Data to be written to data section of WAVE file
+ * @param [in] len Size of data to be written
+ * @param [in] sync Should a filesystem sync be initiated
+ *
+ * @return Returns a value greater than 0 if successful
+ */
 int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync);
 
+/**
+ * @brief Safely close WAVE file
+ *
+ * @param [in] wav Reference to WAVE object
+ *
+ * @return Returns a value greater than 0 if successful
+ */
 int WAVE_close (WAVE_t *wav);
 
 #ifdef __cplusplus
