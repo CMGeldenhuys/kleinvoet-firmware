@@ -170,7 +170,7 @@ int ADC_yield ()
       }
 
       case ADC_ERR_SAMPLE_MISSED: {
-        const float lossRate = adc.nFrames * 100.0f / adc.nFrames;
+        const float lossRate = adc.nFramesMissed * 100.0f / adc.nFrames;
         WARN("Frames missed: %d (%.2f%%)", adc.nFramesMissed, lossRate);
         DBUG("Persisting zeros for missed samples");
         WAVE_appendData(&adc.wav, ADC_MISSED_SAMPLES_ZERO, sizeof(ADC_MISSED_SAMPLES_ZERO), 1);
