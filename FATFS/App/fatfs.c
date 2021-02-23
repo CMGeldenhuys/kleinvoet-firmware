@@ -465,7 +465,7 @@ int CMD_speedtest(__unused int argc, __unused char * args[])
   const size_t testLen = sizeof(tests) / sizeof(speedtest_t);
   TTY_println("Running speedtest on SD card:");
 #ifdef DEBUG
-  TTY_printf("Using %luB RAM for speedtests", sizeof(tests));
+  TTY_printf("Using %luB RAM for speedtests" TTY_EOL, sizeof(tests));
 #endif
 
   // Run over all speedtests
@@ -483,7 +483,19 @@ static int FATFS_runSpeedtest_ (speedtest_t *test)
   const void *const readFrom = (void *) 0x20000000U;
   const size_t size = test->size;
   UINT         BW; // Keep track of total bytes writen
-  TTY_printf("\t%d KiB:" TTY_EOL, toKiB(size));
+  if(size < KiB(1)){
+    TTY_printf("\t%d B:" TTY_EOL, size);
+  }
+  else if (size < MiB(1)){
+    TTY_printf("\t%d KiB:" TTY_EOL, toKiB(size));
+  }
+  else if (size < GiB(1)){
+    TTY_printf("\t%d MiB:" TTY_EOL, toMiB(size));
+  }
+  else {
+    TTY_printf("\t%d GiB:" TTY_EOL, toGiB(size));
+  }
+
 
   // Run each epoch
   for (uint32_t e = 0; e < FATFS_SPEEDTEST_EPOCH; e++) {
@@ -492,7 +504,7 @@ static int FATFS_runSpeedtest_ (speedtest_t *test)
     // Open temp. file for speedtest
     FIL     speedtestFile;
     FRESULT ret;
-    ret = f_open(&speedtestFile, "SPEEDTEST.BIN", FA_WRITE | FA_READ | FA_CREATE_ALWAYS);
+    ret = f_open(&speedtestFile, "TST.BIN", FA_WRITE | FA_READ | FA_CREATE_ALWAYS);
 
     // Failed to open file, can't run test
     if (ret != FR_OK) {

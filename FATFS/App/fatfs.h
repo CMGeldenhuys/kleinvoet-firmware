@@ -35,7 +35,7 @@
 #define FATFS_EOL SERIAL_EOL
 
 #ifndef FATFS_SPEEDTEST_EPOCH
-#define FATFS_SPEEDTEST_EPOCH 1
+#define FATFS_SPEEDTEST_EPOCH 8
 #endif
 
 #define KiB(_KiB_) ((unsigned)(_KiB_) << 10U)
