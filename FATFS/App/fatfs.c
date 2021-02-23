@@ -1,4 +1,3 @@
-#include <sched.h>
 /**
   ******************************************************************************
   * @file   fatfs.c
@@ -20,9 +19,9 @@
 #include "fatfs.h"
 
 uint8_t retSD;    /* Return value for SD */
-char SDPath[4];   /* SD logical drive path */
-FATFS SDFatFS;    /* File system object for SD logical drive */
-FIL SDFile;       /* File object for SD */
+char    SDPath[4];   /* SD logical drive path */
+FATFS   SDFatFS;    /* File system object for SD logical drive */
+FIL     SDFile;       /* File object for SD */
 
 /* USER CODE BEGIN Variables */
 FIL                      *LogFile;
@@ -31,11 +30,12 @@ extern RTC_HandleTypeDef hrtc;
 FIL *files[_FS_LOCK] = {0};
 
 int FATFS_errHandle_ (FRESULT res);
-static int FATFS_runSpeedtest_(speedtest_t * test);
+
+static int FATFS_runSpeedtest_ (speedtest_t *test);
 
 /* USER CODE END Variables */
 
-void MX_FATFS_Init(void)
+void MX_FATFS_Init (void)
 {
   /*## FatFS: Link the SD driver ###########################*/
   retSD = FATFS_LinkDriver(&SD_Driver, SDPath);
@@ -50,7 +50,7 @@ void MX_FATFS_Init(void)
   * @param  None
   * @retval Time in DWORD
   */
-DWORD get_fattime(void)
+DWORD get_fattime (void)
 {
   /* USER CODE BEGIN get_fattime */
   DWORD           dt;
@@ -379,21 +379,21 @@ int FATFS_sync (FIL *fp)
   FRESULT ret;
   if (fp != NULL) {
     ret = f_sync(fp);
-    if(ret != FR_OK) {
-      if(f_error(fp)) ERR("Hard error on filesystem!");
+    if (ret != FR_OK) {
+      if (f_error(fp)) ERR("Hard error on filesystem!");
       return -1;
     }
     return 1;
   }
-  // Sync all tracked files
+    // Sync all tracked files
   else {
     // TODO: (FIX) for some reason kills device
     INFO("Syncing all tracked files");
-    for(size_t i = 0; i < _FS_LOCK; i++) {
+    for (size_t i = 0; i < _FS_LOCK; i++) {
       fp = files[i];
-      if(fp != NULL){
+      if (fp != NULL) {
         ret = f_sync(fp);
-        if(ret != FR_OK) {
+        if (ret != FR_OK) {
           ERR("Failed to sync tracked files to disk");
           return 0;
         }
@@ -405,33 +405,33 @@ int FATFS_sync (FIL *fp)
   return 1;
 }
 
-int CMD_sync(__unused int argc, __unused char * args[])
+int CMD_sync (__unused int argc, __unused char *args[])
 {
   TTY_println("Syncing all tracked files");
   return FATFS_sync(NULL);
 }
 
 // TODO: Can't read file while open
-int CMD_cat(int argc, char * args[])
+int CMD_cat (int argc, char *args[])
 {
-  if(argc != 1) return TTY_println("Please specify one file name");
+  if (argc != 1) return TTY_println("Please specify one file name");
 
-  char * fname = args[0];
+  char    *fname = args[0];
   FILINFO fno;
-  FRESULT ret = f_stat(fname, &fno);
+  FRESULT ret    = f_stat(fname, &fno);
   // File exists
-  if(ret == FR_OK) {
-    FIL * fp = FATFS_malloc(0);
+  if (ret == FR_OK) {
+    FIL *fp = FATFS_malloc(0);
 
     ret = f_open(fp, fname, FA_READ);
     if (ret != FR_OK) return FATFS_errHandle_(ret);
 
     const FSIZE_t bufLen = 512;
-    BYTE buf[bufLen];
-    UINT br = bufLen;
-    while(br >= bufLen) {
+    BYTE          buf[bufLen];
+    UINT          br     = bufLen;
+    while (br >= bufLen) {
       ret = f_read(fp, buf, bufLen, &br);
-      if(ret != FR_OK) return FATFS_errHandle_(ret);
+      if (ret != FR_OK) return FATFS_errHandle_(ret);
 
       TTY_write(buf, br);
     }
@@ -440,27 +440,27 @@ int CMD_cat(int argc, char * args[])
     FATFS_close(fp);
     free(fp);
   }
-  // No such file
-  else if (ret == FR_NO_FILE){
+    // No such file
+  else if (ret == FR_NO_FILE) {
     TTY_println("No such file");
   }
-  // Some other error
+    // Some other error
   else return FATFS_errHandle_(ret);
 
   return 1;
 }
 
-int CMD_speedtest(__unused int argc, __unused char * args[])
+int CMD_speedtest (__unused int argc, __unused char *args[])
 {
 
 
   speedtest_t  tests[] = {
-          {.size = 512},
-          {.size = KiB(1)},
-          {.size = KiB(4)},
-          {.size = KiB(16)},
-          {.size = KiB(32)},
-          {.size = KiB(64)},
+          {.size =            512, 0},
+          {.size =  KiB(1),        0},
+          {.size =  KiB(4),        0},
+          {.size =  KiB(16),       0},
+          {.size =  KiB(32),       0},
+          {.size =  KiB(64),       0},
   };
   const size_t testLen = sizeof(tests) / sizeof(speedtest_t);
   TTY_println("Running speedtest on SD card:");
@@ -471,7 +471,8 @@ int CMD_speedtest(__unused int argc, __unused char * args[])
   // Run over all speedtests
   for (size_t i = 0; i < testLen; i++) {
     FATFS_runSpeedtest_(&tests[i]);
-    TTY_println("--------------------");
+    const float speed = tests[i].speed.write;
+    TTY_printf("-------------------- %4.3f KB/s --------------------" TTY_EOL, speed);
   }
 
   return 1;
@@ -483,13 +484,13 @@ static int FATFS_runSpeedtest_ (speedtest_t *test)
   const void *const readFrom = (void *) 0x20000000U;
   const size_t size = test->size;
   UINT         BW; // Keep track of total bytes writen
-  if(size < KiB(1)){
+  if (size < KiB(1)) {
     TTY_printf("\t%d B:" TTY_EOL, size);
   }
-  else if (size < MiB(1)){
+  else if (size < MiB(1)) {
     TTY_printf("\t%d KiB:" TTY_EOL, toKiB(size));
   }
-  else if (size < GiB(1)){
+  else if (size < GiB(1)) {
     TTY_printf("\t%d MiB:" TTY_EOL, toMiB(size));
   }
   else {
@@ -498,7 +499,7 @@ static int FATFS_runSpeedtest_ (speedtest_t *test)
 
 
   // Run each epoch
-  for (uint32_t e = 0; e < FATFS_SPEEDTEST_EPOCH; e++) {
+  for (size_t e = 0; e < FATFS_SPEEDTEST_EPOCH; e++) {
     TTY_printf("\t\t[%2d] -> ", e);
 
     // Open temp. file for speedtest
@@ -522,6 +523,7 @@ static int FATFS_runSpeedtest_ (speedtest_t *test)
     if (BW == size) {
       const uint32_t ms    = tock - tick;
       const float    speed = (float) (size) / ms;
+      test->speed.write += speed;
       TTY_printf("%4.3f KB/s" TTY_EOL, speed);
     }
       // Something went wrong
@@ -534,6 +536,8 @@ static int FATFS_runSpeedtest_ (speedtest_t *test)
     // Delete file
     f_unlink("SPEEDTEST.BIN");
   }
+  // Compute mean
+  test->speed.write /= FATFS_SPEEDTEST_EPOCH;
 
   return 1;
 }

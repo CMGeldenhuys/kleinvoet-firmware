@@ -20,7 +20,7 @@
 #ifndef __fatfs_H
 #define __fatfs_H
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
 #include "ff.h"
@@ -47,18 +47,20 @@
 #define toGiB(_B_) (     toMiB(_B_) >> 10U)
 typedef struct {
     const size_t size;
-//    uint32_t read[FATFS_SPEEDTEST_EPOCH];
-//    uint32_t write[FATFS_SPEEDTEST_EPOCH];
+//    int32_t read[FATFS_SPEEDTEST_EPOCH];
+    struct {
+        float write;
+    }            speed;
 } speedtest_t;
 
 /* USER CODE END Includes */
 
 extern uint8_t retSD; /* Return value for SD */
-extern char SDPath[4]; /* SD logical drive path */
-extern FATFS SDFatFS; /* File system object for SD logical drive */
-extern FIL SDFile; /* File object for SD */
+extern char    SDPath[4]; /* SD logical drive path */
+extern FATFS   SDFatFS; /* File system object for SD logical drive */
+extern FIL     SDFile; /* File object for SD */
 
-void MX_FATFS_Init(void);
+void MX_FATFS_Init (void);
 
 /* USER CODE BEGIN Prototypes */
 int FATFS_mount ();
@@ -73,7 +75,7 @@ int CMD_sync (int argc, char *args[]);
 
 int CMD_cat (int argc, char *args[]);
 
-int CMD_speedtest(__unused int argc, __unused char * args[]);
+int CMD_speedtest (__unused int argc, __unused char *args[]);
 
 int FATFS_open (FIL *fp, const TCHAR *path, BYTE mode);
 

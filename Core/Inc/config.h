@@ -26,7 +26,7 @@ extern "C" {
 #define LOG_DEST_TTY
 
 // Enable mock writing of WAVE file
-#define WAVE_MOCK_WRITES
+//#define WAVE_MOCK_WRITES
 
 // Run Speedtests at startup
 #define FATFS_RUN_SPEEDTEST
