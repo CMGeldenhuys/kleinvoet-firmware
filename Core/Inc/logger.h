@@ -64,7 +64,7 @@
 
 /// Maximum user log message length.
 #ifndef LOG_MSG_LEN
-#define LOG_MSG_LEN 66
+#define LOG_MSG_LEN 80
 #endif
 
 #ifndef LOG_EOL
