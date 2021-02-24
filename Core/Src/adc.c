@@ -12,6 +12,7 @@
 #include "logger.h"
 #include <math.h>
 #include "timestamp.h"
+#include "perf.h"
 
 static ADC_t adc = {0};
 

@@ -3,6 +3,7 @@
 //
 #include "wave.h"
 #include <string.h>
+#include "perf.h"
 
 int WAVE_createHeader_ (WAVE_t *wav);
 
@@ -90,11 +91,20 @@ int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
       wav->header->data_chunk.SubchunkSize += len;
 
       // TODO: Rather adjust header than rewriting header each time
+      PERF_START("WAVE_writeHeader_");
+      PERF_THRESHOLD(20);
       WAVE_writeHeader_(wav);
+      PERF_END("WAVE_writeHeader_");
 
       DBUG("Appending WAVE data");
       // TODO: Handle errs
-      return FATFS_swrite(wav->fp, buff, len, sync);
+      int temp;
+      PERF_START("WAVE_write");
+      PERF_THRESHOLD(50);
+      temp = FATFS_swrite(wav->fp, buff, len, sync);
+      PERF_END("WAVE_write");
+      if(temp <= 0)ERR("Writing Error");
+      return temp;
     }
     else {
       // TODO: Check return

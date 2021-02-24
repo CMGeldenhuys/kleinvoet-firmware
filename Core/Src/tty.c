@@ -84,14 +84,13 @@ void TTY_deint ()
 
 __weak int TTY_greet_ ()
 {
-  Serial_print(tty.serial, TTY_VT100_CLEAR_SCREEN TTY_VT100_COLOR_DEFAULT);
+  TTY_print(TTY_VT100_CLEAR_SCREEN TTY_VT100_COLOR_DEFAULT);
   Serial_write(tty.serial, oli, sizeof(oli));
-  Serial_println(tty.serial, "VERSION: " VERSION);
-  Serial_println(tty.serial, "AUTHORS: " AUTHORS);
+  TTY_println("VERSION: " VERSION);
+  TTY_println("AUTHORS: " AUTHORS);
 
-  char uuid[sizeof("UUID: 00000000-00000000-00000000")];
-  sprintf(uuid, "UUID: %08X-%08X-%08X", STM32_UUID[0], STM32_UUID[1], STM32_UUID[2]);
-  Serial_println(tty.serial, uuid);
+  const uint32_t uuid = HAL_GetDEVID();
+  TTY_printf("UUID: %08X" TTY_EOL, uuid);
 }
 
 int TTY_yield ()

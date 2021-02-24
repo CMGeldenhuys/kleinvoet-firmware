@@ -19,11 +19,13 @@
 #include "fatfs.h"
 
 uint8_t retSD;    /* Return value for SD */
-char    SDPath[4];   /* SD logical drive path */
-FATFS   SDFatFS;    /* File system object for SD logical drive */
-FIL     SDFile;       /* File object for SD */
+char SDPath[4];   /* SD logical drive path */
+FATFS SDFatFS;    /* File system object for SD logical drive */
+FIL SDFile;       /* File object for SD */
 
 /* USER CODE BEGIN Variables */
+#include "perf.h"
+
 FIL                      *LogFile;
 extern RTC_HandleTypeDef hrtc;
 
@@ -35,7 +37,7 @@ static int FATFS_runSpeedtest_ (speedtest_t *test);
 
 /* USER CODE END Variables */
 
-void MX_FATFS_Init (void)
+void MX_FATFS_Init(void)
 {
   /*## FatFS: Link the SD driver ###########################*/
   retSD = FATFS_LinkDriver(&SD_Driver, SDPath);
@@ -50,7 +52,7 @@ void MX_FATFS_Init (void)
   * @param  None
   * @retval Time in DWORD
   */
-DWORD get_fattime (void)
+DWORD get_fattime(void)
 {
   /* USER CODE BEGIN get_fattime */
   DWORD           dt;
@@ -218,6 +220,8 @@ int FATFS_slwrite (FIL *fp, const void *buff, size_t len, int sync, int pos)
   FRESULT res;
   FSIZE_t tail;
 
+  PERF_START("FATFS_movPos");
+  PERF_THRESHOLD(20);
   // Move file pointer tail pos
   if (pos >= 0) {
     DBUG("Storing current file pointer tail");
@@ -226,14 +230,20 @@ int FATFS_slwrite (FIL *fp, const void *buff, size_t len, int sync, int pos)
     res = f_lseek(fp, pos);
     if (res != FR_OK) ERR("Failed to move file pointer tail");
   }
+  PERF_END("FATFS_movPos");
 
-
+  PERF_START("FATFS_writing");
+  PERF_THRESHOLD(80);
   res = f_write(fp, buff, len, &bw);
+  PERF_END("FATFS_writing");
 
   if (res == FR_OK) {
     if (sync > 0) {
       DBUG("Wrote %u bytes to file (SAFE)", bw);
+      PERF_START("FATFS_syncing");
+      PERF_THRESHOLD(80);
       res = f_sync(fp);
+      PERF_END("FATFS_syncing");
       if (res != FR_OK) return FATFS_errHandle_(res);
     }
     else {
