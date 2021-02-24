@@ -80,6 +80,7 @@
 #define LOG_COLOR_FG_BLUE "\e[34m"
 #define LOG_COLOR_FG_YELLOW "\e[33m"
 #define LOG_COLOR_FG_RED "\e[31m"
+#define LOG_COLOR_FG_GREEN "\e[32m"
 #define LOG_COLOR_RESET "\e[0m"
 
 #define LOG_COLOR_LEN (sizeof(LOG_COLOR_FG_DEFAULT) + sizeof(LOG_COLOR_RESET) - 2)
@@ -98,6 +99,7 @@
 typedef enum {
     LOG_DEBUG,   /**< Debug level of severity*/
     LOG_INFO,    /**< Info level of severity*/
+    LOG_PERF,    /**< Performance level of severity*/
     LOG_WARN,    /**< Warning level of severity*/
     LOG_ERR      /**< Error level of severity*/
 } LOG_Lvl_e;

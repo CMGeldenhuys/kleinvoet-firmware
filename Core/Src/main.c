@@ -29,6 +29,7 @@
 #include "gps.h"
 #include "adc.h"
 #include "timestamp.h"
+#include "perf.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -207,9 +208,10 @@ int main(void)
   while (1) {
     // Kick watchdog
     HAL_IWDG_Refresh(&hiwdg);
-
-
+    PERF_START("ADC_yield");
+    PERF_THRESHOLD(50);
     ADC_yield();
+    PERF_END("ADC_yield");
     TTY_yield();
     GPS_yield();
     TIME_yield();

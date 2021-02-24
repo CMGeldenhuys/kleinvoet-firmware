@@ -34,6 +34,7 @@ static LOG_t log = {
 static const char *LOG_Lvl_str_[] = {
         "DBUG",
         "INFO",
+        "PERF",
         "WARN",
         "ERR",
 };
@@ -42,6 +43,7 @@ static const char *LOG_Lvl_str_[] = {
 static const char *LOG_color_code_[] = {
         LOG_COLOR_FG_DEFAULT,
         LOG_COLOR_FG_BLUE,
+        LOG_COLOR_FG_GREEN,
         LOG_COLOR_FG_YELLOW,
         LOG_COLOR_FG_RED
 };
