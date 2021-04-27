@@ -52,22 +52,21 @@ int WAVE_createFile (WAVE_t *wav)
     return -1;
   }
 
-  // Expanding the file increase write speed but on file reallocation the buffers overflow
-//  DBUG("Creating file allocation of %lu bytes", WAVE_FILE_SPILT);
-//  if (FATFS_expand(wav->fp, WAVE_FILE_SPILT, 1) <= 0)
-//    WARN("Could not allocate continuous file space");
-
+  if(wav->staticAlloc) {
+    // Expanding the file increase write speed but on file reallocation the buffers overflow
+    // Improves writing speed as the FS doesn't need to still allocated blocks of
+    // space to file on write. Rather precompute and clear to ensure there will
+    // also be enough space.
+    // Also helps with file wearing
+    INFO("Creating static file allocation of %lu bytes...", WAVE_FILE_SPILT);
+    WARN("WAVE header will not be updated with each block write");
+    INFO("WAVE header will only be updated on close");
+    if (FATFS_expand(wav->fp, WAVE_FILE_SPILT, 1) <= 0)
+      WARN("Could not allocate continuous file space");
+  }
 
   WAVE_createHeader_(wav);
   WAVE_writeHeader_(wav);
-
-  // TODO: Expand file to 4GB/ File split
-  // Improves writing speed as the FS doesn't need to still allocated blocks of
-  // space to file on write. Rather precompute and clear to ensure there will
-  // also be enough space.
-
-  // TODO: Need to check for space
-
   return 1;
 }
 
@@ -109,7 +108,7 @@ int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
     else {
       // TODO: Check return
       // Spilt Files
-      // TODO: Make us of BWF format (link chunk)
+      // TODO: Make use of BWF format (link chunk)
       // https://tech.ebu.ch/docs/tech/tech3285s4.pdf
       INFO("Slitting WAVE file");
       wav->subfile++; //TODO: Check overrun
