@@ -86,14 +86,17 @@ int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
 
   if (len < FATFS_free()) {
     if (f_size(wav->fp) < WAVE_FILE_SPILT) {
-      wav->header->RIFF_chunk.ChunkSize += len;
-      wav->header->data_chunk.SubchunkSize += len;
+      if(!wav->staticAlloc){
+        wav->header->RIFF_chunk.ChunkSize += len;
+        wav->header->data_chunk.SubchunkSize += len;
 
-      // TODO: Rather adjust header than rewriting header each time
-      PERF_START("WAVE_writeHeader_");
-      PERF_THRESHOLD(20);
-      WAVE_writeHeader_(wav);
-      PERF_END("WAVE_writeHeader_");
+        // TODO: Rather adjust header than rewriting header each time
+        DBUG("Updating WAVE header (rewrite)");
+        PERF_START("WAVE_writeHeader_");
+        PERF_THRESHOLD(20);
+        WAVE_writeHeader_(wav);
+        PERF_END("WAVE_writeHeader_");
+      }
 
       DBUG("Appending WAVE data");
       // TODO: Handle errs
@@ -125,6 +128,11 @@ int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
 int WAVE_createHeader_ (WAVE_t *wav)
 {
 
+  // TODO: Stop using magic numbers and calculate
+  #define WAVE_RIFF_CHUCK_MAGIC_SIZE 36
+  #define WAVE_FMT_CHUCK_MAGIC_SIZE 16
+  #define WAVE_HEADER_MAGIC_SIZE 44
+
   // Prevent memory leak if file already exists, otherwise reuse header
   if (!wav->header) {
     DBUG("Allocating memory to WAVE file header (creating new header)");
@@ -138,7 +146,7 @@ int WAVE_createHeader_ (WAVE_t *wav)
   // RIFF Chunk
   WAVE_RIFF_chunk_t *RIFF_chunk = &wav->header->RIFF_chunk;
   RIFF_chunk->ChunkID   = WAVE_CID_RIFF;
-  RIFF_chunk->ChunkSize = 36; //TODO: Update with number of samples
+  RIFF_chunk->ChunkSize = wav->staticAlloc ? WAVE_FILE_SPILT : WAVE_RIFF_CHUCK_MAGIC_SIZE;
   RIFF_chunk->Format    = WAVE_RIFF_FORMAT;
 
 
@@ -146,7 +154,7 @@ int WAVE_createHeader_ (WAVE_t *wav)
   // fmt Subchunk
   WAVE_fmt_subchunk_t *fmt_chunk = &wav->header->fmt_chunk;
   fmt_chunk->SubchunkID    = WAVE_CID_FMT;
-  fmt_chunk->SubchunkSize  = 16; // TODO: Don't use magic number
+  fmt_chunk->SubchunkSize  = WAVE_FMT_CHUCK_MAGIC_SIZE;
   fmt_chunk->AudioFormat   = WAVE_AUDIO_PCM;
   fmt_chunk->NumChannels   = wav->nChannels;
   fmt_chunk->SampleRate    = wav->sampleRate;
@@ -159,7 +167,7 @@ int WAVE_createHeader_ (WAVE_t *wav)
   // data Subchunk
   WAVE_data_subchunk_t *data_chunk = &wav->header->data_chunk;
   data_chunk->SubchunkID   = WAVE_CID_DATA;
-  data_chunk->SubchunkSize = 0; //TODO: Update with data size
+  data_chunk->SubchunkSize = wav->staticAlloc ? WAVE_FILE_SPILT - WAVE_HEADER_MAGIC_SIZE : 0;
 
   DBUG("WAVE Header created");
   return 1;
