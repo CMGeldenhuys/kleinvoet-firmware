@@ -29,6 +29,9 @@ extern "C" {
 #define PERF_ENABLE
 #endif
 
+// Enable static file allocation
+#define WAVE_STATIC_FILE_ALLOC
+
 // Enable mock writing of WAVE file
 //#define WAVE_MOCK_WRITES
 

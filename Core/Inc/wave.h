@@ -112,7 +112,6 @@ typedef struct {
     uint16_t      nChannels;
     uint16_t      blockSize;
     uint16_t      bitsPerSample;
-    int_least8_t  staticAlloc;
 }                 WAVE_t;
 
 /**

@@ -52,7 +52,7 @@ int WAVE_createFile (WAVE_t *wav)
     return -1;
   }
 
-  if(wav->staticAlloc) {
+#ifdef WAVE_STATIC_FILE_ALLOC
     // Expanding the file increase write speed but on file reallocation the buffers overflow
     // Improves writing speed as the FS doesn't need to still allocated blocks of
     // space to file on write. Rather precompute and clear to ensure there will
@@ -61,9 +61,11 @@ int WAVE_createFile (WAVE_t *wav)
     INFO("Creating static file allocation of %lu bytes...", WAVE_FILE_SPILT);
     WARN("WAVE header will not be updated with each block write");
     INFO("WAVE header will only be updated on close");
-    if (FATFS_expand(wav->fp, WAVE_FILE_SPILT, 1) <= 0)
-      WARN("Could not allocate continuous file space");
-  }
+    if (FATFS_expand(wav->fp, WAVE_FILE_SPILT, 1) <= 0){
+      ERR("Could not allocate continuous file space");
+      return -1;
+    }
+#endif
 
   WAVE_createHeader_(wav);
   WAVE_writeHeader_(wav);
@@ -85,8 +87,8 @@ int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
 #endif
 
   if (len < FATFS_free()) {
-    if (f_size(wav->fp) < WAVE_FILE_SPILT) {
-      if(!wav->staticAlloc){
+    if (f_tell(wav->fp) < WAVE_FILE_SPILT) {
+#ifndef WAVE_STATIC_FILE_ALLOC
         wav->header->RIFF_chunk.ChunkSize += len;
         wav->header->data_chunk.SubchunkSize += len;
 
@@ -96,7 +98,7 @@ int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
         PERF_THRESHOLD(20);
         WAVE_writeHeader_(wav);
         PERF_END("WAVE_writeHeader_");
-      }
+#endif
 
       DBUG("Appending WAVE data");
       // TODO: Handle errs
@@ -146,7 +148,11 @@ int WAVE_createHeader_ (WAVE_t *wav)
   // RIFF Chunk
   WAVE_RIFF_chunk_t *RIFF_chunk = &wav->header->RIFF_chunk;
   RIFF_chunk->ChunkID   = WAVE_CID_RIFF;
-  RIFF_chunk->ChunkSize = wav->staticAlloc ? WAVE_FILE_SPILT : WAVE_RIFF_CHUCK_MAGIC_SIZE;
+#ifdef WAVE_STATIC_FILE_ALLOC
+  RIFF_chunk->ChunkSize = WAVE_FILE_SPILT;
+#else
+  RIFF_chunk->ChunkSize = WAVE_RIFF_CHUCK_MAGIC_SIZE;
+#endif
   RIFF_chunk->Format    = WAVE_RIFF_FORMAT;
 
 
@@ -167,7 +173,11 @@ int WAVE_createHeader_ (WAVE_t *wav)
   // data Subchunk
   WAVE_data_subchunk_t *data_chunk = &wav->header->data_chunk;
   data_chunk->SubchunkID   = WAVE_CID_DATA;
-  data_chunk->SubchunkSize = wav->staticAlloc ? WAVE_FILE_SPILT - WAVE_HEADER_MAGIC_SIZE : 0;
+#ifdef WAVE_STATIC_FILE_ALLOC
+  data_chunk->SubchunkSize = WAVE_FILE_SPILT - WAVE_HEADER_MAGIC_SIZE;
+#else
+  data_chunk->SubchunkSize = 0;
+#endif
 
   DBUG("WAVE Header created");
   return 1;
