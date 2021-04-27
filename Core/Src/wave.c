@@ -85,7 +85,7 @@ int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
 #endif
 
   if (len < FATFS_free()) {
-    if (wav->header->RIFF_chunk.ChunkSize + len < WAVE_FILE_SPILT) {
+    if (f_size(wav->fp) < WAVE_FILE_SPILT) {
       wav->header->RIFF_chunk.ChunkSize += len;
       wav->header->data_chunk.SubchunkSize += len;
 
