@@ -149,11 +149,7 @@ int WAVE_createHeader_ (WAVE_t *wav)
   // RIFF Chunk
   WAVE_RIFF_chunk_t *RIFF_chunk = &wav->header->RIFF_chunk;
   RIFF_chunk->ChunkID   = WAVE_CID_RIFF;
-#ifdef WAVE_STATIC_FILE_ALLOC
-  RIFF_chunk->ChunkSize = WAVE_FILE_SPILT;
-#else
   RIFF_chunk->ChunkSize = WAVE_RIFF_CHUCK_MAGIC_SIZE;
-#endif
   RIFF_chunk->Format    = WAVE_RIFF_FORMAT;
 
 
@@ -174,11 +170,7 @@ int WAVE_createHeader_ (WAVE_t *wav)
   // data Subchunk
   WAVE_data_subchunk_t *data_chunk = &wav->header->data_chunk;
   data_chunk->SubchunkID   = WAVE_CID_DATA;
-#ifdef WAVE_STATIC_FILE_ALLOC
-  data_chunk->SubchunkSize = WAVE_FILE_SPILT - WAVE_HEADER_MAGIC_SIZE;
-#else
   data_chunk->SubchunkSize = 0;
-#endif
 
   DBUG("WAVE Header created");
   return 1;
