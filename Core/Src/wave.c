@@ -58,7 +58,7 @@ int WAVE_createFile (WAVE_t *wav)
     // space to file on write. Rather precompute and clear to ensure there will
     // also be enough space.
     // Also helps with file wearing
-    INFO("Creating static file allocation of %lu bytes...", WAVE_FILE_SPILT);
+    INFO("Creating static file allocation of %lu bytes (%u MiB)...", WAVE_FILE_SPILT, WAVE_B_to_MiB(WAVE_FILE_SPILT));
     WARN("WAVE header will not be updated with each block write");
     INFO("WAVE header will only be updated on close");
     if (FATFS_expand(wav->fp, WAVE_FILE_SPILT, 1) <= 0){
@@ -85,46 +85,47 @@ int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
   HAL_Delay(50);
   return 1;
 #endif
-
-  if (len < FATFS_free()) {
-    if (f_tell(wav->fp) < WAVE_FILE_SPILT) {
 #ifndef WAVE_STATIC_FILE_ALLOC
-        wav->header->RIFF_chunk.ChunkSize += len;
-        wav->header->data_chunk.SubchunkSize += len;
-
-        // TODO: Rather adjust header than rewriting header each time
-        DBUG("Updating WAVE header (rewrite)");
-        PERF_START("WAVE_writeHeader_");
-        PERF_THRESHOLD(20);
-        WAVE_writeHeader_(wav);
-        PERF_END("WAVE_writeHeader_");
-#endif
-
-      DBUG("Appending WAVE data");
-      // TODO: Handle errs
-      int temp;
-      PERF_START("WAVE_write");
-      PERF_THRESHOLD(50);
-      temp = FATFS_swrite(wav->fp, buff, len, sync);
-      PERF_END("WAVE_write");
-      if(temp <= 0)ERR("Writing Error");
-      return temp;
-    }
-    else {
-      // TODO: Check return
-      // Spilt Files
-      // TODO: Make use of BWF format (link chunk)
-      // https://tech.ebu.ch/docs/tech/tech3285s4.pdf
-      INFO("Slitting WAVE file");
-      wav->subfile++; //TODO: Check overrun
-      WAVE_createFile(wav);
-      return WAVE_appendData(wav, buff, len, sync);
-    }
-  }
-  else {
+  if (len >= FATFS_free()) {
     ERR("SD Card full!");
     return 0;
   }
+#endif
+
+  if (f_tell(wav->fp) < WAVE_FILE_SPILT) {
+#ifndef WAVE_STATIC_FILE_ALLOC
+    wav->header->RIFF_chunk.ChunkSize += len;
+    wav->header->data_chunk.SubchunkSize += len;
+
+    // TODO: Rather adjust header than rewriting header each time
+    DBUG("Updating WAVE header (rewrite)");
+    PERF_START("WAVE_writeHeader_");
+    PERF_THRESHOLD(20);
+    WAVE_writeHeader_(wav);
+    PERF_END("WAVE_writeHeader_");
+#endif
+
+    DBUG("Appending WAVE data");
+    // TODO: Handle errs
+    int temp;
+    PERF_START("WAVE_write");
+    PERF_THRESHOLD(50);
+    temp = FATFS_swrite(wav->fp, buff, len, sync);
+    PERF_END("WAVE_write");
+    if(temp <= 0)ERR("Writing Error");
+    return temp;
+  }
+  else {
+    // TODO: Check return
+    // Spilt Files
+    // TODO: Make use of BWF format (link chunk)
+    // https://tech.ebu.ch/docs/tech/tech3285s4.pdf
+    INFO("Slitting WAVE file");
+    wav->subfile++; //TODO: Check overrun
+    WAVE_createFile(wav);
+    return WAVE_appendData(wav, buff, len, sync);
+  }
+
 }
 
 int WAVE_createHeader_ (WAVE_t *wav)
