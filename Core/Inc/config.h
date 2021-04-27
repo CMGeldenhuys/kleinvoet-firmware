@@ -16,7 +16,7 @@ extern "C" {
 #define VERSION_MAJOR "0"
 #define VERSION_MINOR "4"
 #define VERSION_PATCH "1"
-#define VERSION_RC "alpha"
+#define VERSION_RC ""
 
 #define VERSION VERSION_MAJOR "." VERSION_MINOR "." VERSION_PATCH "-" VERSION_RC
 
