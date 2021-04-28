@@ -177,6 +177,12 @@ int main(void)
   WARN("HELLO, World!");
   ERR("HELLO, WORLD!");
 
+  const uint32_t uuid = HAL_GetDEVID();
+  // TODO: move to global state machine class once it exists
+  INFO("VERSION: " VERSION);
+  INFO("AUTHORS: " AUTHORS);
+  INFO("UUID: 0x%08X", uuid);
+
   INFO("Waiting for GPS to finish starting up..");
   HAL_Delay(1500);
   INFO("Done waiting for GPS");

@@ -18,7 +18,11 @@ extern "C" {
 #define VERSION_PATCH "0"
 #define VERSION_RC "RC2a"
 
+#if defined(VERSION_RC)
 #define VERSION VERSION_MAJOR "." VERSION_MINOR "." VERSION_PATCH "-" VERSION_RC
+#else
+#define VERSION VERSION_MAJOR "." VERSION_MINOR "." VERSION_PATCH
+#endif
 
 // Set logging level
 #define LOG_LEVEL_INFO
