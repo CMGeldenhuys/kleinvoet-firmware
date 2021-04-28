@@ -213,7 +213,7 @@ int FATFS_open (FIL *fp, const TCHAR *path, BYTE mode)
   }
 }
 
-
+// TODO: Use FASTMODE lseek to improve performance
 int FATFS_slwrite (FIL *fp, const void *buff, size_t len, int sync, int pos)
 {
   UINT    bw;
