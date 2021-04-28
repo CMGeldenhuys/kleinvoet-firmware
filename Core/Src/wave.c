@@ -93,10 +93,9 @@ int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
 #endif
 
   if (f_tell(wav->fp) < WAVE_FILE_SPILT) {
-#ifndef WAVE_STATIC_FILE_ALLOC
     wav->header->RIFF_chunk.ChunkSize += len;
     wav->header->data_chunk.SubchunkSize += len;
-
+#ifndef WAVE_STATIC_FILE_ALLOC
     // TODO: Rather adjust header than rewriting header each time
     DBUG("Updating WAVE header (rewrite)");
     PERF_START("WAVE_writeHeader_");
@@ -109,8 +108,8 @@ int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
     // TODO: Handle errs
     int temp;
     PERF_START("WAVE_write");
-    PERF_THRESHOLD(50);
-    temp = FATFS_swrite(wav->fp, buff, len, sync);
+      PERF_THRESHOLD(50);
+      temp = FATFS_swrite(wav->fp, buff, len, sync);
     PERF_END("WAVE_write");
     if(temp <= 0)ERR("Writing Error");
     return temp;
@@ -178,6 +177,13 @@ int WAVE_createHeader_ (WAVE_t *wav)
 
 int WAVE_close (WAVE_t *wav)
 {
+  INFO("Closing WAVE file...");
+#ifdef WAVE_STATIC_FILE_ALLOC
+  DBUG("Updating WAVE Header");
+  WAVE_writeHeader_(wav);
+  DBUG("Truncating WAVE file");
+  f_truncate(wav->fp);
+#endif
   if (FATFS_close(wav->fp) > 0) {
     INFO("Freeing WAV file resources");
 
