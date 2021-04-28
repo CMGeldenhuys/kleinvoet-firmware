@@ -90,7 +90,8 @@ __weak int TTY_greet_ ()
   TTY_println("AUTHORS: " AUTHORS);
 
   const uint32_t uuid = HAL_GetDEVID();
-  TTY_printf("UUID: %08X" TTY_EOL, uuid);
+  TTY_printf("UUID: 0x%08X" TTY_EOL, uuid);
+  return 1;
 }
 
 int TTY_yield ()
