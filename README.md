@@ -8,6 +8,21 @@ with ARM GCC.
 
 ### Setup
 
+#### Formatting SD Card
+The SD card needs to be formatted using a modern version of `mkfs.vfat` and `parted`. The following commands were used:
+
+[OPTIONAL]
+```shell script
+sudo dd if=/dev/zero of=/dev/sdX bs=4096 status=progress
+```
+
+```shell script
+sudo parted /dev/sdX --script -- mklabel msdos
+sudo parted /dev/sdX --script -- mkpart primary fat32 1MiB 100%
+sudo parted mkfs.vfat -F32 /dev/sdXX
+sudo parted /dev/sdX --script -- print
+```
+
 #### Requirements
 - CubeMx (>= v6.0.1)
 - OpenOCD (>= v0.10.0)
