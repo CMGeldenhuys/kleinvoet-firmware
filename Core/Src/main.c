@@ -164,7 +164,6 @@ int main(void)
 //
 //  }
 //  for(;;);
-  INFO("Version: %s", VERSION);
 #ifdef DEBUG
   WARN("Running with DEBUG flag enabled");
 #endif
