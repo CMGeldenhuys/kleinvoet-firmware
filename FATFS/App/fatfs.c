@@ -515,7 +515,8 @@ static int FATFS_runSpeedtest_ (speedtest_t *test)
     // Open temp. file for speedtest
     FIL     speedtestFile;
     FRESULT ret;
-    ret = f_open(&speedtestFile, "TST.BIN", FA_WRITE | FA_READ | FA_CREATE_ALWAYS);
+    const char * filename = "TST.BIN";
+    ret = f_open(&speedtestFile, filename, FA_WRITE | FA_READ | FA_CREATE_ALWAYS);
 
     // Failed to open file, can't run test
     if (ret != FR_OK) {
@@ -544,7 +545,7 @@ static int FATFS_runSpeedtest_ (speedtest_t *test)
     // Close file structure
     f_close(&speedtestFile);
     // Delete file
-    f_unlink("SPEEDTEST.BIN");
+    f_unlink(filename);
   }
   // Compute mean
   test->speed.write /= FATFS_SPEEDTEST_EPOCH;
