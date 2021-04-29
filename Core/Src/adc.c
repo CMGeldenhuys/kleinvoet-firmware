@@ -223,6 +223,11 @@ int ADC_yield ()
       WARN("ADC not ready!");
       break;
     }
+
+    case ADC_STOP: {
+      ERR("ADC STOPPED HALTING DEVICE");
+      for(;;);
+    }
   }
 
   return 1;
@@ -314,32 +319,74 @@ int ADC_powerDown ()
 int ADC_setState (ADC_state_major_e state)
 {
 
-  if (state == ADC_IDLE) {
-    INFO("Recorder IDLE");
-    // TODO: Change to DMA pause and resume for better performance
-    //stop recording
-    HAL_SAI_DMAStop(adc.audioPort);
-  }
-  else if (state == ADC_REC) {
-    // Start Recording
-    INFO("Recording started");
-    // Size is defined as frames and not bytes
-    // This is due to the FIFO buffer used
-    HAL_StatusTypeDef ret;
-    ret = HAL_SAI_Receive_DMA(adc.audioPort, adc.dmaBuf, ADC_N_FRAMES);
-    if (ret != HAL_OK) return -1;
+  switch(state) {
+    case ADC_IDLE: {
+      INFO("Recorder IDLE");
+      HAL_SAI_DMAPause(adc.audioPort);
+      HAL_TIM_Base_Stop(adc.tim);
+      break;
+    }
 
-    ret = HAL_TIM_Base_Start(adc.tim);
-    if (ret != HAL_OK) return -2;
-  }
+    case ADC_STOP:{
+      if (adc.state.mode != ADC_REC){
+        WARN("ADC not recording, can not stop");
+        return -1;
+      }
+      INFO("Recording stopping...");
 
+      // Stop Peripherals
+      HAL_SAI_DMAStop(adc.audioPort);
+      HAL_TIM_Base_Stop(adc.tim);
+
+      // Close WAVE File
+      WAVE_close(&adc.wav);
+      break;
+    }
+
+    case ADC_START:
+    case ADC_REC: {
+      if(adc.state.mode != ADC_IDLE) {
+        ERR("ADC not ready!");
+        return -1;
+      }
+      // Start Recording
+      INFO("Recording started");
+      // Size is defined as frames and not bytes
+      // This is due to the FIFO buffer used
+      HAL_StatusTypeDef ret;
+      ret = HAL_SAI_Receive_DMA(adc.audioPort, adc.dmaBuf, ADC_N_FRAMES);
+      if (ret != HAL_OK) return -1;
+
+      ret = HAL_TIM_Base_Start(adc.tim);
+      if (ret != HAL_OK) return -2;
+      break;
+    }
+
+    // TODO Implement
+    case ADC_RESUME:
+    case ADC_PAUSE: {
+      ERR("Not implemented");
+      return -3;
+    }
+
+    case ADC_SETUP:
+      break;
+
+    default: {
+      WARN("Unknown state (0x%08X", state);
+    }
+  }
 #ifdef LOG_LEVEL_DEBUG
   switch (state) {
-    case ADC_UNDEF: DBUG("Entering state: ADC_UNDEF"); break;
-    case ADC_REC:   DBUG("Entering state: ADC_REC"); break;
-    case ADC_SETUP: DBUG("Entering state: ADC_SETUP"); break;
-    case ADC_IDLE:  DBUG("Entering state: ADC_IDLE"); break;
-    default:        DBUG("Entering unknown state"); break;
+    case ADC_UNDEF:   DBUG("Entering state: ADC_UNDEF");  break;
+    case ADC_REC:     DBUG("Entering state: ADC_REC");    break;
+    case ADC_SETUP:   DBUG("Entering state: ADC_SETUP");  break;
+    case ADC_IDLE:    DBUG("Entering state: ADC_IDLE");   break;
+    case ADC_STOP:    DBUG("Entering state: ADC_STOP");   break;
+    case ADC_PAUSE:   DBUG("Entering state: ADC_PAUSE");  break;
+    case ADC_RESUME:  DBUG("Entering state: ADC_RESUME"); break;
+    case ADC_START:   DBUG("Entering state: ADC_START");  break;
+    default:          DBUG("Entering unknown state");     break;
   }
 #endif
 

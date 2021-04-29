@@ -845,6 +845,7 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
       TIME_flush(0);
       flushLog = 1;
       // TODO: In global state machine stop recording
+      ADC_setState(ADC_STOP);
       return;
 
     case GPS_SYNC_Pin: {

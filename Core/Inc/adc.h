@@ -86,6 +86,10 @@
 typedef enum {
     ADC_UNDEF = 0x00U,
     ADC_REC,
+    ADC_STOP,
+    ADC_PAUSE,
+    ADC_RESUME,
+    ADC_START,
     ADC_SETUP,
     ADC_IDLE,
 } ADC_state_major_e;
