@@ -1,7 +1,7 @@
 #THIS FILE IS AUTO GENERATED FROM THE TEMPLATE! DO NOT CHANGE!
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_VERSION 1)
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.19)
 
 # specify cross compilers and tools
 set(CMAKE_C_COMPILER arm-none-eabi-gcc)
@@ -59,6 +59,11 @@ include_directories(FATFS/App FATFS/Target)
 
 # FastFifo Inc
 include_directories(fifofast)
+
+# USB Inc
+include_directories(USB_DEVICE/App USB_DEVICE/Target)
+include_directories(Middlewares/ST/STM32_USB_Device_Library/Core/Inc)
+include_directories(Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc)
 
 file(GLOB_RECURSE SOURCES "Core/*.*" "FATFS/*.*" "Middlewares/*.*" "Drivers/*.*")
 
