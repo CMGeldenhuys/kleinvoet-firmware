@@ -12,14 +12,22 @@ with ARM GCC.
 The SD card needs to be formatted using a modern version of `mkfs.vfat` and `parted`. The following commands were used:
 
 [OPTIONAL]
+Zeroing the SD card helps that the controller doesn't have to clear pages wile 
+running. This improves performance but drastically diminishes the lif span of 
+the medium. Optionally you can specify the number of blocks(`count=N`) if you
+don't want to zero the whole drive. Good for testing purposes.
 ```shell script
 sudo dd if=/dev/zero of=/dev/sdX bs=4096 status=progress
 ```
 
 ```shell script
-sudo parted /dev/sdX --script -- mklabel msdos
-sudo parted /dev/sdX --script -- mkpart primary fat32 1MiB 100%
-sudo parted mkfs.vfat -F32 /dev/sdXX
+# Create an DOS partition table
+sudo parted /dev/sdX --script --align optimal -- mklabel msdos
+# Specify partition as 'FAT32' with 1MiB clearance
+sudo parted /dev/sdX --script --align optimal -- mkpart primary fat32 1MiB 100%
+# Format partition as 'FAT32'
+sudo mkfs.vfat -F32 /dev/sdXX
+# Check to make sure everything is as it should be
 sudo parted /dev/sdX --script -- print
 ```
 
