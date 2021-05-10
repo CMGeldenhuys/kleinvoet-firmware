@@ -11,8 +11,6 @@
 #define PERF_LOG(_name_, _msg_, ...) LOG_log(_name_, LOG_PERF, (_msg_), ##__VA_ARGS__)
 #endif
 
-#define PERF_THRESHOLD(_threshold_) (threshold = _threshold_)
-
 #ifdef PERF_ENABLE
 #define PERF_START(_name_) { \
   uint32_t threshold = 0; \
@@ -27,11 +25,15 @@
   } \
 }
 
+#define PERF_THRESHOLD(_threshold_) (threshold = _threshold_)
+
 #else
 
 #define PERF_START(_name_)
 
 #define PERF_END(_name_)
+
+#define PERF_THRESHOLD(_threshold_)
 
 #endif
 
