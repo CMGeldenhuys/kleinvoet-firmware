@@ -83,25 +83,25 @@ const static WORD WAVE_AUDIO_PCM = 0x0001U;
 
 typedef struct {
     WAVE_RIFF_STR ChunkID;
-    DWORD ChunkSize;
+    DWORD         ChunkSize;
     WAVE_RIFF_STR Format;
 }                 WAVE_RIFF_chunk_t;
 
 typedef struct {
     WAVE_RIFF_STR SubchunkID;
-    DWORD SubchunkSize;
-    WORD  AudioFormat;
-    WORD  NumChannels;
-    DWORD SampleRate;
-    DWORD ByteRate;
-    WORD  BlockAlign;
-    WORD  BitsPerSample;
+    DWORD         SubchunkSize;
+    WORD          AudioFormat;
+    WORD          NumChannels;
+    DWORD         SampleRate;
+    DWORD         ByteRate;
+    WORD          BlockAlign;
+    WORD          BitsPerSample;
 }                 WAVE_fmt_subchunk_t;
 
 
 typedef struct {
     WAVE_RIFF_STR SubchunkID;
-    DWORD SubchunkSize;
+    DWORD         SubchunkSize;
 }                 WAVE_data_subchunk_t;
 
 typedef struct {
