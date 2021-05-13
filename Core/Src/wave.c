@@ -147,15 +147,15 @@ int WAVE_createHeader_ (WAVE_t *wav)
   }
   // RIFF Chunk
   WAVE_RIFF_chunk_t *RIFF_chunk = &wav->header->RIFF_chunk;
-  RIFF_chunk->ChunkID   = WAVE_CID_RIFF;
+  RIFF_chunk->ChunkID   = WAVE_CHUNKID_RIFF.raw;
   RIFF_chunk->ChunkSize = WAVE_RIFF_CHUCK_MAGIC_SIZE;
-  RIFF_chunk->Format    = WAVE_RIFF_FORMAT;
+  RIFF_chunk->Format    = WAVE_RIFF_FORMAT_WAVE.raw;
 
 
 
   // fmt Subchunk
   WAVE_fmt_subchunk_t *fmt_chunk = &wav->header->fmt_chunk;
-  fmt_chunk->SubchunkID    = WAVE_CID_FMT;
+  fmt_chunk->SubchunkID    = WAVE_SUBCHUNKID_FMT.raw;
   fmt_chunk->SubchunkSize  = WAVE_FMT_CHUCK_MAGIC_SIZE;
   fmt_chunk->AudioFormat   = WAVE_AUDIO_PCM;
   fmt_chunk->NumChannels   = wav->nChannels;
@@ -168,7 +168,7 @@ int WAVE_createHeader_ (WAVE_t *wav)
 
   // data Subchunk
   WAVE_data_subchunk_t *data_chunk = &wav->header->data_chunk;
-  data_chunk->SubchunkID   = WAVE_CID_DATA;
+  data_chunk->SubchunkID   = WAVE_SUBCHUNKID_DATA.raw;
   data_chunk->SubchunkSize = 0;
 
   DBUG("WAVE Header created");

@@ -63,11 +63,15 @@ extern "C" {
 #define WAVE_FMT_BPS_24 (24U)
 #define WAVE_FMT_BPS_32 (32U)
 
-const static DWORD WAVE_CID_RIFF = 0x46464952; // "RIFF"
-const static DWORD WAVE_CID_FMT  = 0x20746d66; // "fmt "
-const static DWORD WAVE_CID_DATA = 0x61746164; // "data"
+typedef union {
+    DWORD  raw;
+    u_char str[sizeof(DWORD)];
+} WAVE_RIFF_STR;
 
-const static DWORD WAVE_RIFF_FORMAT = 0x45564157; // "WAVE"
+const static WAVE_RIFF_STR WAVE_RIFF_FORMAT_WAVE = {.str = {'W', 'A', 'V', 'E'}};
+const static WAVE_RIFF_STR WAVE_CHUNKID_RIFF     = {.str = {'R', 'I', 'F', 'F'}};
+const static WAVE_RIFF_STR WAVE_SUBCHUNKID_FMT   = {.str = {'f', 'm', 't', ' '}};
+const static WAVE_RIFF_STR WAVE_SUBCHUNKID_DATA  = {.str = {'d', 'a', 't', 'a'}};
 
 const static WORD WAVE_AUDIO_PCM = 0x0001U;
 

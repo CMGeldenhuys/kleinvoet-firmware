@@ -15,8 +15,8 @@ extern "C" {
 
 #define VERSION_MAJOR "0"
 #define VERSION_MINOR "5"
-#define VERSION_PATCH "1"
-//#define VERSION_RC ""
+#define VERSION_PATCH "2"
+#define VERSION_RC "alpha"
 
 #if defined(VERSION_RC)
 #define VERSION VERSION_MAJOR "." VERSION_MINOR "." VERSION_PATCH "-" VERSION_RC
@@ -40,7 +40,7 @@ extern "C" {
 //#define WAVE_MOCK_WRITES
 
 // Run Speedtests at startup
-#define FATFS_RUN_SPEEDTEST
+//#define FATFS_RUN_SPEEDTEST
 
 #ifdef __cplusplus
 }
