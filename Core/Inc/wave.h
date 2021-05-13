@@ -39,6 +39,14 @@ extern "C" {
 #define WAVE_MAX_FILE_NAME_LEN 32
 #endif
 
+#ifndef WAVE_MAX_INFO_VALUE_LEN
+#define WAVE_MAX_INFO_VALUE_LEN 14
+#endif
+
+#ifndef WAVE_MAX_INFO_N_SLOTS
+#define WAVE_MAX_INFO_N_SLOTS 1
+#endif
+
 #define WAVE_FILE_SPLIT_KiB(b) ((unsigned)(b) << 10U)
 #define WAVE_FILE_SPLIT_MiB(b) ((unsigned)(WAVE_FILE_SPLIT_KiB(b)) << 10U)
 #define WAVE_FILE_SPLIT_GiB(b) ((unsigned)(WAVE_FILE_SPLIT_MiB(b)) << 10U)
@@ -63,18 +71,22 @@ extern "C" {
 #define WAVE_FMT_BPS_24 (24U)
 #define WAVE_FMT_BPS_32 (32U)
 
-#define WAVE_RIFF_HEADER_CHUNK_SIZE (sizeof(DWORD) + sizeof(WAVE_RIFF_STR)) // legnth + name
+#define WAVE_RIFF_HEADER_CHUNK_SIZE (sizeof(DWORD) + sizeof(WAVE_RIFF_STR_u)) // legnth + name
 #define WAVE_SIZEOF_SUBCHUNK(__chunk__) (sizeof(__chunk__) - WAVE_RIFF_HEADER_CHUNK_SIZE)
 
 typedef union {
     DWORD  raw;
     u_char str[sizeof(DWORD)];
-} WAVE_RIFF_STR;
+} WAVE_RIFF_STR_u;
 
-const static WAVE_RIFF_STR WAVE_RIFF_FORMAT_WAVE = {.str = {'W', 'A', 'V', 'E'}};
-const static WAVE_RIFF_STR WAVE_CHUNKID_RIFF     = {.str = {'R', 'I', 'F', 'F'}};
-const static WAVE_RIFF_STR WAVE_SUBCHUNKID_FMT   = {.str = {'f', 'm', 't', ' '}};
-const static WAVE_RIFF_STR WAVE_SUBCHUNKID_DATA  = {.str = {'d', 'a', 't', 'a'}};
+const static WAVE_RIFF_STR_u WAVE_RIFF_FORMAT_WAVE = {.str = {'W', 'A', 'V', 'E'}};
+const static WAVE_RIFF_STR_u WAVE_CHUNKID_RIFF  = {.str = {'R', 'I', 'F', 'F'}};
+const static WAVE_RIFF_STR_u WAVE_CHUNKID_LIST   = {.str = {'L', 'I', 'S', 'T'}};
+const static WAVE_RIFF_STR_u WAVE_FORMAT_INFO    = {.str = {'I', 'N', 'F', 'O'}};
+const static WAVE_RIFF_STR_u WAVE_SUBCHUNKID_FMT = {.str = {'f', 'm', 't', ' '}};
+const static WAVE_RIFF_STR_u WAVE_SUBCHUNKID_DATA  = {.str = {'d', 'a', 't', 'a'}};
+
+const static WAVE_RIFF_STR_u WAVE_INFO_TAG_ICMT    = {.str = {'I', 'C', 'M', 'T'}};
 
 const static WORD WAVE_AUDIO_PCM = 0x0001U;
 
@@ -82,32 +94,46 @@ const static WORD WAVE_AUDIO_PCM = 0x0001U;
 // Also helpful: http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html
 
 typedef struct {
-    WAVE_RIFF_STR ChunkID;
-    DWORD         ChunkSize;
-    WAVE_RIFF_STR Format;
-}                 WAVE_RIFF_chunk_t;
+    WAVE_RIFF_STR_u ChunkID;
+    DWORD           ChunkSize;
+    WAVE_RIFF_STR_u Format;
+}                            WAVE_RIFF_chunk_t;
 
 typedef struct {
-    WAVE_RIFF_STR SubchunkID;
-    DWORD         SubchunkSize;
+    WAVE_RIFF_STR_u SubchunkID;
+    DWORD           SubchunkSize;
     WORD          AudioFormat;
     WORD          NumChannels;
     DWORD         SampleRate;
     DWORD         ByteRate;
     WORD          BlockAlign;
     WORD          BitsPerSample;
-}                 WAVE_fmt_subchunk_t;
+}                            WAVE_fmt_subchunk_t;
 
 
 typedef struct {
-    WAVE_RIFF_STR SubchunkID;
-    DWORD         SubchunkSize;
-}                 WAVE_data_subchunk_t;
+    WAVE_RIFF_STR_u SubchunkID;
+    DWORD           SubchunkSize;
+}                            WAVE_data_subchunk_t;
 
 typedef struct {
-    WAVE_RIFF_chunk_t    RIFF_chunk;
-    WAVE_fmt_subchunk_t  fmt_chunk;
-    WAVE_data_subchunk_t data_chunk;
+    WAVE_RIFF_STR_u SubchunkID;
+    DWORD           SubchunkSize;
+    char          Value[WAVE_MAX_INFO_VALUE_LEN];
+}                            WAVE_info_subchunk_t;
+
+typedef struct {
+    WAVE_RIFF_STR_u      ChunkID;
+    DWORD                ChunkSize;
+    WAVE_RIFF_STR_u      Format;
+    WAVE_info_subchunk_t subChunks[WAVE_MAX_INFO_N_SLOTS];
+}                            WAVE_LIST_chunk_t;
+
+typedef struct {
+    WAVE_RIFF_chunk_t    RIFFChunk;
+    WAVE_fmt_subchunk_t  fmtSubChunk;
+    WAVE_LIST_chunk_t    listChunk;
+    WAVE_data_subchunk_t dataSubChunk;
 }                 WAVE_header_t;
 
 typedef struct {
