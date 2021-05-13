@@ -129,12 +129,6 @@ int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
 
 int WAVE_createHeader_ (WAVE_t *wav)
 {
-
-  // TODO: Stop using magic numbers and calculate
-  #define WAVE_RIFF_CHUCK_MAGIC_SIZE 36
-  #define WAVE_FMT_CHUCK_MAGIC_SIZE 16
-  #define WAVE_HEADER_MAGIC_SIZE 44
-
   // Prevent memory leak if file already exists, otherwise reuse header
   if (!wav->header) {
     DBUG("Allocating memory to WAVE file header (creating new header)");
@@ -148,23 +142,20 @@ int WAVE_createHeader_ (WAVE_t *wav)
   // RIFF Chunk
   WAVE_RIFF_chunk_t *RIFF_chunk = &wav->header->RIFF_chunk;
   RIFF_chunk->ChunkID   = WAVE_CHUNKID_RIFF;
-  RIFF_chunk->ChunkSize = WAVE_RIFF_CHUCK_MAGIC_SIZE;
+  RIFF_chunk->ChunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_RIFF_chunk_t) + sizeof(WAVE_fmt_subchunk_t) + sizeof(WAVE_data_subchunk_t);
   RIFF_chunk->Format    = WAVE_RIFF_FORMAT_WAVE;
-
-
+  WARN("RIFF_magic: %d", RIFF_chunk->ChunkSize );
 
   // fmt Subchunk
   WAVE_fmt_subchunk_t *fmt_chunk = &wav->header->fmt_chunk;
   fmt_chunk->SubchunkID    = WAVE_SUBCHUNKID_FMT;
-  fmt_chunk->SubchunkSize  = WAVE_FMT_CHUCK_MAGIC_SIZE;
+  fmt_chunk->SubchunkSize  = WAVE_SIZEOF_SUBCHUNK(WAVE_fmt_subchunk_t);
   fmt_chunk->AudioFormat   = WAVE_AUDIO_PCM;
   fmt_chunk->NumChannels   = wav->nChannels;
   fmt_chunk->SampleRate    = wav->sampleRate;
   fmt_chunk->BlockAlign    = wav->blockSize;
   fmt_chunk->ByteRate      = wav->sampleRate * fmt_chunk->BlockAlign;
   fmt_chunk->BitsPerSample = wav->bitsPerSample;
-
-
 
   // data Subchunk
   WAVE_data_subchunk_t *data_chunk = &wav->header->data_chunk;

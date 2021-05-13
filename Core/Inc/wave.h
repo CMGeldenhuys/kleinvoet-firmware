@@ -63,6 +63,9 @@ extern "C" {
 #define WAVE_FMT_BPS_24 (24U)
 #define WAVE_FMT_BPS_32 (32U)
 
+#define WAVE_RIFF_HEADER_CHUNK_SIZE (sizeof(DWORD) + sizeof(WAVE_RIFF_STR)) // legnth + name
+#define WAVE_SIZEOF_SUBCHUNK(__chunk__) (sizeof(__chunk__) - WAVE_RIFF_HEADER_CHUNK_SIZE)
+
 typedef union {
     DWORD  raw;
     u_char str[sizeof(DWORD)];
