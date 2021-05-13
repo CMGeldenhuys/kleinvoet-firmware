@@ -79,13 +79,13 @@ const static WORD WAVE_AUDIO_PCM = 0x0001U;
 // Also helpful: http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html
 
 typedef struct {
-    DWORD ChunkID;
+    WAVE_RIFF_STR ChunkID;
     DWORD ChunkSize;
-    DWORD Format;
+    WAVE_RIFF_STR Format;
 }                 WAVE_RIFF_chunk_t;
 
 typedef struct {
-    DWORD SubchunkID;
+    WAVE_RIFF_STR SubchunkID;
     DWORD SubchunkSize;
     WORD  AudioFormat;
     WORD  NumChannels;
@@ -97,7 +97,7 @@ typedef struct {
 
 
 typedef struct {
-    DWORD SubchunkID;
+    WAVE_RIFF_STR SubchunkID;
     DWORD SubchunkSize;
 }                 WAVE_data_subchunk_t;
 
