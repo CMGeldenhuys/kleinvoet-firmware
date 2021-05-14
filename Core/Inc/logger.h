@@ -31,6 +31,7 @@
 
 // Default logging level if not defined
 #if !defined(LOG_LEVEL_DEBUG) && !defined(LOG_LEVEL_INFO) && !defined(LOG_LEVEL_WARN)
+#warning "No log level specified assuming 'DEBUG'"
 #if defined(DEBUG)
 #define LOG_LEVEL_DEBUG
 #else
