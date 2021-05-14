@@ -55,6 +55,12 @@ int GPS_configureUBX_ ()
   DBUG("Size of DEFAULT_CONFIG: %u", GPS_LEN_DEFAULT_CONFIG);
   for (size_t i = 0; i < GPS_LEN_DEFAULT_CONFIG; i++) {
     GPS_sendCommand(GPS_DEFAULT_CONFIG[i], 0, 0);
+    // TODO: Quick fix if a message is sent twice chances are better will be properly ack'd
+    // NB: NEED ACK QUEUE...
+    HAL_Delay(10);
+    GPS_sendCommand(GPS_DEFAULT_CONFIG[i], 0, 0);
+    // Wait between messages to ensure success
+    HAL_Delay(10);
   }
   gps.rx.state = GPS_IDLE;
   gps.state    = GPS_IDLE;
@@ -122,7 +128,9 @@ int GPS_rxByte_ (uint8_t c)
 
       // Received start byte
       if (c == GPS_SYNC_1_) gps.rx.state = GPS_RX_SYNC_2;
-      else if (c == '$') DBUG("NMEA Msg recv (ignoring)");
+      else if (c == '$')
+        DBUG("NMEA Msg recv (ignoring)");
+      //TODO Print whole nmea command
       break;
     }
 

@@ -444,7 +444,7 @@ static const UBX_CFG_PRT_t GPS_DEFAULT_PORT_CONFIG = {
         .mode           = UBX_CFG_PRT_MODE_CHARLEN_8
                           | UBX_CFG_PRT_MODE_PARTIY_NO
                           | UBX_CFG_PRT_MODE_NSTOPBITS_1_0,
-        .baudRate       = 115200ul,
+        .baudRate       = 9600UL,
         .inProtoMask    = UBX_CFG_PRT_PROTO_UBX,
         .outProtoMask   = UBX_CFG_PRT_PROTO_UBX
 };
@@ -642,7 +642,7 @@ static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_CLK = {
         .len      = 3u,
 
         .msgClass = UBX_NAV,
-        .msgID    = 0x22,
+        .msgID    = UBX_NAV_CLK,
         .rate     = 10u
 };
 
@@ -652,7 +652,7 @@ static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_STATUS = {
         .len      = 3u,
 
         .msgClass = UBX_NAV,
-        .msgID    = 0x03,
+        .msgID    = UBX_NAV_STATUS,
         .rate     = 10u
 };
 
@@ -662,7 +662,7 @@ static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_SAT = {
         .len      = 3u,
 
         .msgClass = UBX_NAV,
-        .msgID    = 0x35,
+        .msgID    = UBX_NAV_SAT,
         .rate     = 10u
 };
 
@@ -672,7 +672,7 @@ static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_TIMEUTC = {
         .len      = 3u,
 
         .msgClass = UBX_NAV,
-        .msgID    = 0x21,
+        .msgID    = UBX_NAV_TIMEUTC,
         .rate     = 1u
 };
 
@@ -682,7 +682,7 @@ static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_HPPOSECEF = {
         .len      = 3u,
 
         .msgClass = UBX_NAV,
-        .msgID    = 0x13,
+        .msgID    = UBX_NAV_HPPOSECEF,
         .rate     = 10u
 };
 
@@ -692,7 +692,7 @@ static const UBX_CFG_MSG_t GPS_DISABLE_UBX_NAV_SAT = {
         .len      = 3u,
 
         .msgClass = UBX_NAV,
-        .msgID    = 0x35,
+        .msgID    = UBX_NAV_SAT,
         .rate     = 0u
 };
 
@@ -733,6 +733,9 @@ static const UBX_CFG_NAV5_t GPS_CONFIGURE_NAV5 = {
 #define GPS_LEN_DEFAULT_CONFIG (sizeof(GPS_DEFAULT_CONFIG)/sizeof(GPS_UBX_cmd_t))
 
 static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {
+        // Set default port config
+        &GPS_DEFAULT_PORT_CONFIG.generic,
+
         // Disable all NMEA messages
         &GPS_DISABLE_NMEA_DTM.generic,
         &GPS_DISABLE_NMEA_GBQ.generic,
