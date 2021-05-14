@@ -40,15 +40,19 @@ extern "C" {
 #endif
 
 #ifndef WAVE_MAX_INFO_VALUE_LEN
-#define WAVE_MAX_INFO_VALUE_LEN 14
+#define WAVE_MAX_INFO_VALUE_LEN 16
+#endif
+
+#if (WAVE_MAX_INFO_VALUE_LEN % 2 != 0)
+#error "WAVE_MAX_INFO_VALUE_LEN must be even"
 #endif
 
 #ifndef WAVE_MAX_INFO_N_SLOTS
 #define WAVE_MAX_INFO_N_SLOTS 1
 #endif
 
-#if ((WAVE_MAX_INFO_VALUE_LEN * WAVE_MAX_INFO_N_SLOTS) % (4) != 0)
-#warning "WAVE_MAX_INFO_VALUE_LEN must be block aligned. Enforcing struct packing to compensate."
+#if ((WAVE_MAX_INFO_VALUE_LEN * WAVE_MAX_INFO_N_SLOTS) % (4) != 0) || ((WAVE_MAX_INFO_VALUE_LEN) % (4) != 0)
+#error "WAVE_MAX_INFO_VALUE_LEN must be block aligned. Enforcing struct packing to compensate."
 #endif
 
 #define WAVE_FILE_SPLIT_KiB(b) ((unsigned)(b) << 10U)
@@ -84,13 +88,13 @@ typedef union {
 } WAVE_RIFF_STR_u;
 
 const static WAVE_RIFF_STR_u WAVE_RIFF_FORMAT_WAVE = {.str = {'W', 'A', 'V', 'E'}};
-const static WAVE_RIFF_STR_u WAVE_CHUNKID_RIFF  = {.str = {'R', 'I', 'F', 'F'}};
-const static WAVE_RIFF_STR_u WAVE_CHUNKID_LIST   = {.str = {'L', 'I', 'S', 'T'}};
-const static WAVE_RIFF_STR_u WAVE_FORMAT_INFO    = {.str = {'I', 'N', 'F', 'O'}};
-const static WAVE_RIFF_STR_u WAVE_SUBCHUNKID_FMT = {.str = {'f', 'm', 't', ' '}};
+const static WAVE_RIFF_STR_u WAVE_CHUNKID_RIFF     = {.str = {'R', 'I', 'F', 'F'}};
+const static WAVE_RIFF_STR_u WAVE_CHUNKID_LIST     = {.str = {'L', 'I', 'S', 'T'}};
+const static WAVE_RIFF_STR_u WAVE_FORMAT_INFO      = {.str = {'I', 'N', 'F', 'O'}};
+const static WAVE_RIFF_STR_u WAVE_SUBCHUNKID_FMT   = {.str = {'f', 'm', 't', ' '}};
 const static WAVE_RIFF_STR_u WAVE_SUBCHUNKID_DATA  = {.str = {'d', 'a', 't', 'a'}};
 
-const static WAVE_RIFF_STR_u WAVE_INFO_TAG_ICMT    = {.str = {'I', 'C', 'M', 'T'}};
+const static WAVE_RIFF_STR_u WAVE_INFO_TAG_ICMT = {.str = {'I', 'C', 'M', 'T'}};
 
 const static WORD WAVE_AUDIO_PCM = 0x0001U;
 
@@ -101,39 +105,39 @@ typedef struct {
     WAVE_RIFF_STR_u ChunkID;
     DWORD           ChunkSize;
     WAVE_RIFF_STR_u Format;
-}                            WAVE_RIFF_chunk_t;
+}                 WAVE_RIFF_chunk_t;
 
 typedef struct {
     WAVE_RIFF_STR_u SubchunkID;
     DWORD           SubchunkSize;
-    WORD          AudioFormat;
-    WORD          NumChannels;
-    DWORD         SampleRate;
-    DWORD         ByteRate;
-    WORD          BlockAlign;
-    WORD          BitsPerSample;
-}                            WAVE_fmt_subchunk_t;
+    WORD            AudioFormat;
+    WORD            NumChannels;
+    DWORD           SampleRate;
+    DWORD           ByteRate;
+    WORD            BlockAlign;
+    WORD            BitsPerSample;
+}                 WAVE_fmt_subchunk_t;
 
 
 typedef struct {
     WAVE_RIFF_STR_u SubchunkID;
     DWORD           SubchunkSize;
-}                            WAVE_data_subchunk_t;
+}                 WAVE_data_subchunk_t;
 
-typedef struct __packed {
+typedef struct {
     WAVE_RIFF_STR_u SubchunkID;
     DWORD           SubchunkSize;
-    char          Value[WAVE_MAX_INFO_VALUE_LEN];
-}                            WAVE_info_subchunk_t;
+    char            Value[WAVE_MAX_INFO_VALUE_LEN];
+}                 WAVE_info_subchunk_t;
 
-typedef struct __packed {
+typedef struct {
     WAVE_RIFF_STR_u      ChunkID;
     DWORD                ChunkSize;
     WAVE_RIFF_STR_u      Format;
     WAVE_info_subchunk_t subChunks[WAVE_MAX_INFO_N_SLOTS];
-}                            WAVE_LIST_chunk_t;
+}                 WAVE_LIST_chunk_t;
 
-typedef struct __packed {
+typedef struct {
     WAVE_RIFF_chunk_t    RIFFChunk;
     WAVE_fmt_subchunk_t  fmtSubChunk;
     WAVE_LIST_chunk_t    listChunk;
