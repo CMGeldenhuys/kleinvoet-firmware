@@ -211,11 +211,13 @@ int main(void)
       flushLog = 0;
     }
 
+#ifndef WAVE_MOCK_WRITES
     if(wavWriteHeaderFlag) {
       ADC_WAVE_writeHeader();
       wavWriteHeaderFlag = 0;
     }
-
+#endif
+    
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
