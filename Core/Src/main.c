@@ -217,7 +217,7 @@ int main(void)
       wavWriteHeaderFlag = 0;
     }
 #endif
-    
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

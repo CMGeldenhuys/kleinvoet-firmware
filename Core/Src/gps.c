@@ -347,6 +347,16 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
       return UBX_NAV_SAT;
     }
 
+    case UBX_NAV_HPPOSECEF: {
+      // Parse Command
+      const UBX_NAV_HPPOSECEF_t *cmd_t = (UBX_NAV_HPPOSECEF_t *) &gps.rx.cmd._t;
+
+      // Log message
+      GPS_log_UBX_NAV_HPPOSECEF(cmd_t);
+
+      return UBX_NAV_HPPOSECEF;
+    }
+
     default: {
       INFO("NAV Msg ignored (0x%02X)", cmd->id);
       return 0;

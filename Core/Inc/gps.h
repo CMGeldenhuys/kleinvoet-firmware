@@ -54,14 +54,15 @@ typedef enum __attribute__ ((packed)) {
 } GPS_cls_e;
 
 typedef enum __attribute__ ((packed)) {
-    UBX_NAV_CLK     = 0x22,
-    UBX_NAV_TIMEUTC = 0x21,
-    UBX_NAV_STATUS  = 0x03,
-    UBX_NAV_SAT     = 0x35,
-    UBX_CFG_PRT     = 0x00,
-    UBX_CFG_MSG     = 0x01,
-    UBX_CFG_TP5     = 0x31,
-    UBX_CFG_NAV5    = 0x24,
+    UBX_NAV_CLK       = 0x22,
+    UBX_NAV_TIMEUTC   = 0x21,
+    UBX_NAV_STATUS    = 0x03,
+    UBX_NAV_SAT       = 0x35,
+    UBX_NAV_HPPOSECEF = 0x13,
+    UBX_CFG_PRT       = 0x00,
+    UBX_CFG_MSG       = 0x01,
+    UBX_CFG_TP5       = 0x31,
+    UBX_CFG_NAV5      = 0x24,
 
     NMEA_DTM = 0x0A,
     NMEA_GBQ = 0x44,
@@ -359,6 +360,38 @@ typedef union {
     };
 } UBX_NAV_SAT_t;
 
+typedef union {
+    GPS_UBX_cmd_t generic;
+    struct {
+        GPS_cls_e cls;
+        uint8_t   id;
+        uint16_t  len;
+
+        uint8_t  version;
+        uint8_t  reserved1[3];
+        uint32_t iTOW;
+        int32_t  ecefX;
+        int32_t  ecefY;
+        int32_t  ecefZ;
+        int8_t   ecefXHp;
+        int8_t   ecefYHp;
+        int8_t   ecefZHp;
+        union {
+            struct {
+                // LSB
+                bitfield_t invalidEcef: 1;
+                bitfield_t padding1: 7;
+                // MSB
+            };
+            uint8_t flags;
+        };
+        uint32_t pAcc;
+    };
+} UBX_NAV_HPPOSECEF_t;
+#define UBX_NAV_HPPOSECEF_PAYLOAD_SIZE 28
+static_assert(UBX_SIZEOF_PAYLOAD(UBX_NAV_HPPOSECEF_t) == UBX_NAV_HPPOSECEF_PAYLOAD_SIZE,
+              "UBX_NAV_HPPOSECEF_t payload size mismatch");
+
 // Magic Numbers
 #define GPS_SYNC_1_ 0xB5
 #define GPS_SYNC_2_ 0x62
@@ -643,6 +676,16 @@ static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_TIMEUTC = {
         .rate     = 1u
 };
 
+static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_HPPOSECEF = {
+        .cls      = UBX_CFG,
+        .id       = UBX_CFG_MSG,
+        .len      = 3u,
+
+        .msgClass = UBX_NAV,
+        .msgID    = 0x13,
+        .rate     = 10u
+};
+
 static const UBX_CFG_MSG_t GPS_DISABLE_UBX_NAV_SAT = {
         .cls      = UBX_CFG,
         .id       = UBX_CFG_MSG,
@@ -680,7 +723,11 @@ static const UBX_CFG_NAV5_t GPS_CONFIGURE_NAV5 = {
         .len = UBX_CFG_NAV5_PAYLOAD_SIZE,
 
         .dyn = UBX_BIT_ENABLE,
-        .dynModel = UBX_CFG_NAV5_DYNMODEL_STATIONARY
+        .dynModel = UBX_CFG_NAV5_DYNMODEL_STATIONARY,
+
+        .staticHoldMask = UBX_BIT_ENABLE,
+        .staticHoldMaxDist = 2, // m
+        .staticHoldeThresh = 100, // cm/s
 };
 
 #define GPS_LEN_DEFAULT_CONFIG (sizeof(GPS_DEFAULT_CONFIG)/sizeof(GPS_UBX_cmd_t))
@@ -710,6 +757,7 @@ static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {
         &GPS_ENABLE_UBX_NAV_SAT.generic,
         &GPS_ENABLE_UBX_NAV_STATUS.generic,
         &GPS_ENABLE_UBX_NAV_TIMEUTC.generic,
+        &GPS_ENABLE_UBX_NAV_HPPOSECEF.generic,
 
         // Setup time pulse
         &GPS_CONFIGURE_TIMEPULSE.generic,
@@ -809,6 +857,20 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck, int retryOnNack);
   DBUG("  fAcc: %lu", cmd_t->fAcc); \
 })
 
+#define GPS_log_UBX_NAV_HPPOSECEF(cmd_t) \
+({                                 \
+  INFO("UBX-NAV-HPPOSECEF"); \
+  DBUG("  version: %u", cmd_t->version);      \
+  DBUG("  iTOW: %lu", cmd_t->iTOW);      \
+  DBUG("  ecefX: %l", cmd_t->ecefX);     \
+  DBUG("  ecefY: %l", cmd_t->ecefY);      \
+  DBUG("  ecefZ: %l", cmd_t->ecefZ);      \
+  DBUG("  ecefXHp: %d", cmd_t->ecefXHp);      \
+  DBUG("  ecefYHp: %d", cmd_t->ecefYHp);      \
+  DBUG("  ecefZHp: %d", cmd_t->ecefZHp);      \
+  DBUG("  flags.invalidEcef: %u", cmd_t->invalidEcef);      \
+  DBUG("  pAcc: %lu", cmd_t->pAcc);      \
+})
 
 #ifdef __cplusplus
 }
