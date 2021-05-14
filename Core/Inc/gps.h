@@ -23,6 +23,7 @@ extern "C" {
 #define GPS_BUF_LEN 128
 #endif
 
+#define bitfield_t uint8_t
 
 typedef enum __attribute__ ((packed)) {
     UBX_NAV = 0x01,
@@ -164,6 +165,99 @@ typedef union {
         uint32_t flags;
     };
 } UBX_CFG_TP5_t;
+
+// New Style of message structuring
+// TODO migrate all messages to this style
+// TODO Add docs to each field
+typedef union {
+    GPS_UBX_cmd_t generic;
+    struct {
+        GPS_cls_e cls;
+        uint8_t   id;
+        uint16_t  len;
+
+        union {
+            struct {
+                // LSB
+                bitfield_t dyn: 1;
+                bitfield_t minEl: 1;
+                bitfield_t posFixMode: 1;
+                bitfield_t drLim: 1;
+                bitfield_t posMask: 1;
+                bitfield_t timeMask: 1;
+                bitfield_t staticHoldMask: 1;
+                bitfield_t dgpsMask: 1;
+                bitfield_t cnoThreshold: 1;
+                bitfield_t reserved_2: 1;
+                bitfield_t utc: 1;
+                bitfield_t reserved_1: 5;
+                // MSB
+            };
+            uint16_t bitmask;
+        }         mask;
+
+        enum {
+            UBX_CFG_NAV5_DYNMODEL_PORTABLE    = 0U,
+            UBX_CFG_NAV5_DYNMODEL_STATIONARY  = 2U,
+            UBX_CFG_NAV5_DYNMODEL_PEDESTRIAN  = 3U,
+            UBX_CFG_NAV5_DYNMODEL_AUTOMOTIVE  = 4U,
+            UBX_CFG_NAV5_DYNMODEL_SEA         = 5U,
+            UBX_CFG_NAV5_DYNMODEL_AIRBORNE_1G = 6U,
+            UBX_CFG_NAV5_DYNMODEL_AIRBORNE_2G = 7U,
+            UBX_CFG_NAV5_DYNMODEL_AIRBORNE_4G = 8U,
+            UBX_CFG_NAV5_DYNMODEL_WRIST       = 9U,
+            UBX_CFG_NAV5_DYNMODEL_BIKE        = 10U
+        }         dynModel: 8;
+
+        enum {
+            UBX_CFG_NAV5_FIXMODE_2D   = 1U,
+            UBX_CFG_NAV5_FIXMODE_3D   = 2U,
+            UBX_CFG_NAV5_FIXMODE_AUTO = 3U
+        }         fixMode: 8;
+
+#define UBX_CFG_NAV5_FIXED_ALT_CONV_RATE (0.01f)
+#define UBX_CFG_NAV5_FIXED_ALT_CONV(__alt__) ((__alt__) / UBX_CFG_NAV5_FIXED_ALT_CONV_RATE)
+        int32_t fixedAlt; // m
+
+#define UBX_CFG_NAV5_FIXED_ALT_VAR_CONV_RATE (0.0001f)
+#define UBX_CFG_NAV5_FIXED_ALT_VAR_CONV(__altVar__) ((__altVar__) / UBX_CFG_NAV5_FIXED_ALT_VAR_CONV_RATE)
+        uint32_t fixedAltVar; // m^2
+
+        int8_t minElev; // deg
+
+        uint8_t reserved_drLimit; // s
+
+#define UBX_CFG_NAV5_FIXED_DOP_CONV_RATE (0.1f)
+#define UBX_CFG_NAV5_FIXED_DOP_CONV(__dop__) ((__dop__) / UBX_CFG_NAV5_FIXED_DOP_CONV_RATE)
+        uint16_t pDop;
+        uint16_t tDop;
+
+        uint16_t pAcc;
+        uint16_t tAcc;
+
+        uint8_t staticHoldeThresh;
+
+        uint8_t dgnssTimeout;
+
+        uint8_t cnoThreshNumSVs;
+
+        uint8_t cnoThresh;
+
+        uint8_t reserved1[2];
+
+        uint16_t staticHoldMaxDist;
+
+        enum {
+            UBX_CFG_NAV5_UTC_STANDARD_AUTO        = 0U,
+            UBX_CFG_NAV5_UTC_STANDARD_UTC_USNO    = 3U,
+            UBX_CFG_NAV5_UTC_STANDARD_UTC_GALILEO = 5U,
+            UBX_CFG_NAV5_UTC_STANDARD_UTC_GLONASS = 6U,
+            UBX_CFG_NAV5_UTC_STANDARD_UTC_BEIDOU  = 7U
+        } utcStandard: 8;
+
+        uint8_t reserved2[2];
+    };
+} UBX_CFG_NAV5_t;
 
 typedef union {
     GPS_UBX_cmd_t generic;
