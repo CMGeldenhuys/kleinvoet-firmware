@@ -68,10 +68,6 @@ int WAVE_createFile (WAVE_t *wav)
 
   WAVE_createHeader_(wav);
   WAVE_writeHeader(wav);
-  WAVE_infoChunkPrintf(wav, WAVE_INFO_IDX_COMMENT, "ABC %d", 1234);
-  WAVE_close(wav);
-  INFO("DONE!");
-  for(;;);
   return 1;
 }
 
