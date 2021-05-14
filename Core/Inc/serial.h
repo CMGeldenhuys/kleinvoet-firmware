@@ -56,6 +56,8 @@ extern "C" {
 #define SERIAL_TX_BLOCKING
 #endif
 
+#define SERIAL_HEAD(__serial_p__) ((__serial_p__)->rx.buf_ + (__serial_p__)->rx.idx)
+
 typedef struct {
     struct {
         UART_HandleTypeDef *uart;
@@ -136,6 +138,8 @@ int Serial_println (Serial_t *self, const char *str);
  * @return Returns a value greater than 0 if successful
  */
 int Serial_print (Serial_t *self, const char *str);
+
+uint8_t Serial_peek (Serial_t *self);
 
 #ifdef __cplusplus
 }

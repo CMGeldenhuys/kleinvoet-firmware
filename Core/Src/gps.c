@@ -128,9 +128,28 @@ int GPS_rxByte_ (uint8_t c)
 
       // Received start byte
       if (c == GPS_SYNC_1_) gps.rx.state = GPS_RX_SYNC_2;
-      else if (c == '$')
-        DBUG("NMEA Msg recv (ignoring)");
-      //TODO Print whole nmea command
+      // Potential start of NMEA messga
+      else if (c == '$') {
+        INFO("Potential NMEA message detected");
+        // While data left of serial
+        while (Serial_available(&gps.serial) > 0) {
+          uint8_t nextVal = Serial_peek(&gps.serial);
+          char *nmeaMessage = (char *) SERIAL_HEAD(&gps.serial);
+          if (nextVal == GPS_SYNC_1_) {
+            INFO("Aborting NMEA message detection (UBX Sync detected)");
+            break;
+          }
+            // CR detected
+            // TODO: check for LF too but for now CR is enough
+          else if (nextVal == '\r') {
+            *SERIAL_HEAD(&gps.serial) = '\0'; // NULL terminate string
+            INFO("NMEA message detected! -> %s", nmeaMessage);
+            break;
+          }
+          // Move on HEAD
+          Serial_read(&gps.serial);
+        }
+      }
       break;
     }
 

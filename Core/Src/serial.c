@@ -60,7 +60,7 @@ uint8_t Serial_read (Serial_t *self)
 uint8_t Serial_peek (Serial_t *self)
 {
 #ifdef SERIAL_RX_DMA
-  return *(self->rx.buf_ + self->rx.idx);
+  return *(SERIAL_HEAD(self));
 #else
 #error Operation not supported
 #endif
