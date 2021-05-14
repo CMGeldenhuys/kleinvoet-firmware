@@ -56,6 +56,8 @@ scratch. [See this tutorial for a guide on how to compile](https://mbd.kleier.ne
 git clone git://git.code.sf.net/p/openocd/code openocd
 cd openocd
 git pull
+# [Recommended] Optionally checkout a specific version
+git checkout v0.X.Y
 ./bootstrap
 ./configure
 make
