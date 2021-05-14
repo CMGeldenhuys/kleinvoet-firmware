@@ -147,20 +147,38 @@ int WAVE_createHeader_ (WAVE_t *wav)
   RIFF_chunk->ChunkID   = WAVE_CHUNKID_RIFF;
   RIFF_chunk->ChunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_header_t);
   RIFF_chunk->Format    = WAVE_RIFF_FORMAT_WAVE;
-  INFO("RIFF_chunk->ChunkSize: %u", RIFF_chunk->ChunkSize);
+  DBUG("RIFF_chunk->ChunkSize: %u", RIFF_chunk->ChunkSize);
 
   // LIST Chunk
   WAVE_LIST_chunk_t *LIST_chunk = &wav->header->listChunk;
   LIST_chunk->ChunkID    = WAVE_CHUNKID_LIST;
   LIST_chunk->ChunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_LIST_chunk_t);
   LIST_chunk->Format   = WAVE_FORMAT_INFO;
-  INFO("LIST_chunk->ChunkSize: %u", LIST_chunk->ChunkSize);
+  DBUG("LIST_chunk->ChunkSize: %u", LIST_chunk->ChunkSize);
 
-  WAVE_info_subchunk_t *ICMT_subchunk = &LIST_chunk->subChunks[0];
-  ICMT_subchunk->SubchunkID = WAVE_INFO_TAG_ICMT;
-  ICMT_subchunk->SubchunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_info_subchunk_t);
-  strcpy(ICMT_subchunk->Value, "Hello, World!");
-  INFO("ICMT_subchunk->SubchunkSize: %u", ICMT_subchunk->SubchunkSize);
+  WAVE_info_subchunk_t *iEngineer_subchunk = &LIST_chunk->subChunks[0];
+  iEngineer_subchunk->SubchunkID   = WAVE_INFO_TAG_ENGINEER;
+  iEngineer_subchunk->SubchunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_info_subchunk_t);
+  strncpy(iEngineer_subchunk->Value, AUTHORS, WAVE_MAX_INFO_VALUE_LEN);
+  DBUG("iEngineer_subchunk->SubchunkSize: %u", iEngineer_subchunk->SubchunkSize);
+
+  WAVE_info_subchunk_t *iVersion_subchunk = &LIST_chunk->subChunks[1];
+  iVersion_subchunk->SubchunkID   = WAVE_INFO_TAG_VERSION;
+  iVersion_subchunk->SubchunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_info_subchunk_t);
+  strncpy(iVersion_subchunk->Value, "KV_" VERSION, WAVE_MAX_INFO_VALUE_LEN);
+  DBUG("iVersion_subchunk->SubchunkSize: %u", iVersion_subchunk->SubchunkSize);
+
+  WAVE_info_subchunk_t *iLocation_subchunk = &LIST_chunk->subChunks[2];
+  iLocation_subchunk->SubchunkID   = WAVE_INFO_TAG_LOCATION;
+  iLocation_subchunk->SubchunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_info_subchunk_t);
+  strncpy(iLocation_subchunk->Value, "NO LOCK", WAVE_MAX_INFO_VALUE_LEN);
+  INFO("iLocation_subchunk->SubchunkSize: %u", iLocation_subchunk->SubchunkSize);
+
+  WAVE_info_subchunk_t *iComment_subchunk = &LIST_chunk->subChunks[3];
+  iComment_subchunk->SubchunkID   = WAVE_INFO_TAG_COMMENT;
+  iComment_subchunk->SubchunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_info_subchunk_t);
+  strncpy(iComment_subchunk->Value, "NO COMMENT", WAVE_MAX_INFO_VALUE_LEN);
+  INFO("iComment_subchunk->SubchunkSize: %u", iComment_subchunk->SubchunkSize);
 
   // fmt Subchunk
   WAVE_fmt_subchunk_t *fmt_chunk = &wav->header->fmtSubChunk;
@@ -172,7 +190,7 @@ int WAVE_createHeader_ (WAVE_t *wav)
   fmt_chunk->BlockAlign    = wav->blockSize;
   fmt_chunk->ByteRate      = wav->sampleRate * fmt_chunk->BlockAlign;
   fmt_chunk->BitsPerSample = wav->bitsPerSample;
-  INFO("fmt_chunk->SubchunkSize: %u", fmt_chunk->SubchunkSize);
+  DBUG("fmt_chunk->SubchunkSize: %u", fmt_chunk->SubchunkSize);
 
   // data Subchunk
   WAVE_data_subchunk_t *data_chunk = &wav->header->dataSubChunk;

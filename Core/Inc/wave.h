@@ -40,7 +40,7 @@ extern "C" {
 #endif
 
 #ifndef WAVE_MAX_INFO_VALUE_LEN
-#define WAVE_MAX_INFO_VALUE_LEN 14
+#define WAVE_MAX_INFO_VALUE_LEN 16
 #endif
 
 #if (WAVE_MAX_INFO_VALUE_LEN % 2 != 0)
@@ -48,7 +48,7 @@ extern "C" {
 #endif
 
 #ifndef WAVE_MAX_INFO_N_SLOTS
-#define WAVE_MAX_INFO_N_SLOTS 1
+#define WAVE_MAX_INFO_N_SLOTS 4
 #endif
 
 #if (((WAVE_MAX_INFO_VALUE_LEN) % 4) != 0)
@@ -95,7 +95,26 @@ const static WAVE_RIFF_STR_u WAVE_FORMAT_INFO      = {.str = {'I', 'N', 'F', 'O'
 const static WAVE_RIFF_STR_u WAVE_SUBCHUNKID_FMT   = {.str = {'f', 'm', 't', ' '}};
 const static WAVE_RIFF_STR_u WAVE_SUBCHUNKID_DATA  = {.str = {'d', 'a', 't', 'a'}};
 
-const static WAVE_RIFF_STR_u WAVE_INFO_TAG_ICMT = {.str = {'I', 'C', 'M', 'T'}};
+// Taken from: https://exiftool.org/TagNames/RIFF.html#Info
+const static WAVE_RIFF_STR_u WAVE_INFO_TAG_ICMT = {.str = {'I', 'C', 'M', 'T'}}; // Comment
+const static WAVE_RIFF_STR_u WAVE_INFO_TAG_IENG = {.str = {'I', 'E', 'N', 'G'}}; // Engineer
+const static WAVE_RIFF_STR_u WAVE_INFO_TAG_INAM = {.str = {'I', 'N', 'A', 'M'}}; // Title
+const static WAVE_RIFF_STR_u WAVE_INFO_TAG_IPRD = {.str = {'I', 'P', 'R', 'D'}}; // Product
+const static WAVE_RIFF_STR_u WAVE_INFO_TAG_IWRI = {.str = {'I', 'W', 'R', 'I'}}; // WrittenBy
+const static WAVE_RIFF_STR_u WAVE_INFO_TAG_LOCA = {.str = {'L', 'O', 'C', 'A'}}; // Location
+const static WAVE_RIFF_STR_u WAVE_INFO_TAG_ISMP = {.str = {'I', 'S', 'M', 'P'}}; // TimeCode
+const static WAVE_RIFF_STR_u WAVE_INFO_TAG_TVER = {.str = {'T', 'V', 'E', 'R'}}; // Version
+const static WAVE_RIFF_STR_u WAVE_INFO_TAG_TORG = {.str = {'T', 'O', 'R', 'G'}}; // Organisation
+
+#define WAVE_INFO_TAG_COMMENT WAVE_INFO_TAG_ICMT
+#define WAVE_INFO_TAG_ENGINEER WAVE_INFO_TAG_IENG
+#define WAVE_INFO_TAG_TITLE WAVE_INFO_TAG_INAM
+#define WAVE_INFO_TAG_PRODUCT WAVE_INFO_TAG_IPRD
+#define WAVE_INFO_TAG_WRITTENBY WAVE_INFO_TAG_IWRI
+#define WAVE_INFO_TAG_LOCATION WAVE_INFO_TAG_LOCA
+#define WAVE_INFO_TAG_TIMECODE WAVE_INFO_TAG_ISMP
+#define WAVE_INFO_TAG_VERSION WAVE_INFO_TAG_TVER
+#define WAVE_INFO_TAG_ORGANISATION WAVE_INFO_TAG_TORG
 
 const static WORD WAVE_AUDIO_PCM = 0x0001U;
 
