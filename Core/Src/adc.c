@@ -202,9 +202,6 @@ int ADC_yield ()
 
         DBUG("Flushing buffer (0x%08X -> %d)", dmaBuf, dmaLen);
         ADC_persistBuf_(dmaBuf, dmaLen);
-
-        DBUG("DMA Samples:%d, TIM Samples:%d, delta: %d", adc.nSamples, adc.tim->Instance->CNT,
-             adc.nSamples - adc.tim->Instance->CNT);
         ADC_clear_flag_cplt;
       }
       break;
