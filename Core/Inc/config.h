@@ -31,6 +31,9 @@ extern "C" {
 
 #ifdef DEBUG
 #define PERF_ENABLE
+
+// Change ADC sampling Freq.
+#define ADC_SAMPLING_RATE 16000
 #endif
 
 // Enable static file allocation

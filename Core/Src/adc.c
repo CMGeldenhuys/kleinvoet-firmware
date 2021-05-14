@@ -432,3 +432,8 @@ void HAL_SAI_ErrorCallback (SAI_HandleTypeDef *hsai)
 {
   ERR("SAI Problem! (0x%08x)", HAL_SAI_GetState(hsai));
 }
+
+inline void ADC_WAVE_writeHeader()
+{
+  WAVE_writeHeader(&adc.wav);
+}

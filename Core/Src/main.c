@@ -73,7 +73,8 @@ DMA_HandleTypeDef hdma_usart2_rx;
 /* USER CODE BEGIN PV */
 int ready = 0;
 // TODO: Just a quick fix
-int flushLog = 0;
+static int flushLog = 0;
+static uint_least8_t wavWriteHeaderFlag = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -191,6 +192,7 @@ int main(void)
 
   // Store logs
   LOG_flush();
+  wavWriteHeaderFlag = 0;
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "EndlessLoop"
   while (1) {
@@ -203,11 +205,16 @@ int main(void)
     TTY_yield();
     GPS_yield();
     TIME_yield();
+
     if(flushLog) {
       LOG_flush();
       flushLog = 0;
     }
 
+    if(wavWriteHeaderFlag) {
+      ADC_WAVE_writeHeader();
+      wavWriteHeaderFlag = 0;
+    }
 
     /* USER CODE END WHILE */
 
@@ -858,6 +865,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 #endif
     TIME_flush(0);
     flushLog = 1;
+
+    // Write WAVE header
+    wavWriteHeaderFlag = 1;
 
     // Run ADC conversion for ADC watchdog
     HAL_ADC_Start(&hadc1);
