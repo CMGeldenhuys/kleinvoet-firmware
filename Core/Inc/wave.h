@@ -47,6 +47,10 @@ extern "C" {
 #define WAVE_MAX_INFO_N_SLOTS 1
 #endif
 
+#if ((WAVE_MAX_INFO_VALUE_LEN * WAVE_MAX_INFO_N_SLOTS) % (4) != 0)
+#warning "WAVE_MAX_INFO_VALUE_LEN must be block aligned. Enforcing struct packing to compensate."
+#endif
+
 #define WAVE_FILE_SPLIT_KiB(b) ((unsigned)(b) << 10U)
 #define WAVE_FILE_SPLIT_MiB(b) ((unsigned)(WAVE_FILE_SPLIT_KiB(b)) << 10U)
 #define WAVE_FILE_SPLIT_GiB(b) ((unsigned)(WAVE_FILE_SPLIT_MiB(b)) << 10U)
@@ -116,20 +120,20 @@ typedef struct {
     DWORD           SubchunkSize;
 }                            WAVE_data_subchunk_t;
 
-typedef struct {
+typedef struct __packed {
     WAVE_RIFF_STR_u SubchunkID;
     DWORD           SubchunkSize;
     char          Value[WAVE_MAX_INFO_VALUE_LEN];
 }                            WAVE_info_subchunk_t;
 
-typedef struct {
+typedef struct __packed {
     WAVE_RIFF_STR_u      ChunkID;
     DWORD                ChunkSize;
     WAVE_RIFF_STR_u      Format;
     WAVE_info_subchunk_t subChunks[WAVE_MAX_INFO_N_SLOTS];
 }                            WAVE_LIST_chunk_t;
 
-typedef struct {
+typedef struct __packed {
     WAVE_RIFF_chunk_t    RIFFChunk;
     WAVE_fmt_subchunk_t  fmtSubChunk;
     WAVE_LIST_chunk_t    listChunk;
