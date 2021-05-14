@@ -141,29 +141,12 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_SET);
-  // TODO: Remove
-  // Place device in CAL mode
-//  HAL_GPIO_WritePin(CAL_EN_GPIO_Port, CAL_EN_Pin, GPIO_PIN_SET);
+
   // Give time for RTC to init properly
   HAL_RTC_WaitForSynchro(&hrtc);
   if (TTY_init(&huart2) <= 0) Error_Handler();
   if (FATFS_mount() <= 0) Error_Handler();
-//  {
-//    FIL *fp = FATFS_malloc(0);
-//    FATFS_open(fp, "test", FA_CREATE_ALWAYS | FA_WRITE);
-//    uint32_t tick = HAL_GetTick();
-//    int ret;
-//    ret = f_printf(fp, "Testing some new things out");
-//    INFO("fprintf %lu", HAL_GetTick() - tick);
-//    if(ret <= 0) WARN("write failed");
-//    tick = HAL_GetTick();
-////    f_sync(fp);
-//    ret = f_close(fp);
-//    INFO("fclose %lu", HAL_GetTick() - tick);
-//    if(ret != FR_OK) WARN("close failed");
-//
-//  }
-//  for(;;);
+
 #ifdef DEBUG
   WARN("Running with DEBUG flag enabled");
 #endif
