@@ -19,9 +19,15 @@ extern "C" {
 #include "serial.h"
 #include "fatfs.h"
 
+#include <assert.h>
+
 #ifndef GPS_BUF_LEN
 #define GPS_BUF_LEN 128
 #endif
+//                              cls                 id                len
+#define UBX_HEADER_SIZE (sizeof(GPS_cls_e) + sizeof(uint8_t) + sizeof(uint16_t))
+
+#define UBX_SIZEOF_PAYLOAD(__packet__) (sizeof(__packet__) - UBX_HEADER_SIZE)
 
 #define bitfield_t uint8_t
 
@@ -258,6 +264,8 @@ typedef union {
         uint8_t reserved2[2];
     };
 } UBX_CFG_NAV5_t;
+#define UBX_CFG_NAV5_PAYLOAD_SIZE 36
+static_assert(UBX_SIZEOF_PAYLOAD(UBX_CFG_NAV5_t) == UBX_CFG_NAV5_PAYLOAD_SIZE, "UBX_CFG_NAV5_t size mismatch");
 
 typedef union {
     GPS_UBX_cmd_t generic;
