@@ -40,7 +40,7 @@ extern "C" {
 #endif
 
 #ifndef WAVE_MAX_INFO_VALUE_LEN
-#define WAVE_MAX_INFO_VALUE_LEN 16
+#define WAVE_MAX_INFO_VALUE_LEN 14
 #endif
 
 #if (WAVE_MAX_INFO_VALUE_LEN % 2 != 0)
@@ -51,8 +51,9 @@ extern "C" {
 #define WAVE_MAX_INFO_N_SLOTS 1
 #endif
 
-#if ((WAVE_MAX_INFO_VALUE_LEN * WAVE_MAX_INFO_N_SLOTS) % (4) != 0) || ((WAVE_MAX_INFO_VALUE_LEN) % (4) != 0)
-#error "WAVE_MAX_INFO_VALUE_LEN must be block aligned. Enforcing struct packing to compensate."
+#if (((WAVE_MAX_INFO_VALUE_LEN) % 4) != 0)
+#warning "WAVE_MAX_INFO_VALUE_LEN must be block aligned. Padding struct to compensate."
+#define WAVE_HEADER_PADDING  ((WAVE_MAX_INFO_VALUE_LEN) % (4))
 #endif
 
 #define WAVE_FILE_SPLIT_KiB(b) ((unsigned)(b) << 10U)
@@ -128,6 +129,9 @@ typedef struct {
     WAVE_RIFF_STR_u SubchunkID;
     DWORD           SubchunkSize;
     char            Value[WAVE_MAX_INFO_VALUE_LEN];
+#ifdef WAVE_HEADER_PADDING
+    uint8_t         INTERNAL_padding_[WAVE_HEADER_PADDING];
+#endif
 }                 WAVE_info_subchunk_t;
 
 typedef struct {
