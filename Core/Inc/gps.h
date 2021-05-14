@@ -265,7 +265,7 @@ typedef union {
     };
 } UBX_CFG_NAV5_t;
 #define UBX_CFG_NAV5_PAYLOAD_SIZE 36
-static_assert(UBX_SIZEOF_PAYLOAD(UBX_CFG_NAV5_t) == UBX_CFG_NAV5_PAYLOAD_SIZE, "UBX_CFG_NAV5_t size mismatch");
+static_assert(UBX_SIZEOF_PAYLOAD(UBX_CFG_NAV5_t) == UBX_CFG_NAV5_PAYLOAD_SIZE, "UBX_CFG_NAV5_t payload size mismatch");
 
 typedef union {
     GPS_UBX_cmd_t generic;
