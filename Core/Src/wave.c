@@ -156,29 +156,29 @@ int WAVE_createHeader_ (WAVE_t *wav)
   LIST_chunk->Format   = WAVE_FORMAT_INFO;
   DBUG("LIST_chunk->ChunkSize: %u", LIST_chunk->ChunkSize);
 
-  WAVE_info_subchunk_t *iEngineer_subchunk = &LIST_chunk->subChunks[0];
+  WAVE_info_subchunk_t *iEngineer_subchunk = &LIST_chunk->subChunks[WAVE_INFO_IDX_ENGINEER];
   iEngineer_subchunk->SubchunkID   = WAVE_INFO_TAG_ENGINEER;
   iEngineer_subchunk->SubchunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_info_subchunk_t);
   strncpy(iEngineer_subchunk->Value, AUTHORS, WAVE_MAX_INFO_VALUE_LEN);
   DBUG("iEngineer_subchunk->SubchunkSize: %u", iEngineer_subchunk->SubchunkSize);
 
-  WAVE_info_subchunk_t *iVersion_subchunk = &LIST_chunk->subChunks[1];
+  WAVE_info_subchunk_t *iVersion_subchunk = &LIST_chunk->subChunks[WAVE_INFO_IDX_VERSION];
   iVersion_subchunk->SubchunkID   = WAVE_INFO_TAG_VERSION;
   iVersion_subchunk->SubchunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_info_subchunk_t);
   strncpy(iVersion_subchunk->Value, "KV_" VERSION, WAVE_MAX_INFO_VALUE_LEN);
   DBUG("iVersion_subchunk->SubchunkSize: %u", iVersion_subchunk->SubchunkSize);
 
-  WAVE_info_subchunk_t *iLocation_subchunk = &LIST_chunk->subChunks[2];
+  WAVE_info_subchunk_t *iLocation_subchunk = &LIST_chunk->subChunks[WAVE_INFO_IDX_LOCATION];
   iLocation_subchunk->SubchunkID   = WAVE_INFO_TAG_LOCATION;
   iLocation_subchunk->SubchunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_info_subchunk_t);
   strncpy(iLocation_subchunk->Value, "NO LOCK", WAVE_MAX_INFO_VALUE_LEN);
-  INFO("iLocation_subchunk->SubchunkSize: %u", iLocation_subchunk->SubchunkSize);
+  DBUG("iLocation_subchunk->SubchunkSize: %u", iLocation_subchunk->SubchunkSize);
 
-  WAVE_info_subchunk_t *iComment_subchunk = &LIST_chunk->subChunks[3];
+  WAVE_info_subchunk_t *iComment_subchunk = &LIST_chunk->subChunks[WAVE_INFO_IDX_COMMENT];
   iComment_subchunk->SubchunkID   = WAVE_INFO_TAG_COMMENT;
   iComment_subchunk->SubchunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_info_subchunk_t);
   strncpy(iComment_subchunk->Value, "NO COMMENT", WAVE_MAX_INFO_VALUE_LEN);
-  INFO("iComment_subchunk->SubchunkSize: %u", iComment_subchunk->SubchunkSize);
+  DBUG("iComment_subchunk->SubchunkSize: %u", iComment_subchunk->SubchunkSize);
 
   // fmt Subchunk
   WAVE_fmt_subchunk_t *fmt_chunk = &wav->header->fmtSubChunk;

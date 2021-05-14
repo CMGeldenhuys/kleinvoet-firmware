@@ -48,7 +48,7 @@ extern "C" {
 #endif
 
 #ifndef WAVE_MAX_INFO_N_SLOTS
-#define WAVE_MAX_INFO_N_SLOTS 4
+#define WAVE_MAX_INFO_N_SLOTS WAVE_INFO_IDX_LENGTH
 #endif
 
 #if (((WAVE_MAX_INFO_VALUE_LEN) % 4) != 0)
@@ -120,6 +120,14 @@ const static WORD WAVE_AUDIO_PCM = 0x0001U;
 
 // Very helpful: http://soundfile.sapp.org/doc/WaveFormat/
 // Also helpful: http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html
+
+typedef enum {
+    WAVE_INFO_IDX_VERSION,
+    WAVE_INFO_IDX_ENGINEER,
+    WAVE_INFO_IDX_LOCATION,
+    WAVE_INFO_IDX_COMMENT,
+    WAVE_INFO_IDX_LENGTH
+}                 WAVE_INFO_IDX_e;
 
 typedef struct {
     WAVE_RIFF_STR_u ChunkID;
