@@ -126,3 +126,7 @@ it will result in an corrupted header. To repair the file one can simply run:
 ```shell
 sox --ignore-length corrupted.wav fixed.wav
 ```
+### Usefull tools for WAV/Serialisation analysis
+- `shntool info` : Usefull for checking the PCM data
+- `exiftool` : Useful for checking _chunk_/_subchunk_ info
+- `mediainfo` : General purpose tool
