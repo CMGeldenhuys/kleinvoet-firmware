@@ -216,6 +216,11 @@ int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync);
  */
 int WAVE_close (WAVE_t *wav);
 
+
+int WAVE_infoChunkPrintf (WAVE_t *wav, WAVE_INFO_IDX_e infoTag, const char *fmt, ...);
+
+int WAVE_writeHeader (WAVE_t *wav);
+
 #ifdef __cplusplus
 }
 #endif

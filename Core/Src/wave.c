@@ -7,7 +7,6 @@
 
 int WAVE_createHeader_ (WAVE_t *wav);
 
-int WAVE_writeHeader_ (WAVE_t *wav);
 
 int WAVE_createFile (WAVE_t *wav)
 {
@@ -69,6 +68,7 @@ int WAVE_createFile (WAVE_t *wav)
 
   WAVE_createHeader_(wav);
   WAVE_writeHeader_(wav);
+  WAVE_infoChunkPrintf(wav, WAVE_INFO_IDX_COMMENT, "ABC %d", 1234);
   WAVE_close(wav);
   INFO("DONE!");
   for(;;);
@@ -224,5 +224,24 @@ int WAVE_close (WAVE_t *wav)
     return 1;
   }
   else return 0;
+}
+
+int WAVE_infoChunkPrintf(WAVE_t *wav, WAVE_INFO_IDX_e infoTag, const char* fmt, ...)
+{
+  INFO("Changing info tag (%u)", infoTag);
+  WAVE_LIST_chunk_t *LIST_chunk = &wav->header->listChunk;
+  WAVE_info_subchunk_t *infoSubchunk = &LIST_chunk->subChunks[infoTag];
+
+  // Parse varargs
+  va_list args;
+  va_start(args, fmt);
+
+  // Parse message format
+  int msgLen = vsnprintf(infoSubchunk->Value, WAVE_MAX_INFO_VALUE_LEN, fmt, args);
+
+  // Free varargs
+  va_end(args);
+
+  return msgLen;
 }
 
