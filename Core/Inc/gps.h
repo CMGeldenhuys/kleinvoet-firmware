@@ -30,6 +30,8 @@ extern "C" {
 #define UBX_SIZEOF_PAYLOAD(__packet__) (sizeof(__packet__) - UBX_HEADER_SIZE)
 
 #define bitfield_t uint8_t
+#define UBX_BIT_ENABLE (1U)
+#define UBX_BIT_DISBALE (0U)
 
 typedef enum __attribute__ ((packed)) {
     UBX_NAV = 0x01,
@@ -59,6 +61,7 @@ typedef enum __attribute__ ((packed)) {
     UBX_CFG_PRT     = 0x00,
     UBX_CFG_MSG     = 0x01,
     UBX_CFG_TP5     = 0x31,
+    UBX_CFG_NAV5    = 0x24,
 
     NMEA_DTM = 0x0A,
     NMEA_GBQ = 0x44,
@@ -199,8 +202,8 @@ typedef union {
                 bitfield_t reserved_1: 5;
                 // MSB
             };
-            uint16_t bitmask;
-        }         mask;
+            uint16_t mask;
+        };
 
         enum {
             UBX_CFG_NAV5_DYNMODEL_PORTABLE    = 0U,
@@ -671,6 +674,14 @@ static const UBX_CFG_TP5_t GPS_CONFIGURE_TIMEPULSE = {
                               | UBX_CFG_TP5_FLAGS_POLARITY_RISING
 };
 
+static const UBX_CFG_NAV5_t GPS_CONFIGURE_NAV5 = {
+        .cls = UBX_CFG,
+        .id = UBX_CFG_NAV5,
+        .len = UBX_CFG_NAV5_PAYLOAD_SIZE,
+
+        .dyn = UBX_BIT_ENABLE,
+        .dynModel = UBX_CFG_NAV5_DYNMODEL_STATIONARY
+};
 
 #define GPS_LEN_DEFAULT_CONFIG (sizeof(GPS_DEFAULT_CONFIG)/sizeof(GPS_UBX_cmd_t))
 
@@ -701,7 +712,10 @@ static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {
         &GPS_ENABLE_UBX_NAV_TIMEUTC.generic,
 
         // Setup time pulse
-        &GPS_CONFIGURE_TIMEPULSE.generic
+        &GPS_CONFIGURE_TIMEPULSE.generic,
+
+        // Setup NAV
+        &GPS_CONFIGURE_NAV5.generic
 };
 
 /**
