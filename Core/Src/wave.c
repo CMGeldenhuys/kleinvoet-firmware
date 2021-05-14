@@ -67,7 +67,7 @@ int WAVE_createFile (WAVE_t *wav)
 #endif
 
   WAVE_createHeader_(wav);
-  WAVE_writeHeader_(wav);
+  WAVE_writeHeader(wav);
   WAVE_infoChunkPrintf(wav, WAVE_INFO_IDX_COMMENT, "ABC %d", 1234);
   WAVE_close(wav);
   INFO("DONE!");
@@ -75,7 +75,7 @@ int WAVE_createFile (WAVE_t *wav)
   return 1;
 }
 
-int WAVE_writeHeader_ (WAVE_t *wav)
+int WAVE_writeHeader (WAVE_t *wav)
 {
   DBUG("Writing file header");
   return FATFS_lwrite(wav->fp, wav->header, sizeof(WAVE_header_t), 0);
@@ -206,7 +206,7 @@ int WAVE_close (WAVE_t *wav)
   INFO("Closing WAVE file...");
 #ifdef WAVE_STATIC_FILE_ALLOC
   DBUG("Updating WAVE Header");
-  WAVE_writeHeader_(wav);
+  WAVE_writeHeader(wav);
   DBUG("Truncating WAVE file");
   f_truncate(wav->fp);
 #endif
