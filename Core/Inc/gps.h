@@ -1139,12 +1139,12 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck, int retryOnNack);
 
 #define GPS_log_UBX_NAV_POSECEF(cmd_t) \
 ({                                 \
-  INFO("UBX-NAV-POSECEF (%d, %d, %d)", cmd_t->ecefX, cmd_t->ecefY, cmd_t->ecefZ); \
-  INFO("  iTOW: %u", cmd_t->iTOW);      \
-  INFO("  ecefX: %d", cmd_t->ecefX);     \
-  INFO("  ecefY: %d", cmd_t->ecefY);      \
-  INFO("  ecefZ: %d", cmd_t->ecefZ);      \
-  INFO("  pAcc: %u", cmd_t->pAcc);      \
+  INFO("UBX-NAV-POSECEF (%d, %d, %d, %u)", cmd_t->ecefX, cmd_t->ecefY, cmd_t->ecefZ, cmd_t->pAcc); \
+  DBUG("  iTOW: %u", cmd_t->iTOW);      \
+  DBUG("  ecefX: %d", cmd_t->ecefX);     \
+  DBUG("  ecefY: %d", cmd_t->ecefY);      \
+  DBUG("  ecefZ: %d", cmd_t->ecefZ);      \
+  DBUG("  pAcc: %u", cmd_t->pAcc);      \
 })
 
 #define GPS_log_UBX_NAV_PVT(cmd_t) \
