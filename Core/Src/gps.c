@@ -129,15 +129,16 @@ int GPS_rxByte_ (uint8_t c)
       // Potential start of NMEA messga
       else if (c == '$') {
         INFO("Potential NMEA message detected");
+//        HAL_UART_DMAStop(gps.serial.config_.uart);
         // Store pointer to start of message
-        char *nmeaMessage = (char *) SERIAL_HEAD(&gps.serial);
+        char *nmeaMessage = (char *) SERIAL_HEAD(&gps.serial) - 1;
         // While data left of serial
         while (Serial_available(&gps.serial) > 0) {
           // Get next char but don't move on pointer
           uint8_t nextVal = Serial_peek(&gps.serial);
           if (nextVal == GPS_SYNC_1_) {
             INFO("Aborting NMEA message detection (UBX Sync detected)");
-            break;
+            return 1;
           }
             // CR detected
             // TODO: check for LF too but for now CR is enough
@@ -147,12 +148,14 @@ int GPS_rxByte_ (uint8_t c)
             // Move on HEAD
             Serial_read(&gps.serial);
 
-            INFO("NMEA message detected! -> %s", nmeaMessage);
-            break;
+            INFO("> NMEA: %s", nmeaMessage);
+            return 1;
           }
           // Move on HEAD
           Serial_read(&gps.serial);
         }
+
+        WARN("No resolution found... Potential buffer overflow");
       }
       break;
     }
