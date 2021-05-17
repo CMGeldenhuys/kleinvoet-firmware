@@ -1012,7 +1012,7 @@ static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {
         &GPS_ENABLE_UBX_NAV_STATUS.generic,
         &GPS_ENABLE_UBX_NAV_TIMEUTC.generic,
         &GPS_ENABLE_UBX_NAV_POSECEF.generic,
-        &GPS_ENABLE_UBX_NAV_PVT.generic,
+//        &GPS_ENABLE_UBX_NAV_PVT.generic,
 
         // Setup time pulse
         &GPS_CONFIGURE_TIMEPULSE.generic,
