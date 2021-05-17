@@ -989,17 +989,17 @@ static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {
         &GPS_DISABLE_NMEA_ZDA.generic,
 
         // Enable GPS messages
-//        &GPS_ENABLE_UBX_NAV_SAT.generic,
-//        &GPS_ENABLE_UBX_NAV_STATUS.generic,
-//        &GPS_ENABLE_UBX_NAV_TIMEUTC.generic,
-//        &GPS_ENABLE_UBX_NAV_HPPOSECEF.generic,
+        &GPS_ENABLE_UBX_NAV_SAT.generic,
+        &GPS_ENABLE_UBX_NAV_STATUS.generic,
+        &GPS_ENABLE_UBX_NAV_TIMEUTC.generic,
+        &GPS_ENABLE_UBX_NAV_HPPOSECEF.generic,
         &GPS_ENABLE_UBX_NAV_PVT.generic,
 
         // Setup time pulse
         &GPS_CONFIGURE_TIMEPULSE.generic,
 
         // Setup NAV
-//        &GPS_CONFIGURE_NAV5.generic
+        &GPS_CONFIGURE_NAV5.generic
 };
 
 /**
