@@ -352,14 +352,78 @@ typedef union {
         uint16_t  len;
 
         uint32_t iTOW;
-        uint8_t  gpsFix;
-        uint8_t  flags;
-        uint8_t  fixStat;
-        uint8_t  flags2;
+        enum {
+            UBX_NAV_STATUS_GPSFIX_NOFIX             = 0x00U,
+            UBX_NAV_STATUS_GPSFIX_DEADRECKONING     = 0x01U,
+            UBX_NAV_STATUS_GPSFIX_2D                = 0x02U,
+            UBX_NAV_STATUS_GPSFIX_3D                = 0x03U,
+            UBX_NAV_STATUS_GPSFIX_GPS_DEADRECKONING = 0x04U,
+            UBX_NAV_STATUS_GPSFIX_TIME              = 0x05U
+        }        gpsFix: 8;
+        union {
+            struct {
+                // LSB
+                bitfield_t gpsFixOk: 1;
+                bitfield_t diffSoln: 1;
+                bitfield_t wknSet: 1;
+                bitfield_t towSet: 1;
+                bitfield_t _reserved1: 4;
+                // MSB
+            };
+            uint8_t flags;
+        };
+        union {
+            struct {
+                // LSB
+                bitfield_t diffCorr: 1;
+                bitfield_t carrSolnValid: 1;
+                bitfield_t _reserved2: 4;
+                __packed enum {
+                    UBX_NAV_STATUS_MAPMATCHING_NONE                = 0b00,
+                    UBX_NAV_STATUS_MAPMATCHING_VALID_EXPIRED       = 0b01,
+                    UBX_NAV_STATUS_MAPMATCHING_VALID               = 0b10,
+                    UBX_NAV_STATUS_MAPMATCHING_VALID_DEADRECKONING = 0b11
+                }          mapMatching: 2;
+                // MSB
+            };
+            uint8_t fixStat;
+        };
+        union {
+            struct {
+                // LSB
+                __packed enum {
+                    UBX_NAV_STATUS_PSMSTATE_ACQUISTITION             = 0,
+                    UBX_NAV_STATUS_PSMSTATE_TRACKING                 = 1,
+                    UBX_NAV_STATUS_PSMSTATE_POWER_OPTIMISED_TRACKING = 2,
+                    UBX_NAV_STATUS_PSMSTATE_INACTIVE                 = 3
+                } psmState: 2;
+
+                bitfield_t _reserved3: 1;
+
+                __packed enum {
+                    UBX_NAV_STATUS_SPOOFDETSTATE_UNKNOWN            = 0,
+                    UBX_NAV_STATUS_SPOOFDETSTATE_NO_INDICATION      = 1,
+                    UBX_NAV_STATUS_SPOOFDETSTATE_INDICATION         = 2,
+                    UBX_NAV_STATUS_SPOOFDETSTATE_MULTIPLE_LOCATIONS = 3
+                }          spoofDetState: 2;
+
+                bitfield_t _reserved4: 1;
+
+                __packed enum {
+                    UBX_NAV_STATUS_CARRSOLN_NO_CARRIER           = 0,
+                    UBX_NAV_STATUS_CARRSOLN_FLOATING_AMBIGUITIES = 1,
+                    UBX_NAV_STATUS_CARRSOLN_FIXED_AMBIGUITIES    = 2
+                }          carrSoln: 2;
+                // MSB
+            };
+            uint8_t flags2;
+        };
         uint32_t ttff;
         uint32_t msss;
     };
 } UBX_NAV_STATUS_t;
+#define UBX_NAV_STATUS_PAYLOAD_SIZE 16
+static_assert(UBX_SIZEOF_PAYLOAD(UBX_NAV_STATUS_t) == UBX_NAV_STATUS_PAYLOAD_SIZE, "UBX_CFG_NAV5_t payload size mismatch");
 
 typedef union {
     GPS_UBX_cmd_t generic;
@@ -850,10 +914,17 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck, int retryOnNack);
 ({                                    \
   INFO("UBX-NAV-STATUS (V:%d, N:%d)", gps.timeValidN, gps.timeInvalidN); \
   DBUG("  iTOW: %lu", cmd_t->iTOW); \
-  DBUG("  gpsFix: 0x%02X", cmd_t->gpsFix); \
-  DBUG("  flags: 0x%02X", cmd_t->flags); \
-  DBUG("  fixStat: 0x%02x", cmd_t->fixStat); \
-  DBUG("  flags2: 0x%02X", cmd_t->flags2); \
+  DBUG("  gpsFix: 0x%02X", cmd_t->gpsFix);                               \
+  DBUG("  gpsFixOk: 0x%02X", cmd_t->gpsFixOk); \
+  DBUG("  diffSoln: 0x%02X", cmd_t->diffSoln); \
+  DBUG("  wknSet: 0x%02X", cmd_t->wknSet); \
+  DBUG("  towSet: 0x%02X", cmd_t->towSet); \
+  DBUG("  diffCorr: 0x%02X", cmd_t->diffCorr); \
+  DBUG("  carrSolnValid: 0x%02X", cmd_t->carrSolnValid); \
+  DBUG("  mapMatching: 0x%02X", cmd_t->mapMatching); \
+  DBUG("  psmState: 0x%02X", cmd_t->psmState); \
+  DBUG("  spoofDetState: 0x%02X", cmd_t->spoofDetState); \
+  DBUG("  carrSoln: 0x%02X", cmd_t->carrSoln); \
   DBUG("  ttff: %lu", cmd_t->ttff); \
   DBUG("  msss: %lu", cmd_t->msss); \
 })
