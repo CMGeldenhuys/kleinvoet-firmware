@@ -543,7 +543,7 @@ typedef union {
         union {
             struct {
                 // LSB
-                bitfield_t gnssFixOk : 1;
+                bitfield_t gnssFixOK : 1;
                 bitfield_t diffSoln : 1;
                 bitfield_t _reserved3 : 3;
                 bitfield_t headVehValid : 1;
@@ -1116,6 +1116,48 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck, int retryOnNack);
   DBUG("  ecefZHp: %d", cmd_t->ecefZHp);      \
   DBUG("  flags.invalidEcef: %u", cmd_t->invalidEcef);      \
   DBUG("  pAcc: %lu", cmd_t->pAcc);      \
+})
+
+#define GPS_log_UBX_NAV_PVT(cmd_t) \
+({                                 \
+  INFO("UBX-NAV-PVT");               \
+  INFO("  iTOW: %d", cmd_t->iTOW);    \
+  INFO("  year: %u", cmd_t->year);    \
+  INFO("  month: %u", cmd_t->month);    \
+  INFO("  day: %u", cmd_t->day);    \
+  INFO("  hour: %u", cmd_t->hour);    \
+  INFO("  min: %u", cmd_t->min);    \
+  INFO("  sec: %u", cmd_t->sec);    \
+  INFO("  nano: %d", cmd_t->nano);    \
+  INFO("  tAcc: %u", cmd_t->tAcc);    \
+  INFO("  fixType: %u", cmd_t->fixType);    \
+  INFO("  validDate: %u", cmd_t->validDate);    \
+  INFO("  validTime: %u", cmd_t->validTime);    \
+  INFO("  fullyResolved: %u", cmd_t->fullyResolved);    \
+  INFO("  validMag: %u", cmd_t->validMag);    \
+  INFO("  gnssFixOK: %u", cmd_t->gnssFixOK);    \
+  INFO("  diffSoln: %u", cmd_t->diffSoln);    \
+  INFO("  headVehValid: %u", cmd_t->headVehValid);    \
+  INFO("  carrSoln: %u", cmd_t->carrSoln);    \
+  INFO("  numSV: %u", cmd_t->numSV);    \
+  INFO("  lon: %d", cmd_t->lon);    \
+  INFO("  lat: %d", cmd_t->lat);    \
+  INFO("  height: %d", cmd_t->height);    \
+  INFO("  hMSL: %d", cmd_t->hMSL);    \
+  INFO("  hAcc: %u", cmd_t->hAcc);    \
+  INFO("  vAcc: %u", cmd_t->vAcc);    \
+  INFO("  velN: %d", cmd_t->velN);    \
+  INFO("  velE: %d", cmd_t->velE);    \
+  INFO("  velD: %d", cmd_t->velD);    \
+  INFO("  gSpeed: %d", cmd_t->gSpeed);    \
+  INFO("  headMot: %d", cmd_t->headMot);    \
+  INFO("  sAcc: %d", cmd_t->sAcc);    \
+  INFO("  headAcc: %d", cmd_t->headAcc);    \
+  INFO("  pDOP: %u", cmd_t->pDOP);    \
+  INFO("  invalidLlh: %u", cmd_t->invalidLlh);    \
+  INFO("  headVeh: %d", cmd_t->headVeh);    \
+  INFO("  magDec: %d", cmd_t->magDec);    \
+  INFO("  magAcc: %u", cmd_t->magAcc);    \
 })
 
 #ifdef __cplusplus

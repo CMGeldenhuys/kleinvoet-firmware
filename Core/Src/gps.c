@@ -400,6 +400,16 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
       return UBX_NAV_HPPOSECEF;
     }
 
+    case UBX_NAV_PVT: {
+      // Parse Command
+      const UBX_NAV_PVT_t *cmd_t = (UBX_NAV_PVT_t *) cmd;
+
+      // Log message
+      GPS_log_UBX_NAV_PVT(cmd_t);
+
+      return UBX_NAV_HPPOSECEF;
+    }
+
     default: {
       INFO("NAV Msg ignored (0x%02X)", cmd->id);
       return 0;
