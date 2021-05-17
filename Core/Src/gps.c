@@ -397,6 +397,16 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
       return UBX_NAV_HPPOSECEF;
     }
 
+    case UBX_NAV_POSECEF: {
+      // Parse Command
+      const UBX_NAV_POSECEF_t *cmd_t = (UBX_NAV_POSECEF_t *) &gps.rx.cmd._t;
+
+      // Log message
+      GPS_log_UBX_NAV_POSECEF(cmd_t);
+
+      return UBX_NAV_POSECEF;
+    }
+
     case UBX_NAV_PVT: {
       // Parse Command
       const UBX_NAV_PVT_t *cmd_t = (UBX_NAV_PVT_t *) cmd;

@@ -62,6 +62,7 @@ typedef enum __attribute__ ((packed)) {
     UBX_NAV_STATUS    = 0x03,
     UBX_NAV_SAT       = 0x35,
     UBX_NAV_HPPOSECEF = 0x13,
+    UBX_NAV_POSECEF   = 0x01,
     UBX_NAV_PVT       = 0x07,
     UBX_CFG_PRT       = 0x00,
     UBX_CFG_MSG       = 0x01,
@@ -505,6 +506,24 @@ typedef union {
         uint16_t  len;
 
         uint32_t iTOW;
+        int32_t  ecefX;
+        int32_t  ecefY;
+        int32_t  ecefZ;
+        uint32_t pAcc;
+    };
+} UBX_NAV_POSECEF_t;
+#define UBX_NAV_POSECEF_PAYLOAD_SIZE 20
+static_assert(UBX_SIZEOF_PAYLOAD(UBX_NAV_POSECEF_t) == UBX_NAV_POSECEF_PAYLOAD_SIZE,
+              "UBX_NAV_POSECEF_t payload size mismatch");
+
+typedef union {
+    GPS_UBX_cmd_t generic;
+    struct {
+        GPS_cls_e cls;
+        uint8_t   id;
+        uint16_t  len;
+
+        uint32_t iTOW;
 
         uint16_t year;
         uint8_t month;
@@ -898,13 +917,13 @@ static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_TIMEUTC = {
         .rate     = 1u
 };
 
-static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_HPPOSECEF = {
+static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_POSECEF = {
         .cls      = UBX_CFG,
         .id       = UBX_CFG_MSG,
         .len      = 3u,
 
         .msgClass = UBX_NAV,
-        .msgID    = UBX_NAV_HPPOSECEF,
+        .msgID    = UBX_NAV_POSECEF,
         .rate     = 10u
 };
 
@@ -925,7 +944,7 @@ static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_PVT = {
 
         .msgClass = UBX_NAV,
         .msgID    = UBX_NAV_PVT,
-        .rate     = 10u
+        .rate     = 60u
 };
 
 static const UBX_CFG_TP5_t GPS_CONFIGURE_TIMEPULSE = {
@@ -992,7 +1011,7 @@ static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {
         &GPS_ENABLE_UBX_NAV_SAT.generic,
         &GPS_ENABLE_UBX_NAV_STATUS.generic,
         &GPS_ENABLE_UBX_NAV_TIMEUTC.generic,
-        &GPS_ENABLE_UBX_NAV_HPPOSECEF.generic,
+        &GPS_ENABLE_UBX_NAV_POSECEF.generic,
         &GPS_ENABLE_UBX_NAV_PVT.generic,
 
         // Setup time pulse
@@ -1116,6 +1135,16 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck, int retryOnNack);
   DBUG("  ecefZHp: %d", cmd_t->ecefZHp);      \
   DBUG("  flags.invalidEcef: %u", cmd_t->invalidEcef);      \
   DBUG("  pAcc: %lu", cmd_t->pAcc);      \
+})
+
+#define GPS_log_UBX_NAV_POSECEF(cmd_t) \
+({                                 \
+  INFO("UBX-NAV-POSECEF (%d, %d, %d)", cmd_t->ecefX, cmd_t->ecefY, cmd_t->ecefZ); \
+  INFO("  iTOW: %u", cmd_t->iTOW);      \
+  INFO("  ecefX: %d", cmd_t->ecefX);     \
+  INFO("  ecefY: %d", cmd_t->ecefY);      \
+  INFO("  ecefZ: %d", cmd_t->ecefZ);      \
+  INFO("  pAcc: %u", cmd_t->pAcc);      \
 })
 
 #define GPS_log_UBX_NAV_PVT(cmd_t) \
