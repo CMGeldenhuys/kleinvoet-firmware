@@ -57,6 +57,7 @@ int GPS_configureUBX_ ()
     GPS_sendCommand(GPS_DEFAULT_CONFIG[i], 0, 0);
     // TODO: Quick fix if a message is sent twice chances are better will be properly ack'd
     // NB: NEED ACK QUEUE...
+    // TODO: remove!
     HAL_Delay(10);
     GPS_sendCommand(GPS_DEFAULT_CONFIG[i], 0, 0);
     // Wait between messages to ensure success
@@ -131,10 +132,12 @@ int GPS_rxByte_ (uint8_t c)
       // Potential start of NMEA messga
       else if (c == '$') {
         INFO("Potential NMEA message detected");
+        // Store pointer to start of message
+        char *nmeaMessage = (char *) SERIAL_HEAD(&gps.serial);
         // While data left of serial
         while (Serial_available(&gps.serial) > 0) {
+          // Get next char but don't move on pointer
           uint8_t nextVal = Serial_peek(&gps.serial);
-          char *nmeaMessage = (char *) SERIAL_HEAD(&gps.serial);
           if (nextVal == GPS_SYNC_1_) {
             INFO("Aborting NMEA message detection (UBX Sync detected)");
             break;
@@ -143,6 +146,10 @@ int GPS_rxByte_ (uint8_t c)
             // TODO: check for LF too but for now CR is enough
           else if (nextVal == '\r') {
             *SERIAL_HEAD(&gps.serial) = '\0'; // NULL terminate string
+
+            // Move on HEAD
+            Serial_read(&gps.serial);
+
             INFO("NMEA message detected! -> %s", nmeaMessage);
             break;
           }
@@ -269,7 +276,7 @@ int GPS_processCmd_ (GPS_UBX_cmd_t *cmd)
     }
 
     case UBX_ACK: {
-      DBUG("ACK Msg recv (0x%02X | 0x%02X)", cmd->cls, cmd->id);
+      INFO("ACK Msg recv (0x%02X | 0x%02X)", cmd->cls, cmd->id);
       // TODO: Process ACK msg to make sure commands are successful
       return 1;
     }

@@ -315,9 +315,34 @@ typedef union {
         uint8_t  hour;
         uint8_t  min;
         uint8_t  sec;
-        uint8_t  valid;
+
+        union {
+            struct {
+                // LSB
+                bitfield_t validTOW: 1;
+                bitfield_t validWKN: 1;
+                bitfield_t validUTC: 1;
+                bitfield_t _reserved1: 1;
+                __packed enum {
+                    UBX_NAV_TIMEUTC_STANDARD_NO_INFORMATION = 0U,
+                    UBX_NAV_TIMEUTC_STANDARD_CRL            = 1U,
+                    UBX_NAV_TIMEUTC_STANDARD_NIST           = 2U,
+                    UBX_NAV_TIMEUTC_STANDARD_USNO           = 3U,
+                    UBX_NAV_TIMEUTC_STANDARD_BIPM           = 4U,
+                    UBX_NAV_TIMEUTC_STANDARD_EU             = 5U,
+                    UBX_NAV_TIMEUTC_STANDARD_SU             = 6U,
+                    UBX_NAV_TIMEUTC_STANDARD_NTSC           = 7U,
+                    UBX_NAV_TIMEUTC_STANDARD_UNKNOWN        = 15U
+                }          utcStandard: 4;
+                // MSB
+            };
+            uint8_t valid;
+        };
+
     };
 } UBX_NAV_TIMEUTC_t;
+#define UBX_NAV_TIMEUTC_PAYLOAD_SIZE 20
+static_assert(UBX_SIZEOF_PAYLOAD(UBX_NAV_TIMEUTC_t) == UBX_NAV_TIMEUTC_PAYLOAD_SIZE, "UBX_CFG_NAV5_t payload size mismatch");
 
 typedef union {
     GPS_UBX_cmd_t generic;
@@ -815,7 +840,10 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck, int retryOnNack);
     DBUG("  hour: %02u", cmd_t->hour); \
     DBUG("  min: %02u", cmd_t->min); \
     DBUG("  sec: %02u", cmd_t->sec); \
-    DBUG("  valid: 0x%02X", cmd_t->valid); \
+    DBUG("  validTOW: %u", cmd_t->validTOW);     \
+    DBUG("  validWKN: %u", cmd_t->validWKN);        \
+    DBUG("  validUTC: %u", cmd_t->validUTC); \
+    DBUG("  utcStandard: %u", cmd_t->utcStandard); \
 })
 
 #define GPS_log_UBX_NAV_STATUS(cmd_t) \
