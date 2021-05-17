@@ -56,7 +56,18 @@ extern "C" {
 #define SERIAL_TX_BLOCKING
 #endif
 
-#define SERIAL_HEAD(__serial_p__) ((__serial_p__)->rx.buf_ + (__serial_p__)->rx.idx)
+#define Serial_tail(__serial_p__) ((__serial_p__)->rx.buf_ + (__serial_p__)->rx.idx)
+
+#define Serial_advanceTailRx(__serial_p__, __N__) Serial_advance((__serial_p__)->rx, __N__, SERIAL_RX_LEN)
+#define Serial_advanceHeadTx(__serial_p__, __N__) Serial_advance((__serial_p__)->tx, __N__, SERIAL_TX_LEN)
+
+#define Serial_advance(__buf__, __N__, __LEN__) \
+({                              \
+  (__buf__).idx += (__N__); \
+  (__buf__).idx %= (__LEN__);\
+})
+
+
 
 typedef struct {
     struct {
