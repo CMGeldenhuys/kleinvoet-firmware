@@ -984,14 +984,14 @@ static const UBX_CFG_NAV5_t GPS_CONFIGURE_NAV5 = {
 #define GPS_LEN_DEFAULT_CONFIG (sizeof(GPS_DEFAULT_CONFIG)/sizeof(GPS_UBX_cmd_t))
 
 static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {
-//        // Set default port config
-////        &GPS_DEFAULT_PORT_CONFIG.generic,
-//
+        // Set default port config
+        &GPS_DEFAULT_PORT_CONFIG.generic,
+
         // Disable all NMEA messages
         &GPS_DISABLE_NMEA_DTM.generic,
         &GPS_DISABLE_NMEA_GBQ.generic,
         &GPS_DISABLE_NMEA_GBS.generic,
-//        &GPS_DISABLE_NMEA_GGA.generic,
+        &GPS_DISABLE_NMEA_GGA.generic,
         &GPS_DISABLE_NMEA_GLL.generic,
         &GPS_DISABLE_NMEA_GLQ.generic,
         &GPS_DISABLE_NMEA_GNQ.generic,
@@ -1006,19 +1006,19 @@ static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {
         &GPS_DISABLE_NMEA_VLW.generic,
         &GPS_DISABLE_NMEA_VTG.generic,
         &GPS_DISABLE_NMEA_ZDA.generic,
-//
-//        // Enable GPS messages
-//        &GPS_ENABLE_UBX_NAV_SAT.generic,
-//        &GPS_ENABLE_UBX_NAV_STATUS.generic,
-//        &GPS_ENABLE_UBX_NAV_TIMEUTC.generic,
-//        &GPS_ENABLE_UBX_NAV_POSECEF.generic,
-////        &GPS_ENABLE_UBX_NAV_PVT.generic,
-//
-//        // Setup time pulse
-//        &GPS_CONFIGURE_TIMEPULSE.generic,
-//
-//        // Setup NAV
-//        &GPS_CONFIGURE_NAV5.generic
+
+        // Enable GPS messages
+        &GPS_ENABLE_UBX_NAV_SAT.generic,
+        &GPS_ENABLE_UBX_NAV_STATUS.generic,
+        &GPS_ENABLE_UBX_NAV_TIMEUTC.generic,
+        &GPS_ENABLE_UBX_NAV_POSECEF.generic,
+//        &GPS_ENABLE_UBX_NAV_PVT.generic,
+
+        // Setup time pulse
+        &GPS_CONFIGURE_TIMEPULSE.generic,
+
+        // Setup NAV
+        &GPS_CONFIGURE_NAV5.generic
 };
 
 /**
