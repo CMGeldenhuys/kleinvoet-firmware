@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 // Set logging level
-#define LOG_LEVEL_DEBUG
+#define LOG_LEVEL_INFO
 // Set Log destination
 #define LOG_DEST_TTY
 

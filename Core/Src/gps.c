@@ -271,13 +271,22 @@ int GPS_processCmd_ (GPS_UBX_cmd_t *cmd)
   DBUG("> UBX 0x%02X|0x%02X (%uB)", cmd->cls, cmd->id, cmd->len);
   switch (cmd->cls) {
     case UBX_NAV: {
-      DBUG("NAV Msg recv (0x%02X | 0x%02X)", cmd->cls, cmd->id);
+      DBUG("> NAV (0x%02X | 0x%02X)", cmd->cls, cmd->id);
       return GPS_processCmdNav_(cmd);
     }
 
     case UBX_ACK: {
-      INFO("ACK Msg recv (0x%02X | 0x%02X)", cmd->cls, cmd->id);
-      // TODO: Process ACK msg to make sure commands are successful
+      const UBX_ACK_t *cmd_t = (UBX_ACK_t *) cmd;
+
+      if(cmd->id == UBX_ACK_ACK){
+        INFO("> ACK (0x%02X | 0x%02X)", cmd_t->msgClsID, cmd_t->msgID);
+        // TODO: Process ACK msg to make sure commands are successful
+      }
+      // NACK
+      else {
+        INFO("> NACK (0x%02X | 0x%02X)", cmd_t->msgClsID, cmd_t->msgID);
+        // TODO: Process ACK msg to make sure commands are successful
+      }
       return 1;
     }
 

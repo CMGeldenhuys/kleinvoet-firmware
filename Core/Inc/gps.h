@@ -22,7 +22,7 @@ extern "C" {
 #include <assert.h>
 
 #ifndef GPS_BUF_LEN
-#define GPS_BUF_LEN 128
+#define GPS_BUF_LEN 512
 #endif
 //                              cls                 id                len
 #define UBX_HEADER_SIZE (sizeof(GPS_cls_e) + sizeof(uint8_t) + sizeof(uint16_t))
@@ -52,6 +52,9 @@ typedef enum __attribute__ ((packed)) {
     NMEA_STD = 0xF0,
     NMEA_PBX = 0xF1
 } GPS_cls_e;
+
+#define UBX_ACK_ACK  0x01
+#define UBX_ACK_NACK 0x00
 
 typedef enum __attribute__ ((packed)) {
     UBX_NAV_CLK       = 0x22,
@@ -283,6 +286,18 @@ typedef union {
         uint8_t rate;
     };
 } UBX_CFG_MSG_t;
+
+typedef union {
+    GPS_UBX_cmd_t generic;
+    struct {
+        GPS_cls_e cls;
+        uint8_t   id;
+        uint16_t  len;
+
+        GPS_cls_e msgClsID;
+        uint8_t   msgID;
+    };
+} UBX_ACK_t;
 
 typedef union {
     GPS_UBX_cmd_t generic;
