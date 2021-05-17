@@ -281,7 +281,7 @@ int GPS_processCmd_ (GPS_UBX_cmd_t *cmd)
       }
       // NACK
       else {
-        INFO("> NACK (0x%02X | 0x%02X)", cmd_t->msgClsID, cmd_t->msgID);
+        WARN("> NACK (0x%02X | 0x%02X)", cmd_t->msgClsID, cmd_t->msgID);
         // TODO: Process ACK msg to make sure commands are successful
       }
       return 1;
