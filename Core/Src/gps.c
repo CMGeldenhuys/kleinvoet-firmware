@@ -135,9 +135,10 @@ int GPS_rxByte_ (uint8_t c)
       // Potential start of NMEA messga
       else if (c == '$') {
         INFO("Potential NMEA message detected");
+#ifdef GPS_PARSE_NMEA
 //        HAL_UART_DMAStop(gps.serial.config_.uart);
         // Store pointer to start of message
-        char *nmeaMessage = (char *) SERIAL_HEAD(&gps.serial);
+        char *nmeaMessage = (char *) Serial_tail(&gps.serial);
         const size_t nBytes = Serial_available(&gps.serial);
         // While data left of serial
         for (size_t i = 0; i < nBytes; i++) {
@@ -145,6 +146,7 @@ int GPS_rxByte_ (uint8_t c)
           uint8_t nextVal = *(nmeaMessage + i);
           if (nextVal == GPS_SYNC_1_) {
             INFO("Aborting NMEA message detection (UBX Sync detected)");
+            Serial_advanceTailRx(&gps.serial, i);
             return 1;
           }
             // CR detected
@@ -158,6 +160,7 @@ int GPS_rxByte_ (uint8_t c)
         // Neither outcome resolved (not UBX nor complete NMEA)
         WARN("NMEA message not complete during processing");
         return -1;
+#endif
       }
       break;
     }
