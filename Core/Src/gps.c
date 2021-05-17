@@ -55,11 +55,8 @@ int GPS_configureUBX_ ()
   DBUG("Size of DEFAULT_CONFIG: %u", GPS_LEN_DEFAULT_CONFIG);
   for (size_t i = 0; i < GPS_LEN_DEFAULT_CONFIG; i++) {
     GPS_sendCommand(GPS_DEFAULT_CONFIG[i], 0, 0);
-    // TODO: Quick fix if a message is sent twice chances are better will be properly ack'd
     // NB: NEED ACK QUEUE...
-    // TODO: remove!
-    HAL_Delay(10);
-    GPS_sendCommand(GPS_DEFAULT_CONFIG[i], 0, 0);
+    // TODO Check ACK
     // Wait between messages to ensure success
     HAL_Delay(10);
   }

@@ -1121,7 +1121,7 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck, int retryOnNack);
 #define GPS_log_UBX_NAV_PVT(cmd_t) \
 ({                                 \
   INFO("UBX-NAV-PVT");               \
-  INFO("  iTOW: %d", cmd_t->iTOW);    \
+  DBUG("  iTOW: %d", cmd_t->iTOW);    \
   INFO("  year: %u", cmd_t->year);    \
   INFO("  month: %u", cmd_t->month);    \
   INFO("  day: %u", cmd_t->day);    \
@@ -1134,11 +1134,11 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck, int retryOnNack);
   INFO("  validDate: %u", cmd_t->validDate);    \
   INFO("  validTime: %u", cmd_t->validTime);    \
   INFO("  fullyResolved: %u", cmd_t->fullyResolved);    \
-  INFO("  validMag: %u", cmd_t->validMag);    \
+  DBUG("  validMag: %u", cmd_t->validMag);    \
   INFO("  gnssFixOK: %u", cmd_t->gnssFixOK);    \
-  INFO("  diffSoln: %u", cmd_t->diffSoln);    \
-  INFO("  headVehValid: %u", cmd_t->headVehValid);    \
-  INFO("  carrSoln: %u", cmd_t->carrSoln);    \
+  DBUG("  diffSoln: %u", cmd_t->diffSoln);    \
+  DBUG("  headVehValid: %u", cmd_t->headVehValid);    \
+  DBUG("  carrSoln: %u", cmd_t->carrSoln);    \
   INFO("  numSV: %u", cmd_t->numSV);    \
   INFO("  lon: %d", cmd_t->lon);    \
   INFO("  lat: %d", cmd_t->lat);    \
@@ -1146,18 +1146,18 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck, int retryOnNack);
   INFO("  hMSL: %d", cmd_t->hMSL);    \
   INFO("  hAcc: %u", cmd_t->hAcc);    \
   INFO("  vAcc: %u", cmd_t->vAcc);    \
-  INFO("  velN: %d", cmd_t->velN);    \
-  INFO("  velE: %d", cmd_t->velE);    \
-  INFO("  velD: %d", cmd_t->velD);    \
-  INFO("  gSpeed: %d", cmd_t->gSpeed);    \
-  INFO("  headMot: %d", cmd_t->headMot);    \
-  INFO("  sAcc: %d", cmd_t->sAcc);    \
-  INFO("  headAcc: %d", cmd_t->headAcc);    \
-  INFO("  pDOP: %u", cmd_t->pDOP);    \
-  INFO("  invalidLlh: %u", cmd_t->invalidLlh);    \
-  INFO("  headVeh: %d", cmd_t->headVeh);    \
-  INFO("  magDec: %d", cmd_t->magDec);    \
-  INFO("  magAcc: %u", cmd_t->magAcc);    \
+  DBUG("  velN: %d", cmd_t->velN);    \
+  DBUG("  velE: %d", cmd_t->velE);    \
+  DBUG("  velD: %d", cmd_t->velD);    \
+  DBUG("  gSpeed: %d", cmd_t->gSpeed);    \
+  DBUG("  headMot: %d", cmd_t->headMot);    \
+  DBUG("  sAcc: %d", cmd_t->sAcc);    \
+  DBUG("  headAcc: %d", cmd_t->headAcc);    \
+  DBUG("  pDOP: %u", cmd_t->pDOP);    \
+  DBUG("  invalidLlh: %u", cmd_t->invalidLlh);    \
+  DBUG("  headVeh: %d", cmd_t->headVeh);    \
+  DBUG("  magDec: %d", cmd_t->magDec);    \
+  DBUG("  magAcc: %u", cmd_t->magAcc);    \
 })
 
 #ifdef __cplusplus
