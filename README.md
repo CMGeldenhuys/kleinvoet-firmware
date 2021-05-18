@@ -56,6 +56,8 @@ scratch. [See this tutorial for a guide on how to compile](https://mbd.kleier.ne
 git clone git://git.code.sf.net/p/openocd/code openocd
 cd openocd
 git pull
+# [Recommended] Optionally checkout a specific version
+git checkout v0.X.Y
 ./bootstrap
 ./configure
 make
@@ -124,3 +126,7 @@ it will result in an corrupted header. To repair the file one can simply run:
 ```shell
 sox --ignore-length corrupted.wav fixed.wav
 ```
+### Useful tools for WAV/Serialisation analysis
+- `shntool info` : Useful for checking the PCM data
+- `exiftool` : Useful for checking _chunk_/_subchunk_ info
+- `mediainfo` : General purpose tool

@@ -202,9 +202,6 @@ int ADC_yield ()
 
         DBUG("Flushing buffer (0x%08X -> %d)", dmaBuf, dmaLen);
         ADC_persistBuf_(dmaBuf, dmaLen);
-
-        DBUG("DMA Samples:%d, TIM Samples:%d, delta: %d", adc.nSamples, adc.tim->Instance->CNT,
-             adc.nSamples - adc.tim->Instance->CNT);
         ADC_clear_flag_cplt;
       }
       break;
@@ -432,3 +429,37 @@ void HAL_SAI_ErrorCallback (SAI_HandleTypeDef *hsai)
 {
   ERR("SAI Problem! (0x%08x)", HAL_SAI_GetState(hsai));
 }
+
+inline void ADC_WAVE_writeHeader()
+{
+  WAVE_writeHeader(&adc.wav);
+}
+
+// TODO: Not the best place but works for now
+int ADC_updateLocation(const int32_t ecef[3], uint32_t pAcc)
+{
+  static uint32_t prevAcc = UINT32_MAX;
+  const uint32_t threshold = UINT32_MAX;
+  const uint8_t scalingFactor = 100U;
+
+  if ( pAcc < threshold && pAcc < prevAcc){
+    prevAcc = pAcc;
+    const int32_t ecefX = ecef[0] / scalingFactor;
+    const int32_t ecefY = ecef[1] / scalingFactor;
+    const int32_t ecefZ = ecef[2] / scalingFactor;
+    DBUG("ECEF Update: %d,%d,%d", ecefX, ecefY, ecefZ);
+    return WAVE_infoChunkPrintf(&adc.wav, WAVE_INFO_IDX_LOCATION, "%d,%d,%d", ecefX, ecefY, ecefZ);
+  }
+  else
+    return 0;
+}
+
+#ifdef DEBUG
+int CMD_comment(int argc, char * argv[])
+{
+  if( argc > 0) {
+    return WAVE_infoChunkPrintf(&adc.wav, WAVE_INFO_IDX_COMMENT, "%s", *argv);
+  }
+  return -1;
+}
+#endif

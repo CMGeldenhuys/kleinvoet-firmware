@@ -42,12 +42,12 @@ extern "C" {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-
+extern uint32_t KLEINVOET_UUID;
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
-
+#define STM32_UUID ((uint32_t *)0x1FFF7A10)
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
