@@ -453,3 +453,11 @@ int ADC_updateLocation(const int32_t ecef[3], uint32_t pAcc)
   else
     return 0;
 }
+
+int CMD_comment(int argc, char * argv[])
+{
+  if( argc > 0) {
+    return WAVE_infoChunkPrintf(&adc.wav, WAVE_INFO_IDX_COMMENT, "%s", *argv);
+  }
+  return -1;
+}

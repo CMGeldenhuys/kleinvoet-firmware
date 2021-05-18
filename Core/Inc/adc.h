@@ -214,6 +214,8 @@ void ADC_WAVE_writeHeader();
  */
 int ADC_updateLocation(const int32_t ecef[3], uint32_t pAcc);
 
+int CMD_comment(int argc, char * argv[]);
+
 // Size of I2C registers
 #define ADC_REG_SIZE            0x01u
 // Max delay used for blocking IO

@@ -14,6 +14,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include "adc.h"
 
 char workBuf_[TTY_SCREEN_WIDTH];
 #endif
@@ -55,6 +56,7 @@ int TTY_init (UART_HandleTypeDef *uart)
 
 #ifdef DEBUG
   TTY_registerCommand("args", &TTY_testArgs);
+  TTY_registerCommand("tag", &CMD_comment);
 #endif
 
   if (!*tty.PS) {
