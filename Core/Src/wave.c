@@ -131,7 +131,7 @@ int WAVE_createHeader_ (WAVE_t *wav)
 {
   // Prevent memory leak if file already exists, otherwise reuse header
   if (!wav->header) {
-    DBUG("Allocating memory to WAVE file header (creating new header)");
+    INFO("Allocating memory to WAVE file header (%u bytes)", sizeof(WAVE_header_t));
     wav->header = (WAVE_header_t *) malloc(sizeof(WAVE_header_t));
 
     if (!wav->sampleRate) wav->sampleRate       = WAVE_DEFAULT_SAMPLE_RATE;

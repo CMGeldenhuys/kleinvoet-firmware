@@ -40,7 +40,7 @@ extern "C" {
 #endif
 
 #ifndef WAVE_MAX_INFO_VALUE_LEN
-#define WAVE_MAX_INFO_VALUE_LEN 16
+#define WAVE_MAX_INFO_VALUE_LEN 32
 #endif
 
 #if (WAVE_MAX_INFO_VALUE_LEN % 2 != 0)
