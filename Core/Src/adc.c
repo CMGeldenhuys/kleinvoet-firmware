@@ -434,3 +434,22 @@ inline void ADC_WAVE_writeHeader()
 {
   WAVE_writeHeader(&adc.wav);
 }
+
+// TODO: Not the best place but works for now
+int ADC_updateLocation(const int32_t ecef[3], uint32_t pAcc)
+{
+  static uint32_t prevAcc = UINT32_MAX;
+  const uint32_t threshold = UINT32_MAX;
+  const float scalingFactor = 100.0f;
+
+  if ( pAcc < threshold && pAcc < prevAcc){
+    prevAcc = pAcc;
+    const double ecefX = (double)ecef[0] / scalingFactor;
+    const double ecefY = (double)ecef[1] / scalingFactor;
+    const double ecefZ = (double)ecef[2] / scalingFactor;
+    INFO("ECEF Update: %.2lf,%.2lf,%.2lf", ecefX, ecefY, ecefZ);
+    return WAVE_infoChunkPrintf(&adc.wav, WAVE_INFO_IDX_LOCATION, "%.2lf,%.2lf,%.2lf", ecefX, ecefY, ecefZ);
+  }
+  else
+    return 0;
+}

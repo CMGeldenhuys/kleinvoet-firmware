@@ -412,6 +412,9 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
       // Log message
       GPS_log_UBX_NAV_POSECEF(cmd_t);
 
+      // Store location to WAVE header
+      ADC_updateLocation(&(cmd_t->ecefX), cmd_t->pAcc);
+
       return UBX_NAV_POSECEF;
     }
 

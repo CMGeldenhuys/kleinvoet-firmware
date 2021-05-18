@@ -203,6 +203,17 @@ int ADC_yield ();
  */
 void ADC_WAVE_writeHeader();
 
+/**
+ * @brief Update WAVE file INFO chunk with ECEF coordinates
+ *
+ * @deprecated
+ *
+ * @param [in] ecef ECEF coordinates as a array (given in cm)
+ * @param [in] pAcc Positional accuracy
+ * @return Returns positive integer if update was successful, otherwise returns -1 if write failed or if pAcc is not high enough
+ */
+int ADC_updateLocation(const int32_t ecef[3], uint32_t pAcc);
+
 // Size of I2C registers
 #define ADC_REG_SIZE            0x01u
 // Max delay used for blocking IO
