@@ -71,7 +71,7 @@ DMA_HandleTypeDef hdma_uart4_rx;
 DMA_HandleTypeDef hdma_usart2_rx;
 
 /* USER CODE BEGIN PV */
-uint32_t KLEINVOET_UUID = 0xDEADBEEF;
+uint32_t KLEINVOET_UUID = 0xDEADBEEFU;
 int ready = 0;
 // TODO: Just a quick fix
 static int flushLog = 0;
