@@ -454,6 +454,7 @@ int ADC_updateLocation(const int32_t ecef[3], uint32_t pAcc)
     return 0;
 }
 
+#ifdef DEBUG
 int CMD_comment(int argc, char * argv[])
 {
   if( argc > 0) {
@@ -461,3 +462,4 @@ int CMD_comment(int argc, char * argv[])
   }
   return -1;
 }
+#endif

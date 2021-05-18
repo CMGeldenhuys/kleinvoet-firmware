@@ -125,7 +125,9 @@ typedef enum {
     WAVE_INFO_IDX_VERSION,
     WAVE_INFO_IDX_ENGINEER,
     WAVE_INFO_IDX_LOCATION,
+#ifdef DEBUG
     WAVE_INFO_IDX_COMMENT,
+#endif
     WAVE_INFO_IDX_LENGTH
 }                 WAVE_INFO_IDX_e;
 

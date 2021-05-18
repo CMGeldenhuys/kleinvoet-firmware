@@ -171,11 +171,13 @@ int WAVE_createHeader_ (WAVE_t *wav)
   strncpy(iLocation_subchunk->Value, "NO LOCK", WAVE_MAX_INFO_VALUE_LEN);
   DBUG("iLocation_subchunk->SubchunkSize: %u", iLocation_subchunk->SubchunkSize);
 
+#ifdef DEBUG
   WAVE_info_subchunk_t *iComment_subchunk = &LIST_chunk->subChunks[WAVE_INFO_IDX_COMMENT];
   iComment_subchunk->SubchunkID   = WAVE_INFO_TAG_COMMENT;
   iComment_subchunk->SubchunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_info_subchunk_t);
   strncpy(iComment_subchunk->Value, "NO COMMENT", WAVE_MAX_INFO_VALUE_LEN);
   DBUG("iComment_subchunk->SubchunkSize: %u", iComment_subchunk->SubchunkSize);
+#endif
 
   // fmt Subchunk
   WAVE_fmt_subchunk_t *fmt_chunk = &wav->header->fmtSubChunk;
