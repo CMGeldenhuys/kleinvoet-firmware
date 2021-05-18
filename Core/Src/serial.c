@@ -11,6 +11,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include <string.h>
 #include "serial.h"
+#include <assert.h>
 
 /** Functions ----------------------------------------------------------------*/
 // Private Function Defs.
@@ -36,7 +37,8 @@ size_t Serial_available (Serial_t *self)
   // TODO: Implement UART IDLE detection
   uint32_t dmaHead        = self->config_.uart->hdmarx->Instance->NDTR;
   uint32_t readHead       = self->rx.idx;
-  uint32_t bytesAvailable = SERIAL_RX_LEN - readHead - dmaHead;
+  int32_t bytesAvailable = SERIAL_RX_LEN - readHead - dmaHead;
+  assert(bytesAvailable <= SERIAL_RX_LEN);
 
   return bytesAvailable >= 0 ? bytesAvailable : bytesAvailable + SERIAL_RX_LEN;
 }
@@ -45,12 +47,10 @@ uint8_t Serial_read (Serial_t *self)
 {
 #ifdef SERIAL_RX_DMA
   // Get current val form buffer
-  uint8_t *ret = self->rx.buf_ + self->rx.idx;
+  uint8_t *ret = Serial_tail(self);
   // Mark as read
-  self->rx.idx++;
-  // Wrap index if command len reached
-  // TODO: Cheap fix for cir buf
-  self->rx.idx -= self->rx.idx != SERIAL_RX_LEN ? 0 : SERIAL_RX_LEN;
+  // Cheap fix for circ buff
+  Serial_advanceTailRx(self, 1);
   return *ret;
 #else
 #error Operation not supported
@@ -60,7 +60,7 @@ uint8_t Serial_read (Serial_t *self)
 uint8_t Serial_peek (Serial_t *self)
 {
 #ifdef SERIAL_RX_DMA
-  return *(self->rx.buf_ + self->rx.idx);
+  return *(Serial_tail(self));
 #else
 #error Operation not supported
 #endif

@@ -55,6 +55,10 @@ int GPS_configureUBX_ ()
   DBUG("Size of DEFAULT_CONFIG: %u", GPS_LEN_DEFAULT_CONFIG);
   for (size_t i = 0; i < GPS_LEN_DEFAULT_CONFIG; i++) {
     GPS_sendCommand(GPS_DEFAULT_CONFIG[i], 0, 0);
+    // NB: NEED ACK QUEUE...
+    // TODO Check ACK
+    // Wait between messages to ensure success
+    HAL_Delay(10);
   }
   gps.rx.state = GPS_IDLE;
   gps.state    = GPS_IDLE;
@@ -104,7 +108,13 @@ int GPS_yield ()
     gps.state &= ~GPS_RX;
     // Place device in idle
     gps.state |= GPS_IDLE;
-    return GPS_rxByte_(Serial_read(&gps.serial));
+
+    // Get byte from serial
+    const uint8_t c = Serial_peek(&gps.serial);
+    if (GPS_rxByte_(c) > 0) {
+      // Advance pointer
+      Serial_read(&gps.serial);
+    }
   }
 
   return 1;
@@ -122,7 +132,36 @@ int GPS_rxByte_ (uint8_t c)
 
       // Received start byte
       if (c == GPS_SYNC_1_) gps.rx.state = GPS_RX_SYNC_2;
-      else if (c == '$') DBUG("NMEA Msg recv (ignoring)");
+      // Potential start of NMEA messga
+      else if (c == '$') {
+        INFO("Potential NMEA message detected");
+#ifdef GPS_PARSE_NMEA
+//        HAL_UART_DMAStop(gps.serial.config_.uart);
+        // Store pointer to start of message
+        char *nmeaMessage = (char *) Serial_tail(&gps.serial);
+        const size_t nBytes = Serial_available(&gps.serial);
+        // While data left of serial
+        for (size_t i = 0; i < nBytes; i++) {
+          // Get next char but don't move on pointer
+          uint8_t nextVal = *(nmeaMessage + i);
+          if (nextVal == GPS_SYNC_1_) {
+            INFO("Aborting NMEA message detection (UBX Sync detected)");
+            Serial_advanceTailRx(&gps.serial, i);
+            return 1;
+          }
+            // CR detected
+            // TODO: check for LF too but for now CR is enough
+          else if (nextVal == '\r') {
+            *(nmeaMessage + i) = '\0'; // NULL terminate string
+            INFO("> NMEA: %s", nmeaMessage);
+            return 1;
+          }
+        }
+        // Neither outcome resolved (not UBX nor complete NMEA)
+        WARN("NMEA message not complete during processing");
+        return -1;
+#endif
+      }
       break;
     }
 
@@ -237,13 +276,22 @@ int GPS_processCmd_ (GPS_UBX_cmd_t *cmd)
   DBUG("> UBX 0x%02X|0x%02X (%uB)", cmd->cls, cmd->id, cmd->len);
   switch (cmd->cls) {
     case UBX_NAV: {
-      DBUG("NAV Msg recv (0x%02X | 0x%02X)", cmd->cls, cmd->id);
+      DBUG("> NAV (0x%02X | 0x%02X)", cmd->cls, cmd->id);
       return GPS_processCmdNav_(cmd);
     }
 
     case UBX_ACK: {
-      DBUG("ACK Msg recv (0x%02X | 0x%02X)", cmd->cls, cmd->id);
-      // TODO: Process ACK msg to make sure commands are successful
+      const UBX_ACK_t *cmd_t = (UBX_ACK_t *) cmd;
+
+      if(cmd->id == UBX_ACK_ACK){
+        INFO("> ACK (0x%02X | 0x%02X)", cmd_t->msgClsID, cmd_t->msgID);
+        // TODO: Process ACK msg to make sure commands are successful
+      }
+      // NACK
+      else {
+        WARN("> NACK (0x%02X | 0x%02X)", cmd_t->msgClsID, cmd_t->msgID);
+        // TODO: Process ACK msg to make sure commands are successful
+      }
       return 1;
     }
 
@@ -345,6 +393,39 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
       GPS_log_UBX_NAV_SAT(cmd_t);
 
       return UBX_NAV_SAT;
+    }
+
+    case UBX_NAV_HPPOSECEF: {
+      // Parse Command
+      const UBX_NAV_HPPOSECEF_t *cmd_t = (UBX_NAV_HPPOSECEF_t *) &gps.rx.cmd._t;
+
+      // Log message
+      GPS_log_UBX_NAV_HPPOSECEF(cmd_t);
+
+      return UBX_NAV_HPPOSECEF;
+    }
+
+    case UBX_NAV_POSECEF: {
+      // Parse Command
+      const UBX_NAV_POSECEF_t *cmd_t = (UBX_NAV_POSECEF_t *) &gps.rx.cmd._t;
+
+      // Log message
+      GPS_log_UBX_NAV_POSECEF(cmd_t);
+
+      // Store location to WAVE header
+      ADC_updateLocation(&(cmd_t->ecefX), cmd_t->pAcc);
+
+      return UBX_NAV_POSECEF;
+    }
+
+    case UBX_NAV_PVT: {
+      // Parse Command
+      const UBX_NAV_PVT_t *cmd_t = (UBX_NAV_PVT_t *) cmd;
+
+      // Log message
+      GPS_log_UBX_NAV_PVT(cmd_t);
+
+      return UBX_NAV_HPPOSECEF;
     }
 
     default: {
