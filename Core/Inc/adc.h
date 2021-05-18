@@ -195,6 +195,14 @@ int ADC_setState (ADC_state_major_e state);
 
 int ADC_yield ();
 
+
+/**
+ * @brief Quick fix for calling `WAVE_writeHeader`
+ *
+ * @deprecated
+ */
+void ADC_WAVE_writeHeader();
+
 // Size of I2C registers
 #define ADC_REG_SIZE            0x01u
 // Max delay used for blocking IO

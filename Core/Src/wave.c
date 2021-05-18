@@ -7,7 +7,6 @@
 
 int WAVE_createHeader_ (WAVE_t *wav);
 
-int WAVE_writeHeader_ (WAVE_t *wav);
 
 int WAVE_createFile (WAVE_t *wav)
 {
@@ -68,11 +67,11 @@ int WAVE_createFile (WAVE_t *wav)
 #endif
 
   WAVE_createHeader_(wav);
-  WAVE_writeHeader_(wav);
+  WAVE_writeHeader(wav);
   return 1;
 }
 
-int WAVE_writeHeader_ (WAVE_t *wav)
+int WAVE_writeHeader (WAVE_t *wav)
 {
   DBUG("Writing file header");
   return FATFS_lwrite(wav->fp, wav->header, sizeof(WAVE_header_t), 0);
@@ -93,8 +92,8 @@ int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
 #endif
 
   if (f_tell(wav->fp) < WAVE_FILE_SPILT) {
-    wav->header->RIFF_chunk.ChunkSize += len;
-    wav->header->data_chunk.SubchunkSize += len;
+    wav->header->RIFFChunk.ChunkSize += len;
+    wav->header->dataSubChunk.SubchunkSize += len;
 #ifndef WAVE_STATIC_FILE_ALLOC
     // TODO: Rather adjust header than rewriting header each time
     DBUG("Updating WAVE header (rewrite)");
@@ -129,12 +128,6 @@ int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
 
 int WAVE_createHeader_ (WAVE_t *wav)
 {
-
-  // TODO: Stop using magic numbers and calculate
-  #define WAVE_RIFF_CHUCK_MAGIC_SIZE 36
-  #define WAVE_FMT_CHUCK_MAGIC_SIZE 16
-  #define WAVE_HEADER_MAGIC_SIZE 44
-
   // Prevent memory leak if file already exists, otherwise reuse header
   if (!wav->header) {
     DBUG("Allocating memory to WAVE file header (creating new header)");
@@ -146,29 +139,58 @@ int WAVE_createHeader_ (WAVE_t *wav)
     if (!wav->bitsPerSample) wav->bitsPerSample = WAVE_DEFAULT_BPS;
   }
   // RIFF Chunk
-  WAVE_RIFF_chunk_t *RIFF_chunk = &wav->header->RIFF_chunk;
-  RIFF_chunk->ChunkID   = WAVE_CID_RIFF;
-  RIFF_chunk->ChunkSize = WAVE_RIFF_CHUCK_MAGIC_SIZE;
-  RIFF_chunk->Format    = WAVE_RIFF_FORMAT;
+  WAVE_RIFF_chunk_t *RIFF_chunk = &wav->header->RIFFChunk;
+  RIFF_chunk->ChunkID   = WAVE_CHUNKID_RIFF;
+  RIFF_chunk->ChunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_header_t);
+  RIFF_chunk->Format    = WAVE_RIFF_FORMAT_WAVE;
+  DBUG("RIFF_chunk->ChunkSize: %u", RIFF_chunk->ChunkSize);
 
+  // LIST Chunk
+  WAVE_LIST_chunk_t *LIST_chunk = &wav->header->listChunk;
+  LIST_chunk->ChunkID    = WAVE_CHUNKID_LIST;
+  LIST_chunk->ChunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_LIST_chunk_t);
+  LIST_chunk->Format   = WAVE_FORMAT_INFO;
+  DBUG("LIST_chunk->ChunkSize: %u", LIST_chunk->ChunkSize);
 
+  WAVE_info_subchunk_t *iEngineer_subchunk = &LIST_chunk->subChunks[WAVE_INFO_IDX_ENGINEER];
+  iEngineer_subchunk->SubchunkID   = WAVE_INFO_TAG_ENGINEER;
+  iEngineer_subchunk->SubchunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_info_subchunk_t);
+  strncpy(iEngineer_subchunk->Value, AUTHORS, WAVE_MAX_INFO_VALUE_LEN);
+  DBUG("iEngineer_subchunk->SubchunkSize: %u", iEngineer_subchunk->SubchunkSize);
+
+  WAVE_info_subchunk_t *iVersion_subchunk = &LIST_chunk->subChunks[WAVE_INFO_IDX_VERSION];
+  iVersion_subchunk->SubchunkID   = WAVE_INFO_TAG_VERSION;
+  iVersion_subchunk->SubchunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_info_subchunk_t);
+  strncpy(iVersion_subchunk->Value, "KV_" VERSION, WAVE_MAX_INFO_VALUE_LEN);
+  DBUG("iVersion_subchunk->SubchunkSize: %u", iVersion_subchunk->SubchunkSize);
+
+  WAVE_info_subchunk_t *iLocation_subchunk = &LIST_chunk->subChunks[WAVE_INFO_IDX_LOCATION];
+  iLocation_subchunk->SubchunkID   = WAVE_INFO_TAG_LOCATION;
+  iLocation_subchunk->SubchunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_info_subchunk_t);
+  strncpy(iLocation_subchunk->Value, "NO LOCK", WAVE_MAX_INFO_VALUE_LEN);
+  DBUG("iLocation_subchunk->SubchunkSize: %u", iLocation_subchunk->SubchunkSize);
+
+  WAVE_info_subchunk_t *iComment_subchunk = &LIST_chunk->subChunks[WAVE_INFO_IDX_COMMENT];
+  iComment_subchunk->SubchunkID   = WAVE_INFO_TAG_COMMENT;
+  iComment_subchunk->SubchunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_info_subchunk_t);
+  strncpy(iComment_subchunk->Value, "NO COMMENT", WAVE_MAX_INFO_VALUE_LEN);
+  DBUG("iComment_subchunk->SubchunkSize: %u", iComment_subchunk->SubchunkSize);
 
   // fmt Subchunk
-  WAVE_fmt_subchunk_t *fmt_chunk = &wav->header->fmt_chunk;
-  fmt_chunk->SubchunkID    = WAVE_CID_FMT;
-  fmt_chunk->SubchunkSize  = WAVE_FMT_CHUCK_MAGIC_SIZE;
+  WAVE_fmt_subchunk_t *fmt_chunk = &wav->header->fmtSubChunk;
+  fmt_chunk->SubchunkID    = WAVE_SUBCHUNKID_FMT;
+  fmt_chunk->SubchunkSize  = WAVE_SIZEOF_SUBCHUNK(WAVE_fmt_subchunk_t);
   fmt_chunk->AudioFormat   = WAVE_AUDIO_PCM;
   fmt_chunk->NumChannels   = wav->nChannels;
   fmt_chunk->SampleRate    = wav->sampleRate;
   fmt_chunk->BlockAlign    = wav->blockSize;
   fmt_chunk->ByteRate      = wav->sampleRate * fmt_chunk->BlockAlign;
   fmt_chunk->BitsPerSample = wav->bitsPerSample;
-
-
+  DBUG("fmt_chunk->SubchunkSize: %u", fmt_chunk->SubchunkSize);
 
   // data Subchunk
-  WAVE_data_subchunk_t *data_chunk = &wav->header->data_chunk;
-  data_chunk->SubchunkID   = WAVE_CID_DATA;
+  WAVE_data_subchunk_t *data_chunk = &wav->header->dataSubChunk;
+  data_chunk->SubchunkID   = WAVE_SUBCHUNKID_DATA;
   data_chunk->SubchunkSize = 0;
 
   DBUG("WAVE Header created");
@@ -180,7 +202,7 @@ int WAVE_close (WAVE_t *wav)
   INFO("Closing WAVE file...");
 #ifdef WAVE_STATIC_FILE_ALLOC
   DBUG("Updating WAVE Header");
-  WAVE_writeHeader_(wav);
+  WAVE_writeHeader(wav);
   DBUG("Truncating WAVE file");
   f_truncate(wav->fp);
 #endif
@@ -198,5 +220,24 @@ int WAVE_close (WAVE_t *wav)
     return 1;
   }
   else return 0;
+}
+
+int WAVE_infoChunkPrintf(WAVE_t *wav, WAVE_INFO_IDX_e infoTag, const char* fmt, ...)
+{
+  INFO("Changing info tag (%u)", infoTag);
+  WAVE_LIST_chunk_t *LIST_chunk = &wav->header->listChunk;
+  WAVE_info_subchunk_t *infoSubchunk = &LIST_chunk->subChunks[infoTag];
+
+  // Parse varargs
+  va_list args;
+  va_start(args, fmt);
+
+  // Parse message format
+  int msgLen = vsnprintf(infoSubchunk->Value, WAVE_MAX_INFO_VALUE_LEN, fmt, args);
+
+  // Free varargs
+  va_end(args);
+
+  return msgLen;
 }
 

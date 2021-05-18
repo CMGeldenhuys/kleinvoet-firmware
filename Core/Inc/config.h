@@ -14,9 +14,9 @@ extern "C" {
 #define AUTHORS "CM Geldenhuys"
 
 #define VERSION_MAJOR "0"
-#define VERSION_MINOR "5"
-#define VERSION_PATCH "1"
-//#define VERSION_RC ""
+#define VERSION_MINOR "6"
+#define VERSION_PATCH "0"
+#define VERSION_RC "alpha"
 
 #if defined(VERSION_RC)
 #define VERSION VERSION_MAJOR "." VERSION_MINOR "." VERSION_PATCH "-" VERSION_RC
@@ -31,16 +31,19 @@ extern "C" {
 
 #ifdef DEBUG
 #define PERF_ENABLE
+
+// Change ADC sampling Freq.
+#define ADC_SAMPLING_RATE 16000
 #endif
 
 // Enable static file allocation
 #define WAVE_STATIC_FILE_ALLOC
 
 // Enable mock writing of WAVE file
-//#define WAVE_MOCK_WRITES
+#define WAVE_MOCK_WRITES
 
 // Run Speedtests at startup
-#define FATFS_RUN_SPEEDTEST
+//#define FATFS_RUN_SPEEDTEST
 
 #ifdef __cplusplus
 }

@@ -73,7 +73,8 @@ DMA_HandleTypeDef hdma_usart2_rx;
 /* USER CODE BEGIN PV */
 int ready = 0;
 // TODO: Just a quick fix
-int flushLog = 0;
+static int flushLog = 0;
+static uint_least8_t wavWriteHeaderFlag = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -141,29 +142,12 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_SET);
-  // TODO: Remove
-  // Place device in CAL mode
-//  HAL_GPIO_WritePin(CAL_EN_GPIO_Port, CAL_EN_Pin, GPIO_PIN_SET);
+
   // Give time for RTC to init properly
   HAL_RTC_WaitForSynchro(&hrtc);
   if (TTY_init(&huart2) <= 0) Error_Handler();
   if (FATFS_mount() <= 0) Error_Handler();
-//  {
-//    FIL *fp = FATFS_malloc(0);
-//    FATFS_open(fp, "test", FA_CREATE_ALWAYS | FA_WRITE);
-//    uint32_t tick = HAL_GetTick();
-//    int ret;
-//    ret = f_printf(fp, "Testing some new things out");
-//    INFO("fprintf %lu", HAL_GetTick() - tick);
-//    if(ret <= 0) WARN("write failed");
-//    tick = HAL_GetTick();
-////    f_sync(fp);
-//    ret = f_close(fp);
-//    INFO("fclose %lu", HAL_GetTick() - tick);
-//    if(ret != FR_OK) WARN("close failed");
-//
-//  }
-//  for(;;);
+
 #ifdef DEBUG
   WARN("Running with DEBUG flag enabled");
 #endif
@@ -208,6 +192,7 @@ int main(void)
 
   // Store logs
   LOG_flush();
+  wavWriteHeaderFlag = 0;
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "EndlessLoop"
   while (1) {
@@ -220,12 +205,19 @@ int main(void)
     TTY_yield();
     GPS_yield();
     TIME_yield();
+
     if(flushLog) {
       LOG_flush();
       flushLog = 0;
     }
 
-
+#ifndef WAVE_MOCK_WRITES
+    if(wavWriteHeaderFlag) {
+      ADC_WAVE_writeHeader();
+      wavWriteHeaderFlag = 0;
+    }
+#endif
+    
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -875,6 +867,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 #endif
     TIME_flush(0);
     flushLog = 1;
+
+    // Write WAVE header
+    wavWriteHeaderFlag = 1;
 
     // Run ADC conversion for ADC watchdog
     HAL_ADC_Start(&hadc1);
