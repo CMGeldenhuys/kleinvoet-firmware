@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include "adc.h"
+#include "main.h"
 
 char workBuf_[TTY_SCREEN_WIDTH];
 #endif
@@ -91,8 +92,7 @@ __weak int TTY_greet_ ()
   TTY_println("VERSION: " VERSION);
   TTY_println("AUTHORS: " AUTHORS);
 
-  const uint32_t uuid = HAL_GetDEVID();
-  TTY_printf("UUID: 0x%08X" TTY_EOL, uuid);
+  TTY_printf("UUID: 0x%08X (%08X-%08X-%08X)" TTY_EOL, KLEINVOET_UUID, STM32_UUID[0], STM32_UUID[1], STM32_UUID[2]);
   return 1;
 }
 

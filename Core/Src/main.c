@@ -71,6 +71,7 @@ DMA_HandleTypeDef hdma_uart4_rx;
 DMA_HandleTypeDef hdma_usart2_rx;
 
 /* USER CODE BEGIN PV */
+uint32_t KLEINVOET_UUID = 0xDEADBEEF;
 int ready = 0;
 // TODO: Just a quick fix
 static int flushLog = 0;
@@ -145,6 +146,8 @@ int main(void)
 
   // Give time for RTC to init properly
   HAL_RTC_WaitForSynchro(&hrtc);
+  // Calculate UUID
+  KLEINVOET_UUID = HAL_CRC_Calculate(&hcrc, STM32_UUID, 3);
   if (TTY_init(&huart2) <= 0) Error_Handler();
   if (FATFS_mount() <= 0) Error_Handler();
 
@@ -160,11 +163,10 @@ int main(void)
   WARN("HELLO, World!");
   ERR("HELLO, WORLD!");
 
-  const uint32_t uuid = HAL_GetDEVID();
   // TODO: move to global state machine class once it exists
   INFO("VERSION: " VERSION);
   INFO("AUTHORS: " AUTHORS);
-  INFO("UUID: 0x%08X", uuid);
+  INFO("UUID: 0x%08X (%08X-%08X-%08X)", KLEINVOET_UUID, STM32_UUID[0], STM32_UUID[1], STM32_UUID[2]);
 
   INFO("Waiting for GPS to finish starting up..");
   HAL_Delay(1500);
