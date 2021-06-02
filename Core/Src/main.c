@@ -30,6 +30,7 @@
 #include "adc.h"
 #include "timestamp.h"
 #include "perf.h"
+#include "led.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -141,8 +142,8 @@ int main(void)
   MX_TIM2_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-  HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_SET);
+  LED_BLUE_SET_HIGH();
+  LED_ORANGE_SET_HIGH();
 
   // Give time for RTC to init properly
   HAL_RTC_WaitForSynchro(&hrtc);
@@ -182,8 +183,8 @@ int main(void)
 
   // Enable FS flush timer
   HAL_TIM_Base_Start_IT(&htim10);
-  HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_RESET);
+  LED_BLUE_SET_LOW();
+  LED_ORANGE_SET_LOW();
   ready = 1;
   /* USER CODE END 2 */
 
@@ -768,7 +769,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, LED_STATUS_Pin|LED_STATUS_1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, LED_BLUE_Pin|LED_ORANGE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(ADC_nRST_GPIO_Port, ADC_nRST_Pin, GPIO_PIN_SET);
@@ -785,8 +786,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(SDIO_CD_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LED_STATUS_Pin LED_STATUS_1_Pin */
-  GPIO_InitStruct.Pin = LED_STATUS_Pin|LED_STATUS_1_Pin;
+  /*Configure GPIO pins : LED_BLUE_Pin LED_ORANGE_Pin */
+  GPIO_InitStruct.Pin = LED_BLUE_Pin|LED_ORANGE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -847,7 +848,7 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
       if(ready){
         const GPIO_PinState syncPinState = HAL_GPIO_ReadPin(GPS_SYNC_GPIO_Port, GPS_SYNC_Pin);
         DBUG("GPS sync pulse (%c)",  syncPinState ? 'H' : 'L');
-        HAL_GPIO_TogglePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin);
+        LED_BLUE_TOGGLE();
 
         // If on rising pulse
         if(syncPinState == GPIO_PIN_SET) TIME_mark();
@@ -909,10 +910,10 @@ void Error_Handler(void)
   TTY_println("HALTED!");
   LOG_flush();
   TIME_flush(1);
-  HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_RESET);
+  LED_BLUE_SET_HIGH();
+  LED_ORANGE_SET_LOW();
   for (;;) {
-    HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
+    LED_ORANGE_TOGGLE();
     // NOTE: DELAY WILL NOT WORK IF ERROR HANDLER IS CALL FROM WITHIN HIGH PRIORTY INTERRUPT!
     HAL_Delay(250);
   }

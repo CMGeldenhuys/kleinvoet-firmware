@@ -408,10 +408,9 @@ static inline void ADC_SAI_Interrupt_ (ADC_state_flag_rec_e caller)
   else {
     adc.nFrames++;
     adc.state.flags.rec |= caller;
-    HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin,
-                      caller == ADC_CPLT_HALF
-                      ? GPIO_PIN_SET
-                      : GPIO_PIN_RESET);
+    LED_ORANGE_WRITE(caller == ADC_CPLT_HALF
+                      ? LED_ORANGE_HIGH
+                      : LED_ORANGE_LOW);
   }
 }
 

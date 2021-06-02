@@ -81,10 +81,10 @@ void Error_Handler(void);
 #define VCP_TX_GPIO_Port GPIOA
 #define VCP_RX_Pin GPIO_PIN_3
 #define VCP_RX_GPIO_Port GPIOA
-#define LED_STATUS_Pin GPIO_PIN_5
-#define LED_STATUS_GPIO_Port GPIOA
-#define LED_STATUS_1_Pin GPIO_PIN_6
-#define LED_STATUS_1_GPIO_Port GPIOA
+#define LED_BLUE_Pin GPIO_PIN_5
+#define LED_BLUE_GPIO_Port GPIOA
+#define LED_ORANGE_Pin GPIO_PIN_6
+#define LED_ORANGE_GPIO_Port GPIOA
 #define USR_BTN_Pin GPIO_PIN_7
 #define USR_BTN_GPIO_Port GPIOA
 #define USR_BTN_EXTI_IRQn EXTI9_5_IRQn
