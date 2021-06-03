@@ -194,6 +194,13 @@ int ADC_powerDown ();
  */
 int ADC_setState (ADC_state_major_e state);
 
+/**
+ * @brief Yield command for basic scheduling
+ *
+ * @param [in] sync Force an 'fsync' on write call
+ *
+ * @return Returns status of yield
+ */
 int ADC_yield (int sync);
 
 
