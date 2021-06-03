@@ -43,6 +43,19 @@
 #define LED_ORANGE_READ() LED_READ(LED_ORANGE_PORT, LED_ORANGE_PIN)
 #endif
 
+#if defined(LED_ORANGE_TIM) && defined(LED_ORANGE_TIM_CH)
+#define LED_ORANGE_START_BLINK() HAL_TIM_OC_Start(LED_ORANGE_TIM, LED_ORANGE_TIM_CH)
+#define LED_ORANGE_STOP_BLINK() ({ \
+  HAL_TIM_OC_Stop(&htim3, TIM_CHANNEL_1); \
+  GPIO_InitTypeDef GPIO_InitStruct = {0}; \
+  GPIO_InitStruct.Pin = LED_ORANGE_Pin;   \
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; \
+  GPIO_InitStruct.Pull = GPIO_NOPULL;     \
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;\
+  HAL_GPIO_Init(LED_ORANGE_GPIO_Port, &GPIO_InitStruct); \
+  })
+#endif
+
 #if defined(LED_BLUE_GPIO_Port) && !defined(LED_BLUE_PORT)
 #define LED_BLUE_PORT LED_BLUE_GPIO_Port
 #endif

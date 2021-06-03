@@ -27,7 +27,7 @@ extern "C" {
 // Set logging level
 #define LOG_LEVEL_INFO
 // Set Log destination
-#define LOG_DEST_TTY
+#define LOG_DEST_FILE
 
 #ifdef DEBUG
 #define PERF_ENABLE
@@ -44,6 +44,10 @@ extern "C" {
 
 // Run Speedtests at startup
 //#define FATFS_RUN_SPEEDTEST
+
+// LED_ORANGE Timer setting for main file
+#define LED_ORANGE_TIM &htim3
+#define LED_ORANGE_TIM_CH TIM_CHANNEL_1
 
 #ifdef __cplusplus
 }

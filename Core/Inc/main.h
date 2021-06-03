@@ -50,6 +50,8 @@ extern uint32_t KLEINVOET_UUID;
 #define STM32_UUID ((uint32_t *)0x1FFF7A10)
 /* USER CODE END EM */
 
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
