@@ -23,7 +23,7 @@ static inline void ADC_SAI_Interrupt_ (ADC_state_flag_rec_e caller);
 
 static inline void ADC_32To24Blocks_ (uint8_t *to, const uint32_t *from, size_t len, uint8_t lsb);
 
-static void ADC_persistBuf_ (void *buf, size_t len);
+static void ADC_persistBuf_ (void *buf, size_t len, int * sync);
 
 int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInterface, TIM_HandleTypeDef *timInterface)
 {
@@ -160,7 +160,7 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   return 1;
 }
 
-int ADC_yield ()
+int ADC_yield (int * sync)
 {
 
   // TODO: Track delta between DMA samples and TIM samples
@@ -180,7 +180,7 @@ int ADC_yield ()
         const float lossRate = adc.nFramesMissed * 100.0f / adc.nFrames;
         WARN("Frames missed: %d (%.2f%%)", adc.nFramesMissed, lossRate);
         DBUG("Persisting zeros for missed samples");
-        WAVE_appendData(&adc.wav, ADC_MISSED_SAMPLES_ZERO, sizeof(ADC_MISSED_SAMPLES_ZERO), 1);
+        WAVE_appendData(&adc.wav, ADC_MISSED_SAMPLES_ZERO, sizeof(ADC_MISSED_SAMPLES_ZERO), 0);
         // TODO: if more than % missed samples then reset device
         break;
       }
@@ -201,7 +201,7 @@ int ADC_yield ()
                           : (uint8_t *) adc.dmaBuf + dmaLen;
 
         DBUG("Flushing buffer (0x%08X -> %d)", dmaBuf, dmaLen);
-        ADC_persistBuf_(dmaBuf, dmaLen);
+        ADC_persistBuf_(dmaBuf, dmaLen, sync);
         ADC_clear_flag_cplt;
       }
       break;
@@ -230,10 +230,15 @@ int ADC_yield ()
   return 1;
 }
 
-static void ADC_persistBuf_ (void *buf, size_t len)
+static void ADC_persistBuf_ (void *buf, size_t len, int * sync)
 {
   ADC_32To24Blocks_(buf, buf, len, 0);
-  WAVE_appendData(&adc.wav, buf, len * 3 / 4, 1);
+  int bw = WAVE_appendData(&adc.wav, buf, len * 3 / 4, *sync);
+  if(bw > 0 && *sync > 0){
+    INFO("Syncing WAVE changes to FAT FS");
+    // Clear flag
+    *sync = 0;
+  }
 }
 
 static inline void ADC_32To24Blocks_ (uint8_t *to, const uint32_t *from, size_t len, uint8_t lsb)
