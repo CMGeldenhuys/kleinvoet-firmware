@@ -318,6 +318,7 @@ int ADC_setState (ADC_state_major_e state)
 
   switch(state) {
     case ADC_IDLE: {
+      LED_ORANGE_SET_LOW();
       INFO("Recorder IDLE");
       HAL_SAI_DMAPause(adc.audioPort);
       HAL_TIM_Base_Stop(adc.tim);
@@ -330,7 +331,7 @@ int ADC_setState (ADC_state_major_e state)
         return -1;
       }
       INFO("Recording stopping...");
-
+      LED_ORANGE_SET_LOW();
       // Stop Peripherals
       HAL_SAI_DMAStop(adc.audioPort);
       HAL_TIM_Base_Stop(adc.tim);
@@ -348,6 +349,7 @@ int ADC_setState (ADC_state_major_e state)
       }
       // Start Recording
       INFO("Recording started");
+      LED_ORANGE_SET_HIGH();
       // Size is defined as frames and not bytes
       // This is due to the FIFO buffer used
       HAL_StatusTypeDef ret;
@@ -408,9 +410,6 @@ static inline void ADC_SAI_Interrupt_ (ADC_state_flag_rec_e caller)
   else {
     adc.nFrames++;
     adc.state.flags.rec |= caller;
-    LED_ORANGE_WRITE(caller == ADC_CPLT_HALF
-                      ? LED_ORANGE_HIGH
-                      : LED_ORANGE_LOW);
   }
 }
 
