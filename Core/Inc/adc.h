@@ -18,6 +18,7 @@
 
 #include "main.h"
 #include "wave.h"
+#include "led.h"
 
 /// Filename of the recording
 #ifndef ADC_FILENAME

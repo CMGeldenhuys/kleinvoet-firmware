@@ -30,6 +30,7 @@
 #include "adc.h"
 #include "timestamp.h"
 #include "perf.h"
+#include "led.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,7 +44,7 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
+#define WAIT(__base2_Hz__) ({for(uint32_t i = 0; i < (HAL_RCC_GetHCLKFreq() >> (__base2_Hz__)); i++) __NOP();})
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -63,6 +64,7 @@ DMA_HandleTypeDef hdma_sai1_b;
 SD_HandleTypeDef hsd;
 
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim10;
 
 UART_HandleTypeDef huart4;
@@ -93,6 +95,7 @@ static void MX_I2C1_Init(void);
 static void MX_SAI1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_ADC1_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 /* USER CODE END PFP */
 
@@ -140,10 +143,9 @@ int main(void)
   MX_SAI1_Init();
   MX_TIM2_Init();
   MX_ADC1_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_SET);
-
+  LED_ORANGE_START_BLINK();
   // Give time for RTC to init properly
   HAL_RTC_WaitForSynchro(&hrtc);
   // Calculate UUID
@@ -167,6 +169,7 @@ int main(void)
   INFO("VERSION: " VERSION);
   INFO("AUTHORS: " AUTHORS);
   INFO("UUID: 0x%08X (%08X-%08X-%08X)", KLEINVOET_UUID, STM32_UUID[0], STM32_UUID[1], STM32_UUID[2]);
+  INFO("Core Freq: %uHz", HAL_RCC_GetHCLKFreq());
 
   INFO("Waiting for GPS to finish starting up..");
   HAL_Delay(1500);
@@ -182,8 +185,6 @@ int main(void)
 
   // Enable FS flush timer
   HAL_TIM_Base_Start_IT(&htim10);
-  HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_RESET);
   ready = 1;
   /* USER CODE END 2 */
 
@@ -195,6 +196,7 @@ int main(void)
   // Store logs
   LOG_flush();
   wavWriteHeaderFlag = 0;
+  LED_ORANGE_STOP_BLINK();
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "EndlessLoop"
   while (1) {
@@ -632,6 +634,65 @@ static void MX_TIM2_Init(void)
 }
 
 /**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 18000;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 1000;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV4;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_OC_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_TOGGLE;
+  sConfigOC.Pulse = 1000;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+  HAL_TIM_MspPostInit(&htim3);
+
+}
+
+/**
   * @brief TIM10 Initialization Function
   * @param None
   * @retval None
@@ -768,7 +829,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, LED_STATUS_Pin|LED_STATUS_1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(ADC_nRST_GPIO_Port, ADC_nRST_Pin, GPIO_PIN_SET);
@@ -785,12 +846,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(SDIO_CD_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LED_STATUS_Pin LED_STATUS_1_Pin */
-  GPIO_InitStruct.Pin = LED_STATUS_Pin|LED_STATUS_1_Pin;
+  /*Configure GPIO pin : LED_BLUE_Pin */
+  GPIO_InitStruct.Pin = LED_BLUE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(LED_BLUE_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : USR_BTN_Pin */
   GPIO_InitStruct.Pin = USR_BTN_Pin;
@@ -847,7 +908,7 @@ void HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
       if(ready){
         const GPIO_PinState syncPinState = HAL_GPIO_ReadPin(GPS_SYNC_GPIO_Port, GPS_SYNC_Pin);
         DBUG("GPS sync pulse (%c)",  syncPinState ? 'H' : 'L');
-        HAL_GPIO_TogglePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin);
+        LED_BLUE_TOGGLE();
 
         // If on rising pulse
         if(syncPinState == GPIO_PIN_SET) TIME_mark();
@@ -909,12 +970,15 @@ void Error_Handler(void)
   TTY_println("HALTED!");
   LOG_flush();
   TIME_flush(1);
-  HAL_GPIO_WritePin(LED_STATUS_GPIO_Port, LED_STATUS_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin, GPIO_PIN_RESET);
+  // Force alternating lights
+  LED_BLUE_SET_HIGH();
+  LED_ORANGE_SET_LOW();
   for (;;) {
-    HAL_GPIO_TogglePin(LED_STATUS_1_GPIO_Port, LED_STATUS_1_Pin);
-    // NOTE: DELAY WILL NOT WORK IF ERROR HANDLER IS CALL FROM WITHIN HIGH PRIORTY INTERRUPT!
-    HAL_Delay(250);
+    LED_ORANGE_TOGGLE();
+    LED_BLUE_TOGGLE();
+    // Can't reliably use `HAL_Delay` here as this depends on systick which is
+    // not updated if `Error_Handler` is called from high IRQ
+    WAIT(8);
   }
   /* USER CODE END Error_Handler_Debug */
 }
