@@ -160,7 +160,7 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
   return 1;
 }
 
-int ADC_yield ()
+int ADC_yield (int sync)
 {
 
   // TODO: Track delta between DMA samples and TIM samples

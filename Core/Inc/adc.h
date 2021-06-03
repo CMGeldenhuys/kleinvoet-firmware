@@ -194,7 +194,7 @@ int ADC_powerDown ();
  */
 int ADC_setState (ADC_state_major_e state);
 
-int ADC_yield ();
+int ADC_yield (int sync);
 
 
 /**
