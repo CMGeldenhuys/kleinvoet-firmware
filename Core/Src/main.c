@@ -145,9 +145,7 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  LED_BLUE_SET_HIGH();
-  LED_ORANGE_SET_HIGH();
-
+  LED_ORANGE_START_BLINK();
   // Give time for RTC to init properly
   HAL_RTC_WaitForSynchro(&hrtc);
   // Calculate UUID
@@ -186,8 +184,6 @@ int main(void)
 
   // Enable FS flush timer
   HAL_TIM_Base_Start_IT(&htim10);
-  LED_BLUE_SET_LOW();
-  LED_ORANGE_SET_LOW();
   ready = 1;
   /* USER CODE END 2 */
 
