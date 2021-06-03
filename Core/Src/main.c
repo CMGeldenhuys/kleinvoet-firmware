@@ -77,8 +77,8 @@ uint32_t KLEINVOET_UUID = 0xDEADBEEFU;
 int ready = 0;
 // TODO: Just a quick fix
 static int flushLog = 0;
-static uint_least8_t wavWriteHeaderFlag = 0;
-static uint_least8_t adcSyncWrite = 0;
+static uint32_t wavWriteHeaderFlag = 0;
+static int adcSyncWrite = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -205,9 +205,7 @@ int main(void)
     HAL_IWDG_Refresh(&hiwdg);
     PERF_START("ADC_yield");
     PERF_THRESHOLD(100);
-    ADC_yield(adcSyncWrite);
-    // TODO Check ACK from yield function
-    adcSyncWrite = 0;
+    ADC_yield(&adcSyncWrite);
     PERF_END("ADC_yield");
     TTY_yield();
     GPS_yield();
