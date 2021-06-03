@@ -78,6 +78,7 @@ int ready = 0;
 // TODO: Just a quick fix
 static int flushLog = 0;
 static uint_least8_t wavWriteHeaderFlag = 0;
+static uint_least8_t adcSyncWrite = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -204,7 +205,9 @@ int main(void)
     HAL_IWDG_Refresh(&hiwdg);
     PERF_START("ADC_yield");
     PERF_THRESHOLD(100);
-    ADC_yield(0);
+    ADC_yield(adcSyncWrite);
+    // TODO Check ACK from yield function
+    adcSyncWrite = 0;
     PERF_END("ADC_yield");
     TTY_yield();
     GPS_yield();
@@ -932,6 +935,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     flushLog = 1;
 
     // Write WAVE header
+    adcSyncWrite = 1;
     wavWriteHeaderFlag = 1;
 
     // Run ADC conversion for ADC watchdog
