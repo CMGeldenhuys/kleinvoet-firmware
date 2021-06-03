@@ -169,6 +169,7 @@ int main(void)
   INFO("VERSION: " VERSION);
   INFO("AUTHORS: " AUTHORS);
   INFO("UUID: 0x%08X (%08X-%08X-%08X)", KLEINVOET_UUID, STM32_UUID[0], STM32_UUID[1], STM32_UUID[2]);
+  INFO("Core Freq: %uHz", HAL_RCC_GetHCLKFreq());
 
   INFO("Waiting for GPS to finish starting up..");
   HAL_Delay(1500);
