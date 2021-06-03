@@ -44,7 +44,7 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
+#define WAIT(__base2_Hz__) ({for(uint32_t i = 0; i < (HAL_RCC_GetHCLKFreq() >> (__base2_Hz__)); i++) __NOP();})
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -199,6 +199,7 @@ int main(void)
   // Store logs
   LOG_flush();
   wavWriteHeaderFlag = 0;
+  LED_ORANGE_STOP_BLINK();
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "EndlessLoop"
   while (1) {
@@ -972,12 +973,15 @@ void Error_Handler(void)
   TTY_println("HALTED!");
   LOG_flush();
   TIME_flush(1);
+  // Force alternating lights
   LED_BLUE_SET_HIGH();
   LED_ORANGE_SET_LOW();
   for (;;) {
     LED_ORANGE_TOGGLE();
-    // NOTE: DELAY WILL NOT WORK IF ERROR HANDLER IS CALL FROM WITHIN HIGH PRIORTY INTERRUPT!
-    HAL_Delay(250);
+    LED_BLUE_TOGGLE();
+    // Can't reliably use `HAL_Delay` here as this depends on systick which is
+    // not updated if `Error_Handler` is called from high IRQ
+    WAIT(8);
   }
   /* USER CODE END Error_Handler_Debug */
 }
