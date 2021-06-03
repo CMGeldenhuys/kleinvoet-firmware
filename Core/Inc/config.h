@@ -9,16 +9,45 @@
 extern "C" {
 #endif
 
+#define ADC_MAX_DELAY 100
+
 #define AUTHORS "CM Geldenhuys"
 
 #define VERSION_MAJOR "0"
-#define VERSION_MINOR "1"
-#define VERSION_PATCH "1"
-#define VERSION_RC ""
+#define VERSION_MINOR "8"
+#define VERSION_PATCH "0"
+//#define VERSION_RC ""
 
-#define VERSION VERSION_MAJOR "." VERSION_MINOR "." VERSION_PATCH VERSION_RC
+#if defined(VERSION_RC)
+#define VERSION VERSION_MAJOR "." VERSION_MINOR "." VERSION_PATCH "-" VERSION_RC
+#else
+#define VERSION VERSION_MAJOR "." VERSION_MINOR "." VERSION_PATCH
+#endif
 
+// Set logging level
 #define LOG_LEVEL_INFO
+// Set Log destination
+#define LOG_DEST_TTY
+
+#ifdef DEBUG
+#define PERF_ENABLE
+
+// Change ADC sampling Freq.
+#define ADC_SAMPLING_RATE 16000
+#endif
+
+// Enable static file allocation
+#define WAVE_STATIC_FILE_ALLOC
+
+// Enable mock writing of WAVE file
+//#define WAVE_MOCK_WRITES
+
+// Run Speedtests at startup
+//#define FATFS_RUN_SPEEDTEST
+
+// LED_ORANGE Timer setting for main file
+#define LED_ORANGE_TIM &htim3
+#define LED_ORANGE_TIM_CH TIM_CHANNEL_1
 
 #ifdef __cplusplus
 }

@@ -23,9 +23,15 @@
 #include <string.h>
 #include "stm32f4xx_hal.h"
 #include "config.h"
+#include "fifofast.h"
+
+#if !defined(LOG_DEST_TTY) && !defined(LOG_DEST_FILE) && !defined(LOG_DISABLE)
+#error "Please specify log device using 'LOG_DEST_****'"
+#endif
 
 // Default logging level if not defined
 #if !defined(LOG_LEVEL_DEBUG) && !defined(LOG_LEVEL_INFO) && !defined(LOG_LEVEL_WARN)
+#warning "No log level specified assuming 'DEBUG'"
 #if defined(DEBUG)
 #define LOG_LEVEL_DEBUG
 #else
@@ -54,19 +60,19 @@
 #define ERR(msg, ...) LOG_log(__func__, LOG_ERR, (msg), ##__VA_ARGS__)
 
 #ifndef LOG_BUF_LEN
-#define LOG_BUF_LEN 64
+#define LOG_BUF_LEN 32
 #endif
 
 /// Maximum user log message length.
 #ifndef LOG_MSG_LEN
-#define LOG_MSG_LEN 1024
+#define LOG_MSG_LEN 80
 #endif
 
 #ifndef LOG_EOL
 #define LOG_EOL "\r\n"
 #endif
 
-#ifdef DEBUG
+#if defined(LOG_DEST_TTY) && !defined(LOG_COLOR_DISABLE)
 #define LOG_COLOR
 #endif
 
@@ -75,11 +81,23 @@
 #define LOG_COLOR_FG_BLUE "\e[34m"
 #define LOG_COLOR_FG_YELLOW "\e[33m"
 #define LOG_COLOR_FG_RED "\e[31m"
+#define LOG_COLOR_FG_GREEN "\e[32m"
 #define LOG_COLOR_RESET "\e[0m"
+
+#define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
+#define BYTE_TO_BINARY(byte)  \
+  (byte & 0x80 ? '1' : '0'), \
+  (byte & 0x40 ? '1' : '0'), \
+  (byte & 0x20 ? '1' : '0'), \
+  (byte & 0x10 ? '1' : '0'), \
+  (byte & 0x08 ? '1' : '0'), \
+  (byte & 0x04 ? '1' : '0'), \
+  (byte & 0x02 ? '1' : '0'), \
+  (byte & 0x01 ? '1' : '0')
 
 #define LOG_COLOR_LEN (sizeof(LOG_COLOR_FG_DEFAULT) + sizeof(LOG_COLOR_RESET) - 2)
 
-#else
+#else // ! LOG_COLOR
 #define LOG_COLOR_LEN 0
 #endif
 
@@ -93,9 +111,35 @@
 typedef enum {
     LOG_DEBUG,   /**< Debug level of severity*/
     LOG_INFO,    /**< Info level of severity*/
+    LOG_PERF,    /**< Performance level of severity*/
     LOG_WARN,    /**< Warning level of severity*/
     LOG_ERR      /**< Error level of severity*/
 } LOG_Lvl_e;
+
+typedef struct {
+    const LOG_Lvl_e       lvl;
+    const char            *func;
+    const RTC_DateTypeDef date;
+    const RTC_TimeTypeDef time;
+    const char            msg[64];
+} LOG_msg_t;
+
+typedef int (*LOG_write_f) (uint8_t *buf, size_t len);
+typedef int (*LOG_flush_f) (void);
+
+typedef struct {
+    LOG_write_f write;
+    LOG_flush_f flush;
+} LOG_writer_t;
+
+typedef struct {
+    uint_least8_t ready;
+    uint_least8_t locked;
+    uint_least16_t missed;
+    LOG_writer_t writer;
+    _fff_declare(LOG_msg_t, fifo, LOG_BUF_LEN);
+    char workBuf[LOG_MSG_INFO_LEN + LOG_MSG_LEN + sizeof(LOG_EOL)];
+}           LOG_t;
 
 /**
  * @brief Log message function.
@@ -141,6 +185,8 @@ int LOG_write (uint8_t *buf, size_t len);
  * @return Returns number of bytes written or negative value no fail.
  */
 int LOG_flush ();
+
+int LOG_init ();
 
 
 #endif //FIRMWARE_LOGGER_H

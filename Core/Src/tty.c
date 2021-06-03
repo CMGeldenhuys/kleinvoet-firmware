@@ -14,6 +14,8 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include "adc.h"
+#include "main.h"
 
 char workBuf_[TTY_SCREEN_WIDTH];
 #endif
@@ -22,14 +24,16 @@ int TTY_greet_ ();
 
 void TTY_clearCommandBuffer_ ();
 
-int TTY_processCommand_ (char * cmdStrBuffer);
+int TTY_processCommand_ (char *cmdStrBuffer);
 
 int TTY_PS_ ();
 
 void TTY_splitArgs_ (char *cmdBuf, char **cmd, int *argc, char *args[]);
 
 #ifdef DEBUG
-int TTY_testArgs(int argc, char *args[]);
+
+int TTY_testArgs (int argc, char *args[]);
+
 #endif
 
 TTY_t tty = {0};
@@ -41,6 +45,11 @@ int TTY_init (UART_HandleTypeDef *uart)
   TTY_clearCommandBuffer_();
 
   TTY_greet_();
+
+#ifdef LOG_DEST_TTY
+  LOG_init();
+#endif
+
   TTY_registerCommand("greet", &TTY_greet_);
 
   // Register TTY default commands
@@ -48,9 +57,25 @@ int TTY_init (UART_HandleTypeDef *uart)
 
 #ifdef DEBUG
   TTY_registerCommand("args", &TTY_testArgs);
+  TTY_registerCommand("tag", &CMD_comment);
 #endif
 
-  if (!*tty.PS) tty.PS = SERIAL_EOL "> ";
+  if (!*tty.PS) {
+
+#ifdef DEBUG
+#ifdef WAVE_MOCK_WRITES
+    tty.PS = SERIAL_EOL "[DEBUG+MOCK]> ";
+#else // !WAVE_MOCK_WRITES
+    tty.PS = SERIAL_EOL "[DEBUG]> ";
+#endif // WAVE_MOCK_WRITES
+#else // !DEBUG
+#ifdef WAVE_MOCK_WRITES
+    tty.PS = SERIAL_EOL "[MOCK]> ";
+#else // !WAVE_MOCK_WRITES
+    tty.PS = SERIAL_EOL "> ";
+#endif // WAVE_MOCK_WRITES
+#endif // DEBUG
+  }
   TTY_PS_();
   return 1;
 }
@@ -62,14 +87,13 @@ void TTY_deint ()
 
 __weak int TTY_greet_ ()
 {
-  Serial_print(tty.serial, TTY_VT100_CLEAR_SCREEN TTY_VT100_COLOR_DEFAULT);
+  TTY_print(TTY_VT100_CLEAR_SCREEN TTY_VT100_COLOR_DEFAULT);
   Serial_write(tty.serial, oli, sizeof(oli));
-  Serial_println(tty.serial, "VERSION: " VERSION);
-  Serial_println(tty.serial, "AUTHORS: " AUTHORS);
+  TTY_println("VERSION: " VERSION);
+  TTY_println("AUTHORS: " AUTHORS);
 
-  char uuid[sizeof("UUID: 00000000-00000000-00000000")];
-  sprintf(uuid, "UUID: %08X-%08X-%08X", STM32_UUID[0], STM32_UUID[1], STM32_UUID[2]);
-  Serial_println(tty.serial, uuid);
+  TTY_printf("UUID: 0x%08X (%08X-%08X-%08X)" TTY_EOL, KLEINVOET_UUID, STM32_UUID[0], STM32_UUID[1], STM32_UUID[2]);
+  return 1;
 }
 
 int TTY_yield ()
@@ -111,7 +135,7 @@ int TTY_yield ()
       (*tty.command.pos) = '\0';
 
       TTY_println("");
-      TTY_processCommand_((char *)tty.command.buffer);
+      TTY_processCommand_((char *) tty.command.buffer);
       TTY_clearCommandBuffer_();
       TTY_PS_();
     }
@@ -135,7 +159,7 @@ int TTY_write (uint8_t *buf, size_t len)
   return Serial_write(tty.serial, buf, len);
 }
 
-int TTY_available ()
+size_t TTY_available ()
 {
   return Serial_available(tty.serial);
 }
@@ -145,14 +169,14 @@ uint8_t TTY_read ()
   return Serial_read(tty.serial);
 }
 
-int TTY_registerCommand (const char *command, int (*func) (__unused int argc, __unused char *argv[]))
+int TTY_registerCommand (const char *alias, REPL_cmd_t func)
 {
   static size_t idx = 0;
   // Run out of command space
   if (idx >= TTY_CMD_LST) return 0;
 
   tty.commandList[idx++] = (TTY_Command_t) {
-          .name = command,
+          .name = alias,
           .func = func
   };
   return idx;
@@ -169,19 +193,24 @@ int TTY_printf (const char *fmt, ...)
   // Clamp length
   TTY_write((uint8_t *) workBuf_,
             len > TTY_SCREEN_WIDTH ? TTY_SCREEN_WIDTH : len);
+
+  va_end(args);
   return len > TTY_SCREEN_WIDTH ? -1 * len : len;
 }
 
 #endif
 
-int TTY_processCommand_ (char * cmdStrBuffer)
+int TTY_processCommand_ (char *cmdStrBuffer)
 {
   //TODO: Split command string into command + args
-  char * cmdStr;
+  char *cmdStr;
   char *args[TTY_ARGS_LEN];
-  int argc;
+  int  argc;
 
   TTY_splitArgs_(cmdStrBuffer, &cmdStr, &argc, args);
+
+  // Command null or empty
+  if (!cmdStr || strcmp(cmdStr, "") == 0) return 0;
 
   for (size_t idx = 0; idx < TTY_CMD_LST; idx++) {
     // Lookup command
@@ -189,7 +218,7 @@ int TTY_processCommand_ (char * cmdStrBuffer)
 
     // Match command string
     if (strcmp(cmdStr, cmd->name) == 0) {
-      DBUG("Command received '%s'", cmd->name);
+      INFO("Command received '%s'", cmd->name);
       return (*(cmd->func))(argc, args);
     }
   }
@@ -199,9 +228,9 @@ int TTY_processCommand_ (char * cmdStrBuffer)
 
 void TTY_splitArgs_ (char *cmdBuf, char **cmd, int *argc, char *args[])
 {
-  *cmd = strtok(cmdBuf, TTY_ARGS_SPLIT_TOKEN);
+  *cmd  = strtok(cmdBuf, TTY_ARGS_SPLIT_TOKEN);
   *argc = 0;
-  char * ptr;
+  char *ptr;
   while ((ptr = strtok(NULL, TTY_ARGS_SPLIT_TOKEN))
          && *argc < TTY_ARGS_LEN) {
     DBUG("arg [%d] -> %s", *argc, ptr);
@@ -230,16 +259,17 @@ int CMD_resetDevice (__unused int argc, __unused char **argv)
   return 1;
 }
 
-int TTY_testArgs(int argc, char *args[])
+int TTY_testArgs (int argc, char *args[])
 {
   TTY_println("ARGS: ");
-  for(int i = 0; i < argc; i++) {
-    TTY_printf("  [%i] -> '%s'" TTY_EOL,i, args[i]);
+  for (int i = 0; i < argc; i++) {
+    TTY_printf("  [%i] -> '%s'" TTY_EOL, i, args[i]);
   }
 }
 
 
-#ifdef DEBUG
+#ifdef LOG_DEST_TTY
+
 int LOG_write (uint8_t *buf, size_t len)
 {
   return Serial_write(tty.serial, buf, len);
@@ -250,4 +280,5 @@ int LOG_flush ()
   // TODO: Fix once buffered writer is implemented
   return 1;
 }
+
 #endif

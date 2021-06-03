@@ -58,7 +58,7 @@
 /* This option switches filtered directory read functions, f_findfirst() and
 /  f_findnext(). (0:Disable, 1:Enable 2:Enable with matching altname[] too) */
 
-#define _USE_MKFS            1
+#define _USE_MKFS            0
 /* This option switches f_mkfs() function. (0:Disable or 1:Enable) */
 
 #define _USE_FASTSEEK        1
@@ -174,9 +174,9 @@
 /  number and only an FAT volume found on the physical drive will be mounted.
 /  When multi-partition is enabled (1), each logical drive number can be bound to
 /  arbitrary physical drive and partition listed in the VolToPart[]. Also f_fdisk()
-/  funciton will be available. */
+/  function will be available. */
 #define _MIN_SS    512  /* 512, 1024, 2048 or 4096 */
-#define _MAX_SS    4096  /* 512, 1024, 2048 or 4096 */
+#define _MAX_SS    512  /* 512, 1024, 2048 or 4096 */
 /* These options configure the range of sector size to be supported. (512, 1024,
 /  2048 or 4096) Always set both 512 for most systems, all type of memory cards and
 /  harddisk. But a larger value may be required for on-board flash memory and some
@@ -240,7 +240,7 @@
 /      lock control is independent of re-entrancy. */
 
 #define _FS_REENTRANT    0  /* 0:Disable or 1:Enable */
-#define _FS_TIMEOUT      1000 /* Timeout period in unit of time ticks */
+#define _FS_TIMEOUT      80 /* Timeout period in unit of time ticks */
 #define _SYNC_t          NULL
 /* The option _FS_REENTRANT switches the re-entrancy (thread safe) of the FatFs
 /  module itself. Note that regardless of this option, file access to different

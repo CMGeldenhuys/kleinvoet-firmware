@@ -1,8 +1,12 @@
-/*
- * tty.h
+/**
  *
- *  Created on: Jul 31, 2020
- *      Author: CM Geldenhuys
+ * @file tty.h
+ * @author CM Geldenhuys
+ * @date 31 Jul. 2020
+ *
+ * @brief TTY prompt for basic interactions with the MCU using a REPL
+ *
+ *
  */
 
 #ifndef TTY_H_
@@ -71,28 +75,97 @@ typedef struct {
 
 extern TTY_t tty;
 
+typedef int (*REPL_cmd_t) (int argc, char *argv[]);
+
+/**
+ * @brief Initialise TTY with handle to serial interface
+ *
+ * @param [in] uart HAL serial handle
+ *
+ * @return Returns a value greater than 0 if successful
+ */
 int TTY_init (UART_HandleTypeDef *uart);
 
+/**
+ * @brief Runs current event loop
+ *
+ * @return Returns a value greater than 0 if successful
+ */
 int TTY_yield ();
 
-int TTY_registerCommand (const char *command, int (*func) (int argc, char *argv[]));
+/**
+ * @brief Registers a new command with the REPL
+ *
+ * @param [in] command Command name or alias
+ * @param [in] func Function to be executed by REPL
+ *
+ * @return Returns a value greater than 0 if successful
+ */
+int TTY_registerCommand (const char *alias, REPL_cmd_t func);
 
+/**
+ * @brief Prints string to attached serial with newline ending
+ *
+ * @see Serial_println(Serial_t *, const char *)
+ *
+ * @param [in] str String message to print
+ *
+ * @return Returns a value greater than 0 if successful
+ */
 int TTY_println (const char *str);
 
+/**
+ * @brief Prints string to attached serial
+ *
+ * @see Serial_print(Serial_t *, const char *)
+ *
+ * @param [in] str String message to print
+ *
+ * @return Returns a value greater than 0 if successful
+ */
 int TTY_print (const char *str);
 
 int TTY_write (uint8_t *buf, size_t len);
 
-int TTY_available ();
+/**
+ * @brief Returns number of bytes available on serial interface
+ *
+ * @see Serial_available(Serial_t *)
+ *
+ * @return Returns a value greater than 0 if successful
+ */
+size_t TTY_available ();
 
+/**
+ * @brief Reads current byte from serial interface
+ *
+ * @see Serial_read(Serial_t *)
+ *
+ * @return Returns a value greater than 0 if successful
+ */
 uint8_t TTY_read ();
 
+/**
+ * @brief REPL command to reset device
+ * @param [in] argc Unused
+ * @param [in] argv Unused
+ *
+ * @return Does not return
+ */
 int CMD_resetDevice (int argc, char **argv);
 
 // TODO: Find fix for linker to pick up
 #define TTY_PRINTF
 #ifdef TTY_PRINTF
 
+/**
+ * @brief Format printing to serial interface
+ *
+ * @param [in] fmt String format
+ * @param [in] ... Arguments passed to formatter
+ *
+ * @return Returns a value greater than 0 if successful
+ */
 int TTY_printf (const char *fmt, ...);
 
 #endif

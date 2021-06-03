@@ -5,7 +5,7 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
+  * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
   * All rights reserved.</center></h2>
   *
   * This software component is licensed by ST under Ultimate Liberty license
@@ -33,6 +33,26 @@
 #include "logger.h"
 
 #define FATFS_EOL SERIAL_EOL
+
+#ifndef FATFS_SPEEDTEST_EPOCH
+#define FATFS_SPEEDTEST_EPOCH 8
+#endif
+
+#define KiB(_KiB_) ((unsigned)(_KiB_) << 10U)
+#define MiB(_MiB_) (       KiB(_MiB_) << 10U)
+#define GiB(_GiB_) (       MiB(_GiB_) << 10U)
+
+#define toKiB(_B_) ((unsigned)(_B_) >> 10U)
+#define toMiB(_B_) (     toKiB(_B_) >> 10U)
+#define toGiB(_B_) (     toMiB(_B_) >> 10U)
+typedef struct {
+    const size_t size;
+//    int32_t read[FATFS_SPEEDTEST_EPOCH];
+    struct {
+        float write;
+    }            speed;
+} speedtest_t;
+
 /* USER CODE END Includes */
 
 extern uint8_t retSD; /* Return value for SD */
@@ -55,6 +75,8 @@ int CMD_sync (int argc, char *args[]);
 
 int CMD_cat (int argc, char *args[]);
 
+int CMD_speedtest (__unused int argc, __unused char *args[]);
+
 int FATFS_open (FIL *fp, const TCHAR *path, BYTE mode);
 
 #define FATFS_write(fp, buff, len) FATFS_slwrite((fp), (buff), (len), 0, -1)
@@ -69,7 +91,7 @@ int FATFS_close (FIL *fp);
 
 int FATFS_expand (FIL *fp, FSIZE_t fsize, BYTE opt);
 
-FIL *FATFS_malloc (BYTE sync);
+FIL *FATFS_malloc (BYTE trackFile);
 
 int FATFS_sync (FIL *fp);
 /* USER CODE END Prototypes */

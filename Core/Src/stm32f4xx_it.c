@@ -23,6 +23,7 @@
 #include "stm32f4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "logger.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,8 +57,9 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern DMA_HandleTypeDef hdma_sdio_rx;
-extern DMA_HandleTypeDef hdma_sdio_tx;
+extern ADC_HandleTypeDef hadc1;
+extern DMA_HandleTypeDef hdma_sai1_b;
+extern SAI_HandleTypeDef hsai_BlockB1;
 extern SD_HandleTypeDef hsd;
 extern TIM_HandleTypeDef htim10;
 extern DMA_HandleTypeDef hdma_uart4_rx;
@@ -88,7 +90,8 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
+  ERR("Hard Fault Exception!");
+  Error_Handler();
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
@@ -103,7 +106,8 @@ void HardFault_Handler(void)
 void MemManage_Handler(void)
 {
   /* USER CODE BEGIN MemoryManagement_IRQn 0 */
-
+  ERR("MemManage Exception!");
+  Error_Handler();
   /* USER CODE END MemoryManagement_IRQn 0 */
   while (1)
   {
@@ -118,7 +122,8 @@ void MemManage_Handler(void)
 void BusFault_Handler(void)
 {
   /* USER CODE BEGIN BusFault_IRQn 0 */
-
+  ERR("Bus Fault Exception!");
+  Error_Handler();
   /* USER CODE END BusFault_IRQn 0 */
   while (1)
   {
@@ -133,7 +138,8 @@ void BusFault_Handler(void)
 void UsageFault_Handler(void)
 {
   /* USER CODE BEGIN UsageFault_IRQn 0 */
-
+  ERR("Usage Fault Exception!");
+  Error_Handler();
   /* USER CODE END UsageFault_IRQn 0 */
   while (1)
   {
@@ -231,6 +237,20 @@ void DMA1_Stream5_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles ADC1, ADC2 and ADC3 interrupts.
+  */
+void ADC_IRQHandler(void)
+{
+  /* USER CODE BEGIN ADC_IRQn 0 */
+
+  /* USER CODE END ADC_IRQn 0 */
+  HAL_ADC_IRQHandler(&hadc1);
+  /* USER CODE BEGIN ADC_IRQn 1 */
+
+  /* USER CODE END ADC_IRQn 1 */
+}
+
+/**
   * @brief This function handles EXTI line[9:5] interrupts.
   */
 void EXTI9_5_IRQHandler(void)
@@ -238,7 +258,7 @@ void EXTI9_5_IRQHandler(void)
   /* USER CODE BEGIN EXTI9_5_IRQn 0 */
 
   /* USER CODE END EXTI9_5_IRQn 0 */
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);
   /* USER CODE BEGIN EXTI9_5_IRQn 1 */
 
   /* USER CODE END EXTI9_5_IRQn 1 */
@@ -266,7 +286,7 @@ void EXTI15_10_IRQHandler(void)
   /* USER CODE BEGIN EXTI15_10_IRQn 0 */
 
   /* USER CODE END EXTI15_10_IRQn 0 */
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_12);
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
   /* USER CODE BEGIN EXTI15_10_IRQn 1 */
 
   /* USER CODE END EXTI15_10_IRQn 1 */
@@ -287,31 +307,31 @@ void SDIO_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles DMA2 stream3 global interrupt.
+  * @brief This function handles DMA2 stream4 global interrupt.
   */
-void DMA2_Stream3_IRQHandler(void)
+void DMA2_Stream4_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA2_Stream3_IRQn 0 */
+  /* USER CODE BEGIN DMA2_Stream4_IRQn 0 */
 
-  /* USER CODE END DMA2_Stream3_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_sdio_rx);
-  /* USER CODE BEGIN DMA2_Stream3_IRQn 1 */
+  /* USER CODE END DMA2_Stream4_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_sai1_b);
+  /* USER CODE BEGIN DMA2_Stream4_IRQn 1 */
 
-  /* USER CODE END DMA2_Stream3_IRQn 1 */
+  /* USER CODE END DMA2_Stream4_IRQn 1 */
 }
 
 /**
-  * @brief This function handles DMA2 stream6 global interrupt.
+  * @brief This function handles SAI1 global interrupt.
   */
-void DMA2_Stream6_IRQHandler(void)
+void SAI1_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA2_Stream6_IRQn 0 */
+  /* USER CODE BEGIN SAI1_IRQn 0 */
 
-  /* USER CODE END DMA2_Stream6_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_sdio_tx);
-  /* USER CODE BEGIN DMA2_Stream6_IRQn 1 */
+  /* USER CODE END SAI1_IRQn 0 */
+  HAL_SAI_IRQHandler(&hsai_BlockB1);
+  /* USER CODE BEGIN SAI1_IRQn 1 */
 
-  /* USER CODE END DMA2_Stream6_IRQn 1 */
+  /* USER CODE END SAI1_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

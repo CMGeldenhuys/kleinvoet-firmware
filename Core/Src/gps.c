@@ -13,6 +13,7 @@
 #include "gps.h"
 #include "logger.h"
 #include "adc.h"
+#include "timestamp.h"
 
 static GPS_t             gps = {0};
 extern RTC_HandleTypeDef hrtc;
@@ -45,17 +46,6 @@ int GPS_init (UART_HandleTypeDef *uart)
   DBUG("Wrapping serial");
   if (Serial_wrap(&gps.serial, uart) <= 0) return -1;
 
-  DBUG("Allocating memory for timestamping file");
-  gps.fp = FATFS_malloc(1);
-  if (gps.fp == NULL) return -2;
-  DBUG("Open/creating file");
-  if (FATFS_open(
-          gps.fp,
-          "TS.CSV",
-          FA_CREATE_ALWAYS | FA_WRITE) <= 0)
-    return -2;
-  DBUG("Writing header to file");
-  f_printf(gps.fp, "\"Sample\",\"Date/Time\",\"GPS Time of Week\",\"Time Accuracy\"" FATFS_EOL);
   if (GPS_configureUBX_() <= 0) return -3;
   return 1;
 }
@@ -65,6 +55,10 @@ int GPS_configureUBX_ ()
   DBUG("Size of DEFAULT_CONFIG: %u", GPS_LEN_DEFAULT_CONFIG);
   for (size_t i = 0; i < GPS_LEN_DEFAULT_CONFIG; i++) {
     GPS_sendCommand(GPS_DEFAULT_CONFIG[i], 0, 0);
+    // NB: NEED ACK QUEUE...
+    // TODO Check ACK
+    // Wait between messages to ensure success
+    HAL_Delay(10);
   }
   gps.rx.state = GPS_IDLE;
   gps.state    = GPS_IDLE;
@@ -86,6 +80,8 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, __unused int waitAck, __unused in
   Serial_write(&gps.serial, (uint8_t *) cmd, GPS_cmdLen_(cmd));
   // Send checksum
   Serial_write(&gps.serial, (uint8_t *) &msg.CK_A, 2);
+
+  return 1;
 }
 
 inline size_t GPS_cmdLen_ (const GPS_UBX_cmd_t *cmd)
@@ -112,7 +108,13 @@ int GPS_yield ()
     gps.state &= ~GPS_RX;
     // Place device in idle
     gps.state |= GPS_IDLE;
-    return GPS_rxByte_(Serial_read(&gps.serial));
+
+    // Get byte from serial
+    const uint8_t c = Serial_peek(&gps.serial);
+    if (GPS_rxByte_(c) > 0) {
+      // Advance pointer
+      Serial_read(&gps.serial);
+    }
   }
 
   return 1;
@@ -125,11 +127,41 @@ int GPS_rxByte_ (uint8_t c)
     // Sync 1
     case GPS_IDLE: {
       // Cache sample when time code was received
-      gps.adcTimestamp = adc.sampleCount;
+      // TODO: ADC fix up
+//      gps.adcTimestamp = adc.sampleCount;
 
       // Received start byte
       if (c == GPS_SYNC_1_) gps.rx.state = GPS_RX_SYNC_2;
-      else if (c == '$') DBUG("NMEA Msg recv (ignoring)");
+      // Potential start of NMEA messga
+      else if (c == '$') {
+        INFO("Potential NMEA message detected");
+#ifdef GPS_PARSE_NMEA
+//        HAL_UART_DMAStop(gps.serial.config_.uart);
+        // Store pointer to start of message
+        char *nmeaMessage = (char *) Serial_tail(&gps.serial);
+        const size_t nBytes = Serial_available(&gps.serial);
+        // While data left of serial
+        for (size_t i = 0; i < nBytes; i++) {
+          // Get next char but don't move on pointer
+          uint8_t nextVal = *(nmeaMessage + i);
+          if (nextVal == GPS_SYNC_1_) {
+            INFO("Aborting NMEA message detection (UBX Sync detected)");
+            Serial_advanceTailRx(&gps.serial, i);
+            return 1;
+          }
+            // CR detected
+            // TODO: check for LF too but for now CR is enough
+          else if (nextVal == '\r') {
+            *(nmeaMessage + i) = '\0'; // NULL terminate string
+            INFO("> NMEA: %s", nmeaMessage);
+            return 1;
+          }
+        }
+        // Neither outcome resolved (not UBX nor complete NMEA)
+        WARN("NMEA message not complete during processing");
+        return -1;
+#endif
+      }
       break;
     }
 
@@ -164,7 +196,7 @@ int GPS_rxByte_ (uint8_t c)
         gps.rx.idx   = 0;
       }
 
-      if(gps.rx.idx >= GPS_BUF_LEN) {
+      if (gps.rx.idx >= GPS_BUF_LEN) {
         WARN("Command buffer overflow!");
         gps.rx.state = GPS_IDLE;
       }
@@ -241,16 +273,25 @@ int GPS_rxByte_ (uint8_t c)
 
 int GPS_processCmd_ (GPS_UBX_cmd_t *cmd)
 {
-  INFO("> UBX 0x%02X|0x%02X (%uB)", cmd->cls, cmd->id, cmd->len);
+  DBUG("> UBX 0x%02X|0x%02X (%uB)", cmd->cls, cmd->id, cmd->len);
   switch (cmd->cls) {
     case UBX_NAV: {
-      DBUG("NAV Msg recv (0x%02X | 0x%02X)", cmd->cls, cmd->id);
+      DBUG("> NAV (0x%02X | 0x%02X)", cmd->cls, cmd->id);
       return GPS_processCmdNav_(cmd);
     }
 
     case UBX_ACK: {
-      DBUG("ACK Msg recv (0x%02X | 0x%02X)", cmd->cls, cmd->id);
-      // TODO: Process ACK msg to make sure commands are successful
+      const UBX_ACK_t *cmd_t = (UBX_ACK_t *) cmd;
+
+      if(cmd->id == UBX_ACK_ACK){
+        INFO("> ACK (0x%02X | 0x%02X)", cmd_t->msgClsID, cmd_t->msgID);
+        // TODO: Process ACK msg to make sure commands are successful
+      }
+      // NACK
+      else {
+        WARN("> NACK (0x%02X | 0x%02X)", cmd_t->msgClsID, cmd_t->msgID);
+        // TODO: Process ACK msg to make sure commands are successful
+      }
       return 1;
     }
 
@@ -271,38 +312,32 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
   switch (cmd->id) {
 
     case UBX_NAV_CLK: {
-      INFO("UBX-NAV-CLK");
+      // Parse Command
       const UBX_NAV_CLK_t *cmd_t = (UBX_NAV_CLK_t *) &gps.rx.cmd._t;
-      DBUG("  iTOW: %lu", cmd_t->iTOW);
-      DBUG("  clkB: %l", cmd_t->clkB);
-      DBUG("  clkD: %l", cmd_t->clkD);
-      DBUG("  tAcc: %lu", cmd_t->tAcc);
-      DBUG("  fAcc: %lu", cmd_t->fAcc);
+
+      // Log Message
+      GPS_log_UBX_NAV_CLK(cmd_t);
+
       return UBX_NAV_CLK;
     }
 
     case UBX_NAV_TIMEUTC: {
+      // Parse serial command into struct
       const UBX_NAV_TIMEUTC_t *cmd_t = (UBX_NAV_TIMEUTC_t *) &gps.rx.cmd._t;
-      INFO("UBX-NAV-TIMEUTC (%s - 0x%08X)",
-           cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC ? "VALID" : "INVALID",
-           gps.adcTimestamp);
+      // Log out command received
+      GPS_log_UBX_NAV_TIMEUTC(cmd_t);
 
-      DBUG("  iTOW: %lu", cmd_t->iTOW);
-      DBUG("  tAcc: %lu", cmd_t->tAcc);
-      DBUG("  nano: %0l", cmd_t->nano);
-      DBUG("  year: %u", cmd_t->year);
-      DBUG("  month: %02u", cmd_t->month);
-      DBUG("  day: %02u", cmd_t->day);
-      DBUG("  hour: %02u", cmd_t->hour);
-      DBUG("  min: %02u", cmd_t->min);
-      DBUG("  sec: %02u", cmd_t->sec);
-      DBUG("  valid: 0x%02X", cmd_t->valid);
-
-      // TODO: Replace with constant blip
+      // If current cmd's time is valid
       if (cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC) {
+        // Keep track of number of valid samples within one status window
+        gps.timeValidN++;
+
+        // Time stamp previously marked sample with time received from GPS
+        TIME_stamp(cmd_t);
+
         // Previously not valid
         if (!gps.timeValid) {
-          HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+          // Update RTC with current GPS time
           GPS_updateRTC_(&hrtc, cmd_t);
 
           // Once fix & valid time then disable SAT msgs
@@ -310,66 +345,87 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
 
           // Mark time as valid for next epoch
           gps.timeValid = 1;
+          // Notify timestamping that time is locked
+          TIME_timeValid();
         }
-        // Best attempt timestamping
-        DBUG("Timestamping");
-        f_printf(gps.fp, "%lu,%4u-%02u-%02u %02u:%02u:%02u.%lu,%lu,%lu" FATFS_EOL,
-                 gps.adcTimestamp,
-                 cmd_t->year, cmd_t->month, cmd_t->day,
-                 cmd_t->hour, cmd_t->min, cmd_t->sec, cmd_t->nano,
-                 cmd_t->iTOW, cmd_t->tAcc);
       }
-        // If fix lost or never had ensure SAT is on as to show feedback of num sats
-      else if (gps.timeValid) {
-        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-        GPS_sendCommand(&GPS_ENABLE_UBX_NAV_SAT.generic, 0, 0);
-        gps.timeValid = 0;
+      else
+      {
+        // Keep track of the number of invalid time message in one status window
+        gps.timeInvalidN++;
+
+        // If current time is NOT valid and previous time is valid
+        // If fix lost ensure SAT is on as to show feedback of num sats
+        if (gps.timeValid) {
+          GPS_sendCommand(&GPS_ENABLE_UBX_NAV_SAT.generic, 0, 0);
+          gps.timeValid = 0;
+          TIME_timeInvalid();
+        }
+        // If time was never valid and is still not valid
+        else {
+          DBUG("Not valid and was previously not valid");
+        }
       }
-      else {
-        DBUG("Not not valid and was previously not valid");
-      }
+
 
 
       return UBX_NAV_TIMEUTC;
     }
 
     case UBX_NAV_STATUS: {
-      INFO("UBX-NAV-STATUS");
       const UBX_NAV_STATUS_t *cmd_t = (UBX_NAV_STATUS_t *) &gps.rx.cmd._t;
-      DBUG("  iTOW: %lu", cmd_t->iTOW);
-      DBUG("  gpsFix: 0x%02X", cmd_t->gpsFix);
-      DBUG("  flags: 0x%02X", cmd_t->flags);
-      DBUG("  fixStat: 0x%02x", cmd_t->fixStat);
-      DBUG("  flags2: 0x%02X", cmd_t->flags2);
-      DBUG("  ttff: %lu", cmd_t->ttff);
-      DBUG("  msss: %lu", cmd_t->msss);
+
+      // Log message
+      GPS_log_UBX_NAV_STATUS(cmd_t);
+
+      // Reset counters for next status window
+      gps.timeInvalidN = 0;
+      gps.timeValidN = 0;
+
       return UBX_NAV_STATUS;
     }
 
     case UBX_NAV_SAT: {
+      // Parse command
       const UBX_NAV_SAT_t *cmd_t = (UBX_NAV_SAT_t *) &gps.rx.cmd._t;
-      INFO("UBX-NAV-SAT (%u)", cmd_t->numSvs);
 
-      DBUG("  iTOW: %lu", cmd_t->iTOW);
-      DBUG("  version: %u", cmd_t->version);
-      DBUG("  numSvs: %u", cmd_t->numSvs);
+      // Log message
+      GPS_log_UBX_NAV_SAT(cmd_t);
 
-      for (uint8_t i = 0; i < cmd_t->numSvs; i++) {
-        DBUG("  ---- Svs %u ----", i);
-        DBUG("    gnssId: %u", cmd_t->svs[i].gnssId);
-        DBUG("    svId: %u", cmd_t->svs[i].svId);
-        DBUG("    cno: %u", cmd_t->svs[i].cno);
-        DBUG("    elev: %d", cmd_t->svs[i].elev);
-        DBUG("    azim: %d", cmd_t->svs[i].azim);
-        DBUG("    prRes: %d", cmd_t->svs[i].prRes);
-        DBUG("    flags: 0x%02X", cmd_t->svs[i].flags);
-        // TODO: Make this non blocking??
-        // Need 'outer' state machine that controls LED status with main yield
-//        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-//        HAL_Delay(100);
-//        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-      }
       return UBX_NAV_SAT;
+    }
+
+    case UBX_NAV_HPPOSECEF: {
+      // Parse Command
+      const UBX_NAV_HPPOSECEF_t *cmd_t = (UBX_NAV_HPPOSECEF_t *) &gps.rx.cmd._t;
+
+      // Log message
+      GPS_log_UBX_NAV_HPPOSECEF(cmd_t);
+
+      return UBX_NAV_HPPOSECEF;
+    }
+
+    case UBX_NAV_POSECEF: {
+      // Parse Command
+      const UBX_NAV_POSECEF_t *cmd_t = (UBX_NAV_POSECEF_t *) &gps.rx.cmd._t;
+
+      // Log message
+      GPS_log_UBX_NAV_POSECEF(cmd_t);
+
+      // Store location to WAVE header
+      ADC_updateLocation(&(cmd_t->ecefX), cmd_t->pAcc);
+
+      return UBX_NAV_POSECEF;
+    }
+
+    case UBX_NAV_PVT: {
+      // Parse Command
+      const UBX_NAV_PVT_t *cmd_t = (UBX_NAV_PVT_t *) cmd;
+
+      // Log message
+      GPS_log_UBX_NAV_PVT(cmd_t);
+
+      return UBX_NAV_HPPOSECEF;
     }
 
     default: {
@@ -432,7 +488,7 @@ int GPS_updateRTC_ (RTC_HandleTypeDef *rtc, const UBX_NAV_TIMEUTC_t *cmd)
     return -1;
   }
 
-  sDate.Year    = cmd->year % 2000; // Will probably break but not now...
+  sDate.Year    = cmd->year % 2000; // Will probably break but not now... or at least soon xD
   sDate.Month   = RTC_ByteToBcd2(cmd->month);
   sDate.Date    = cmd->day;
   sDate.WeekDay = dow(cmd->year, cmd->month, cmd->day);

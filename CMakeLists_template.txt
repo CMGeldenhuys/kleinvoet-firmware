@@ -56,6 +56,9 @@ include_directories(${includes})
 # FATFS Inc
 include_directories(FATFS/App FATFS/Target)
 
+# FastFifo Inc
+include_directories(fifofast)
+
 file(GLOB_RECURSE SOURCES ${sources})
 
 set(LINKER_SCRIPT $${CMAKE_SOURCE_DIR}/${linkerScript})
