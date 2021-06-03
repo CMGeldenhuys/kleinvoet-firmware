@@ -265,7 +265,7 @@ int FATFS_slwrite (FIL *fp, const void *buff, size_t len, int sync, int pos)
     }
   }
 
-  return bw;
+  return (int) bw;
 }
 
 int FATFS_close (FIL *fp)
