@@ -180,7 +180,7 @@ int ADC_yield (int sync)
         const float lossRate = adc.nFramesMissed * 100.0f / adc.nFrames;
         WARN("Frames missed: %d (%.2f%%)", adc.nFramesMissed, lossRate);
         DBUG("Persisting zeros for missed samples");
-        WAVE_appendData(&adc.wav, ADC_MISSED_SAMPLES_ZERO, sizeof(ADC_MISSED_SAMPLES_ZERO), 1);
+        WAVE_appendData(&adc.wav, ADC_MISSED_SAMPLES_ZERO, sizeof(ADC_MISSED_SAMPLES_ZERO), sync);
         // TODO: if more than % missed samples then reset device
         break;
       }

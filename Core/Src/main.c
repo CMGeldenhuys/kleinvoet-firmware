@@ -204,7 +204,7 @@ int main(void)
     HAL_IWDG_Refresh(&hiwdg);
     PERF_START("ADC_yield");
     PERF_THRESHOLD(100);
-    ADC_yield();
+    ADC_yield(0);
     PERF_END("ADC_yield");
     TTY_yield();
     GPS_yield();
