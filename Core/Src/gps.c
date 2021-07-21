@@ -31,7 +31,7 @@ int GPS_processCmd_ (GPS_UBX_cmd_t *cmd);
 
 int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd);
 
-int GPS_rxByte_ (uint8_t c);
+GPS_rx_state_e GPS_parseByte_ (uint8_t c, GPS_rx_state_e state, GPS_rx_cmd_buffer_t * buff);
 
 int GPS_updateRTC_ (RTC_HandleTypeDef *rtc, const UBX_NAV_TIMEUTC_t *cmd);
 
@@ -60,7 +60,7 @@ int GPS_configureUBX_ ()
     // Wait between messages to ensure success
     HAL_Delay(5);
   }
-  gps.rx.state = GPS_IDLE;
+  gps.rxState  = GPS_RX_RESET;
   gps.state    = GPS_IDLE;
   return 1;
 }
@@ -101,81 +101,47 @@ int GPS_yield ()
       return 1;
     }
   }
-  // Check if byte ready for RX
-  gps.state |= Serial_available(&gps.serial) > 0 ? GPS_RX : 0u;
-  if (gps.state & GPS_RX) {
-    // Remove RX flag
-    gps.state &= ~GPS_RX;
-    // Place device in idle
-    gps.state |= GPS_IDLE;
 
-    // Get byte from serial
-    const uint8_t c = Serial_peek(&gps.serial);
-    if (GPS_rxByte_(c) > 0) {
-      // Advance pointer
-      Serial_read(&gps.serial);
+  if (Serial_available(&gps.serial) > 0) {
+    GPS_rx_state_e nextState = GPS_rxByte(&gps.serial, gps.rxState, &gps.rxBuff);
+    gps.rxState = GPS_RX_ADVANCE_STATE(nextState);
+
+    if (nextState == GPS_RX_CHECKSUM_PASS) {
+      return GPS_processCmd_(&gps.rxBuff.cmd._t);
     }
   }
 
   return 1;
 }
 
-typedef enum {
-    // STATES :   0b................XXXXXXXX................
-    // ERROR :    0b................................1EEEEEEE
-    // OK :       0b................................0KKKKKKK
+inline GPS_rx_state_e GPS_rxByte (Serial_t * serial, GPS_rx_state_e state, GPS_rx_cmd_buffer_t * buff)
+{
+  // Check if Byte available
+  if (Serial_available(serial) > 0) {
+    // Get byte from serial
+    const uint8_t  c         = Serial_peek(serial);
+    GPS_rx_state_e nextState = GPS_parseByte_(state, c, buff);
 
-    GPS_RX_OK   = 0x00000000U,
-    GPS_RX_OK_1 = 0x00000001U,
-    GPS_RX_OK_2 = 0x00000002U,
-    GPS_RX_OK_3 = 0x00000003U,
+    // Only advance serial `head` if byte was successfully parsed
+    if (nextState > 0)
+      Serial_read(serial);
 
-    GPS_RX_ERR_1 = 0x0000000FU,
-    GPS_RX_ERR_2 = 0x0000000EU,
-    GPS_RX_ERR_3 = 0x0000000DU,
+    return nextState;
+  }
+  else return GPS_RX_NO_DATA;
+}
 
-    GPS_RX_WAIT     = 0x00010000U,
-    GPS_RX_NEMA_DET = GPS_RX_WAIT | GPS_RX_ERR_1,
-
-    GPS_RX_POTENTIAL_COMMAND      = 0x00020000U,
-    GPS_RX_POTENTIAL_COMMAND_FAIL = GPS_RX_POTENTIAL_COMMAND | GPS_RX_ERR_1,
-
-    GPS_RX_PREAMBLE          = 0x00030000U,
-    GPS_RX_PREAMBLE_OVERRUN  = GPS_RX_PREAMBLE | GPS_RX_ERR_1,
-    GPS_RX_PREAMBLE_OVERFLOW = GPS_RX_PREAMBLE | GPS_RX_ERR_2,
-
-    GPS_RX_PAYLOAD = 0x00040000U,
-
-    GPS_RX_CK_A = 0x00050000U,
-
-    GPS_RX_CK_B = 0x00060000U,
-
-    GPS_RX_CHECKSUM        = 0x00070000U,
-    GPS_RX_CHECKSUM_FAILED = GPS_RX_CHECKSUM | GPS_RX_ERR_1,
-
-    GPS_RX_UNKNOWN = 0x00080000U,
-} GPS_rx_state_e;
-
-typedef struct {
-    size_t len;
-    size_t idx;
-    union {
-        uint8_t mem[];
-        GPS_UBX_cmd_t cmd;
-    };
-} GPS_rx_cmd_buffer_t;
-
-
-GPS_rx_state_e GPS_rxByte_ (GPS_rx_state_e state, uint8_t c, GPS_rx_cmd_buffer_t * buff)
+GPS_rx_state_e GPS_parseByte_ (uint8_t c, GPS_rx_state_e state, GPS_rx_cmd_buffer_t * buff)
 {
   switch (state) {
 
     // Sync 1
+    case GPS_RX_RESET:
     case GPS_RX_WAIT: {
       // Received start byte
-      if (c == GPS_SYNC_1_) return GPS_RX_POTENTIAL_COMMAND;
+      if (c == GPS_SYNC_1_) return GPS_RX_WAIT_OK;
       // Potential start of NMEA messga
-      else if (c == '$') {
+      else if (c == GPS_NMEA_ID) {
         INFO("Potential NMEA message detected");
 #ifdef GPS_PARSE_NMEA
 //        HAL_UART_DMAStop(gps.serial.config_.uart);
@@ -217,11 +183,11 @@ GPS_rx_state_e GPS_rxByte_ (GPS_rx_state_e state, uint8_t c, GPS_rx_cmd_buffer_t
 
         // Reset internal state
         buff->idx = 0;
-        memset(buff->mem, 0, buff->len);
+        memset(buff->cmd.mem, 0, GPS_BUF_LEN);
 
-        return GPS_RX_PREAMBLE;
+        return GPS_RX_POTENTIAL_COMMAND_OK;
       }
-      else gps.rx.state = GPS_IDLE;
+      else return GPS_RX_POTENTIAL_COMMAND_UNEXPECTED;
       break;
     }
       // Preamble
@@ -229,21 +195,25 @@ GPS_rx_state_e GPS_rxByte_ (GPS_rx_state_e state, uint8_t c, GPS_rx_cmd_buffer_t
 #ifdef GPS_DEBUG_SERIAL
       DBUG("Recv preamble \t[%03u] <- 0x%02X", gps.rx.idx, c);
 #endif
-      gps.rx.cmd.mem[gps.rx.idx++] = c;
+      // Store Rx char to buff
+      buff->cmd.mem[buff->idx++] = c;
 
       // Finished getting preamble
-      if (gps.rx.idx >= GPS_PREAMBLE_LEN_) {
+      if (buff->idx >= GPS_PREAMBLE_LEN_) {
 #ifdef GPS_DEBUG_SERIAL
         DBUG("CMD Len: %u", gps.rx.cmd._t.len);
 #endif
-        gps.rx.state = GPS_RX_PAYLOAD;
-        gps.rx.idx   = 0;
+        buff->idx = 0;
+        return GPS_RX_PREAMBLE_COMPLETE;
       }
-
-      if (gps.rx.idx >= GPS_BUF_LEN) {
+      // Check overflow
+      else if (buff->idx >= GPS_BUF_LEN) {
         WARN("Command buffer overflow!");
-        gps.rx.state = GPS_IDLE;
+        return GPS_RX_PREAMBLE_OVERFLOW;
       }
+      // Preamble incomplete
+      else return GPS_RX_PREAMBLE_PENDING;
+
       break;
     }
 
@@ -251,12 +221,15 @@ GPS_rx_state_e GPS_rxByte_ (GPS_rx_state_e state, uint8_t c, GPS_rx_cmd_buffer_t
 #ifdef GPS_DEBUG_SERIAL
       DBUG("Recv payload \t[%03u] <- 0x%02X", gps.rx.idx, c);
 #endif
-      gps.rx.cmd._t.payload[gps.rx.idx++] = c;
-      if (gps.rx.idx >= gps.rx.cmd._t.len) gps.rx.state = GPS_RX_CK_A;
-      if (gps.rx.idx >= GPS_BUF_LEN - GPS_PREAMBLE_LEN_) {
+      // Store Payload
+      buff->cmd._t.payload[buff->idx++] = c;
+
+      if (buff->idx == buff->cmd._t.len) return GPS_RX_PAYLOAD_OK;
+      else if (buff->idx >= GPS_MAX_CMD_LEN) {
         WARN("Command buffer overflow!");
-        gps.rx.state = GPS_IDLE;
+        return GPS_RX_PAYLOAD_OVERFLOW;
       }
+      else return GPS_RX_PAYLOAD_PENDING;
       break;
     }
       // Ck_a
@@ -264,8 +237,8 @@ GPS_rx_state_e GPS_rxByte_ (GPS_rx_state_e state, uint8_t c, GPS_rx_cmd_buffer_t
 #ifdef GPS_DEBUG_SERIAL
       DBUG("Recv CK_A (0x%02X)", c);
 #endif
-      gps.rx.CK_A  = c;
-      gps.rx.state = GPS_RX_CK_B;
+      buff->CK_A  = c;
+      return GPS_RX_CK_A_ACK;
       break;
     }
       // Ck_b
@@ -273,41 +246,32 @@ GPS_rx_state_e GPS_rxByte_ (GPS_rx_state_e state, uint8_t c, GPS_rx_cmd_buffer_t
 #ifdef GPS_DEBUG_SERIAL
       DBUG("Recv CK_B (0x%02X)", c);
 #endif
-      gps.rx.CK_B = c;
-
-      gps.rx.state = GPS_RX_CHECKSUM;
-      // Run into next state
+      buff->CK_B  = c;
+      // Internal state transition
+      // NB!: Run into next state
     }
       // FUll cmd
     case GPS_RX_CHECKSUM: {
       DBUG("---- Full Command Recv ----");
+
+      // Pack message
       GPS_UBX_msg_t tmp = {0};
-      tmp.cmd           = &gps.rx.cmd._t;
-      tmp.CK_A          = gps.rx.CK_A;
-      tmp.CK_B          = gps.rx.CK_B;
+      tmp.cmd           = &buff->cmd._t;
+      tmp.CK_A          = buff->CK_A;
+      tmp.CK_B          = buff->CK_B;
       if (GPS_checksum_(&tmp) > 0) {
         DBUG("Checksum status: PASSED");
-        gps.rx.state = GPS_RX_PROCESS_CMD;
-        // Run into next state
+        return GPS_RX_CHECKSUM_PASS;
       }
       else {
         DBUG("Checksum status: FAILED");
-        gps.rx.state = GPS_IDLE;
-        return 0;
+        return GPS_RX_CHECKSUM_FAIL;
       }
-
-    }
-
-    case GPS_RX_PROCESS_CMD: {
-      gps.rx.state = GPS_IDLE;
-      return GPS_processCmd_(&gps.rx.cmd._t);
-      // Yield end of command
-      // Allow time for other commands
+      break;
     }
 
     default: {
-      gps.rx.state = GPS_IDLE;
-      WARN("Unkown state (placing into idle)");
+      return GPS_RX_RESET;
       break;
     }
   }
@@ -357,7 +321,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
 
     case UBX_NAV_CLK: {
       // Parse Command
-      const UBX_NAV_CLK_t *cmd_t = (UBX_NAV_CLK_t *) &gps.rx.cmd._t;
+      const UBX_NAV_CLK_t *cmd_t = (UBX_NAV_CLK_t *) &gps.rxBuff.cmd._t;
 
       // Log Message
       GPS_log_UBX_NAV_CLK(cmd_t);
@@ -367,7 +331,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
 
     case UBX_NAV_TIMEUTC: {
       // Parse serial command into struct
-      const UBX_NAV_TIMEUTC_t *cmd_t = (UBX_NAV_TIMEUTC_t *) &gps.rx.cmd._t;
+      const UBX_NAV_TIMEUTC_t *cmd_t = (UBX_NAV_TIMEUTC_t *) &gps.rxBuff.cmd._t;
       // Log out command received
       GPS_log_UBX_NAV_TIMEUTC(cmd_t);
 
@@ -417,7 +381,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
     }
 
     case UBX_NAV_STATUS: {
-      const UBX_NAV_STATUS_t *cmd_t = (UBX_NAV_STATUS_t *) &gps.rx.cmd._t;
+      const UBX_NAV_STATUS_t *cmd_t = (UBX_NAV_STATUS_t *) &gps.rxBuff.cmd._t;
 
       // Log message
       GPS_log_UBX_NAV_STATUS(cmd_t);
@@ -431,7 +395,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
 
     case UBX_NAV_SAT: {
       // Parse command
-      const UBX_NAV_SAT_t *cmd_t = (UBX_NAV_SAT_t *) &gps.rx.cmd._t;
+      const UBX_NAV_SAT_t *cmd_t = (UBX_NAV_SAT_t *) &gps.rxBuff.cmd._t;
 
       // Log message
       GPS_log_UBX_NAV_SAT(cmd_t);
@@ -441,7 +405,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
 
     case UBX_NAV_HPPOSECEF: {
       // Parse Command
-      const UBX_NAV_HPPOSECEF_t *cmd_t = (UBX_NAV_HPPOSECEF_t *) &gps.rx.cmd._t;
+      const UBX_NAV_HPPOSECEF_t *cmd_t = (UBX_NAV_HPPOSECEF_t *) &gps.rxBuff.cmd._t;
 
       // Log message
       GPS_log_UBX_NAV_HPPOSECEF(cmd_t);
@@ -451,7 +415,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
 
     case UBX_NAV_POSECEF: {
       // Parse Command
-      const UBX_NAV_POSECEF_t *cmd_t = (UBX_NAV_POSECEF_t *) &gps.rx.cmd._t;
+      const UBX_NAV_POSECEF_t *cmd_t = (UBX_NAV_POSECEF_t *) &gps.rxBuff.cmd._t;
 
       // Log message
       GPS_log_UBX_NAV_POSECEF(cmd_t);
