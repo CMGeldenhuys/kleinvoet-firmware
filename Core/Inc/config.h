@@ -14,8 +14,8 @@ extern "C" {
 #define AUTHORS "CM Geldenhuys"
 
 #define VERSION_MAJOR "0"
-#define VERSION_MINOR "8"
-#define VERSION_PATCH "2"
+#define VERSION_MINOR "9"
+#define VERSION_PATCH "0"
 //#define VERSION_RC ""
 
 #if defined(VERSION_RC)
@@ -40,7 +40,7 @@ extern "C" {
 #define WAVE_STATIC_FILE_ALLOC
 
 // Enable mock writing of WAVE file
-#define WAVE_MOCK_WRITES
+//#define WAVE_MOCK_WRITES
 
 // Run Speedtests at startup
 //#define FATFS_RUN_SPEEDTEST
