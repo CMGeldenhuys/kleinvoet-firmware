@@ -124,9 +124,20 @@ typedef enum {
 #define GPS_RX_ERR_STAUS_CODE(__OP__) GPS_RX_STATUS_CODE((unsigned)(__OP__) | 0x80U)
 #define GPS_RX_STATUS_CODE(__OP__) (((unsigned)(__OP__) & 0xFFU) << 24U )
 #define GPS_RX_STATE(__STATE__) ((unsigned)(__STATE__) & 0xFFU)
-#define _NEXT_STATE(__STATE__) GPS_RX_STATE((unsigned)(__STATE__) << 16U)
-#define GPS_RX_ADVANCE_STATE(__STATE__) (((unsigned)(__STATE__) & 0xFF00U) >> 16U)
+#define _NEXT_STATE(__STATE__) (GPS_RX_STATE(__STATE__) << 8U)
+#define GPS_RX_ADVANCE_STATE(__STATE__) (((unsigned)(__STATE__) & 0xFF00U) >> 8U)
 
+// "Sub-state" Status Codes:
+// Success Codes
+#define GPS_RX_OK    GPS_RX_OK_0
+#define GPS_RX_OK_0  GPS_RX_OK_STATUS_CODE(0)
+#define GPS_RX_OK_1  GPS_RX_OK_STATUS_CODE(1)
+#define GPS_RX_OK_2  GPS_RX_OK_STATUS_CODE(2)
+#define GPS_RX_OK_3  GPS_RX_OK_STATUS_CODE(3)
+// Error Codes
+#define GPS_RX_ERR_1  GPS_RX_ERR_STAUS_CODE(-1)
+#define GPS_RX_ERR_2  GPS_RX_ERR_STAUS_CODE(-2)
+#define GPS_RX_ERR_3  GPS_RX_ERR_STAUS_CODE(-3)
 
 typedef enum {
     // Current State  : 0b....|....|....|....|....|....|XXXX|XXXX
@@ -134,15 +145,7 @@ typedef enum {
     // ERROR          : 0b1XXX|XXXX|....|....|....|....|....|....
     // OK             : 0b0XXX|XXXX|....|....|....|....|....|....
 
-    GPS_RX_OK   = GPS_RX_OK_STATUS_CODE(0),
-    GPS_RX_OK_1 = GPS_RX_OK_STATUS_CODE(1),
-    GPS_RX_OK_2 = GPS_RX_OK_STATUS_CODE(2),
-    GPS_RX_OK_3 = GPS_RX_OK_STATUS_CODE(3),
-
-    GPS_RX_ERR_1 = GPS_RX_ERR_STAUS_CODE(-1),
-    GPS_RX_ERR_2 = GPS_RX_ERR_STAUS_CODE(-2),
-    GPS_RX_ERR_3 = GPS_RX_ERR_STAUS_CODE(-3),
-
+    // States:
     GPS_RX_RESET                        = GPS_RX_STATE(0),
     GPS_RX_WAIT                         = GPS_RX_STATE(1),
     GPS_RX_POTENTIAL_COMMAND            = GPS_RX_STATE(2),
@@ -151,33 +154,31 @@ typedef enum {
     GPS_RX_CK_A                         = GPS_RX_STATE(5),
     GPS_RX_CK_B                         = GPS_RX_STATE(6),
     GPS_RX_CHECKSUM                     = GPS_RX_STATE(7),
+    // Unrelated states
     GPS_RX_NO_DATA                      = GPS_RX_STATE(-2),
     GPS_RX_UNKNOWN                      = GPS_RX_STATE(-1),
 
-    // GPS_RX_WAIT
-    GPS_RX_WAIT_OK                      = _NEXT_STATE(GPS_RX_POTENTIAL_COMMAND) | GPS_RX_WAIT,
-    GPS_RX_NEMA_DET                     = GPS_RX_ERR_1 | _NEXT_STATE(GPS_RX_RESET) | GPS_RX_WAIT,
+    // State Transitions:                 STATUS        | NEXT STATE                            | CURRENT STATE
+    // GPS_RX_WAIT                        ---------------------------------------------------------------------------------
+    GPS_RX_UBX_DET                      = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_POTENTIAL_COMMAND) | GPS_RX_WAIT,
+    GPS_RX_NEMA_DET                     = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_WAIT,
+    // GPS_RX_POTENTIAL_COMMAND           ---------------------------------------------------------------------------------
+    GPS_RX_POTENTIAL_COMMAND_OK         = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_PREAMBLE)          | GPS_RX_POTENTIAL_COMMAND,
+    GPS_RX_POTENTIAL_COMMAND_UNEXPECTED = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_POTENTIAL_COMMAND,
+    // GPS_RX_PREAMBLE                    ---------------------------------------------------------------------------------
+    GPS_RX_PREAMBLE_COMPLETE            = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_PAYLOAD)           | GPS_RX_PREAMBLE,
+    GPS_RX_PREAMBLE_PENDING             = GPS_RX_OK_1   | _NEXT_STATE(GPS_RX_PREAMBLE)          | GPS_RX_PREAMBLE,
+    GPS_RX_PREAMBLE_OVERFLOW            = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_PREAMBLE,
+    // GPS_RX_PAYLOAD                     ---------------------------------------------------------------------------------
+    GPS_RX_PAYLOAD_OK                   = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_CK_A)              | GPS_RX_PAYLOAD,
+    GPS_RX_PAYLOAD_PENDING              = GPS_RX_OK_1   | _NEXT_STATE(GPS_RX_PAYLOAD)           | GPS_RX_PAYLOAD,
+    GPS_RX_PAYLOAD_OVERFLOW             = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_PAYLOAD,
+    // GPS_RX_CK_A                        ---------------------------------------------------------------------------------
+    GPS_RX_CK_A_ACK                     = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_CK_B)              | GPS_RX_CK_A,
+    // GPS_RX_CHECKSUM                    ---------------------------------------------------------------------------------
+    GPS_RX_CHECKSUM_PASS                = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_CHECKSUM,
+    GPS_RX_CHECKSUM_FAIL                = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_CHECKSUM,
 
-    // GPS_RX_POTENTIAL_COMMAND
-    GPS_RX_POTENTIAL_COMMAND_OK         = _NEXT_STATE(GPS_RX_PREAMBLE) | GPS_RX_POTENTIAL_COMMAND,
-    GPS_RX_POTENTIAL_COMMAND_UNEXPECTED = GPS_RX_ERR_1 | _NEXT_STATE(GPS_RX_RESET) | GPS_RX_POTENTIAL_COMMAND,
-
-    // GPS_RX_PREAMBLE
-    GPS_RX_PREAMBLE_COMPLETE            = _NEXT_STATE(GPS_RX_PAYLOAD) | GPS_RX_PREAMBLE,
-    GPS_RX_PREAMBLE_PENDING             = GPS_RX_OK_1 | _NEXT_STATE(GPS_RX_PREAMBLE) | GPS_RX_PREAMBLE,
-    GPS_RX_PREAMBLE_OVERFLOW            = GPS_RX_ERR_1 | _NEXT_STATE(GPS_RX_RESET) | GPS_RX_PREAMBLE,
-
-    // GPS_RX_PAYLOAD
-    GPS_RX_PAYLOAD_OK                   = _NEXT_STATE(GPS_RX_CK_A) | GPS_RX_PAYLOAD,
-    GPS_RX_PAYLOAD_PENDING              = GPS_RX_OK_1 | _NEXT_STATE(GPS_RX_PAYLOAD) | GPS_RX_PAYLOAD,
-    GPS_RX_PAYLOAD_OVERFLOW             = GPS_RX_ERR_1 | _NEXT_STATE(GPS_RX_RESET) | GPS_RX_PAYLOAD,
-
-    // GPS_RX_CK_A
-    GPS_RX_CK_A_ACK                      = _NEXT_STATE(GPS_RX_CK_B) | GPS_RX_CK_A,
-
-    // GPS_RX_CHECKSUM
-    GPS_RX_CHECKSUM_PASS                 = _NEXT_STATE(GPS_RX_RESET) | GPS_RX_CHECKSUM,
-    GPS_RX_CHECKSUM_FAIL                 = GPS_RX_ERR_1 | _NEXT_STATE(GPS_RX_RESET) | GPS_RX_CHECKSUM,
 } GPS_rx_state_e;
 
 typedef struct {
@@ -1107,8 +1108,6 @@ int GPS_yield ();
  * @note retryOnNack is not implemented
  */
 int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck, int retryOnNack);
-
-inline GPS_rx_state_e GPS_rxByte (Serial_t * serial, GPS_rx_state_e state, GPS_rx_cmd_buffer_t * buff);
 
 #define GPS_log_UBX_NAV_TIMEUTC(cmd_t) \
 ({ \

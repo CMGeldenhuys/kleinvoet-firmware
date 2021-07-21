@@ -33,6 +33,10 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd);
 
 GPS_rx_state_e GPS_parseByte_ (uint8_t c, GPS_rx_state_e state, GPS_rx_cmd_buffer_t * buff);
 
+inline GPS_rx_state_e GPS_rxByte (Serial_t * serial, GPS_rx_state_e state, GPS_rx_cmd_buffer_t * buff);
+
+void GPS_logRxState (GPS_rx_state_e state);
+
 int GPS_updateRTC_ (RTC_HandleTypeDef *rtc, const UBX_NAV_TIMEUTC_t *cmd);
 
 int leap (int year);
@@ -103,9 +107,13 @@ int GPS_yield ()
   }
 
   if (Serial_available(&gps.serial) > 0) {
+    // Receive and parse byte
     GPS_rx_state_e nextState = GPS_rxByte(&gps.serial, gps.rxState, &gps.rxBuff);
+
+    // Move to next state
     gps.rxState = GPS_RX_ADVANCE_STATE(nextState);
 
+    // If checksum PASSED process CMD
     if (nextState == GPS_RX_CHECKSUM_PASS) {
       return GPS_processCmd_(&gps.rxBuff.cmd._t);
     }
@@ -114,17 +122,84 @@ int GPS_yield ()
   return 1;
 }
 
+void GPS_logRxState (GPS_rx_state_e state)
+{
+  switch (state) {
+    case GPS_RX_UBX_DET:
+      INFO("UBX Message Detected");
+      break;
+
+    case GPS_RX_NEMA_DET:
+      INFO("NMEA Message Detected");
+      break;
+
+    case GPS_RX_POTENTIAL_COMMAND_OK:
+      INFO("SYNC bytes received");
+      break;
+
+    case GPS_RX_POTENTIAL_COMMAND_UNEXPECTED:
+      INFO("Unexpected byte");
+      break;
+
+    case GPS_RX_PREAMBLE_COMPLETE:
+      INFO("Preamble complete");
+      break;
+
+    case GPS_RX_PREAMBLE_PENDING:
+      INFO("Preamble Pending");
+      break;
+
+    case GPS_RX_PREAMBLE_OVERFLOW:
+      INFO("Preamble Overflow");
+      break;
+
+    case GPS_RX_PAYLOAD_OK:
+      INFO("Payload OK");
+      break;
+
+    case GPS_RX_PAYLOAD_PENDING:
+      INFO("Payload Pending");
+      break;
+
+    case GPS_RX_PAYLOAD_OVERFLOW:
+      INFO("Payload Overflow");
+      break;
+
+    case GPS_RX_CK_A_ACK:
+      INFO("Checksum(A) received");
+      break;
+
+    case GPS_RX_CHECKSUM_PASS:
+      INFO("Checksum PASS");
+      break;
+
+    case GPS_RX_CHECKSUM_FAIL:
+      INFO("Checksum FAIL");
+      break;
+
+    case GPS_RX_RESET:
+      break;
+
+    default:
+      INFO("Unknown State (0x%08X)", state);
+      break;
+  }
+}
+
 inline GPS_rx_state_e GPS_rxByte (Serial_t * serial, GPS_rx_state_e state, GPS_rx_cmd_buffer_t * buff)
 {
   // Check if Byte available
   if (Serial_available(serial) > 0) {
     // Get byte from serial
     const uint8_t  c         = Serial_peek(serial);
-    GPS_rx_state_e nextState = GPS_parseByte_(state, c, buff);
+    GPS_rx_state_e nextState = GPS_parseByte_(c, state, buff);
 
     // Only advance serial `head` if byte was successfully parsed
-    if (nextState > 0)
+    if (nextState > 0) {
       Serial_read(serial);
+    }
+
+//    GPS_logRxState(nextState);
 
     return nextState;
   }
@@ -139,8 +214,8 @@ GPS_rx_state_e GPS_parseByte_ (uint8_t c, GPS_rx_state_e state, GPS_rx_cmd_buffe
     case GPS_RX_RESET:
     case GPS_RX_WAIT: {
       // Received start byte
-      if (c == GPS_SYNC_1_) return GPS_RX_WAIT_OK;
-      // Potential start of NMEA messga
+      if (c == GPS_SYNC_1_) return GPS_RX_UBX_DET;
+      // Potential start of NMEA message
       else if (c == GPS_NMEA_ID) {
         INFO("Potential NMEA message detected");
 #ifdef GPS_PARSE_NMEA
@@ -172,6 +247,7 @@ GPS_rx_state_e GPS_parseByte_ (uint8_t c, GPS_rx_state_e state, GPS_rx_cmd_buffe
         return GPS_RX_NEMA_DET;
 #endif
       }
+      else return GPS_RX_RESET;
       break;
     }
 
@@ -276,7 +352,7 @@ GPS_rx_state_e GPS_parseByte_ (uint8_t c, GPS_rx_state_e state, GPS_rx_cmd_buffe
     }
   }
 
-  return GPS_RX_UNKNOWN;
+  return GPS_RX_RESET;
 }
 
 int GPS_processCmd_ (GPS_UBX_cmd_t *cmd)
