@@ -120,31 +120,50 @@ int GPS_yield ()
   return 1;
 }
 
-#define GPS_RX_STATE(__rx__) ((__rx__) & 0x0000)
+#define GPS_RX_STATE(__rx__) ((__rx__) & 0x00F0)
 #define GPS_RX_STATUS(__rx__) ((__rx__) & 0x0000)
 #define GPS_RX_ERROR(__rx__) ((__rx__) & 0x0000)
 #define GPS_RX_SUCCESS(__rx__) ((__rx__) & 0x0000)
+
+
+
 typedef enum {
+    // STATES :   0b................XXXXXXXX................
+    // ERROR :    0b................................1EEEEEEE
+    // OK :       0b........................1SSSSSSS........
     //                          ...STATE|..STATUS
     //                        0bSSSSSSSS|EEEEEEEE
-    // STATES:
-  GPS_RX_WAIT               = 0b0000000100000000,
+    GPS_RX_OK                = 0x0001,
+    GPS_RX_FAILED            = 0x0002,
 
-  GPS_RX_POTENTIAL_COMMAND,
+    GPS_RX_WAIT              = 0x0010,
+    GPS_RX_POTENTIAL_COMMAND = 0x0020,
+    GPS_RX_PREAMBLE          = 0x0030,
+    GPS_RX_PAYLOAD           = 0x0040,
+    GPS_RX_CK_A              = 0x0050,
+    GPS_RX_CK_B              = 0x0060,
+    GPS_RX_CHECKSUM          = 0x0070,
+    GPS_RX_CHECKSUM_FAIL     = GPS_RX_CHECKSUM | GPS_RX_FAILED,
+    GPS_RX_CHECKSUM_OK       = GPS_RX_CHECKSUM | GPS_RX_OK,
+    GPS_RX_NEMA_DET,
+    GPS_RX_UNEXPECTED,
 
-  GPS_RX_PREAMBLE,
-  GPS_RX_PAYLOAD,
-  GPS_RX_CK_A,
-  GPS_RX_CK_B,
-  GPS_RX_CHECKSUM,
 
-  GPS_RX_CHECKSUM_FAIL,
-  GPS_RX_CHECKSUM_OK,
-  GPS_RX_NEMA_DET,
-  GPS_RX_UNEXPECTED
+} GPS_rx_state_e;
 
+typedef struct {
 
-} GPS_rx_e;
+} GPS_rx_status_generic_t;
+
+typedef union {
+    GPS_rx_status_generic_t generic;
+
+} GPS_rx_status_u;
+
+typedef struct {
+
+} GPS_rx_res_t;
+
 
 int GPS_rxByte_ (uint8_t c)
 {
