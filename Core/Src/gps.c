@@ -58,7 +58,7 @@ int GPS_configureUBX_ ()
     // NB: NEED ACK QUEUE...
     // TODO Check ACK
     // Wait between messages to ensure success
-    HAL_Delay(10);
+    HAL_Delay(5);
   }
   gps.rx.state = GPS_IDLE;
   gps.state    = GPS_IDLE;
@@ -412,8 +412,14 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
       // Log message
       GPS_log_UBX_NAV_POSECEF(cmd_t);
 
-      // Store location to WAVE header
-      ADC_updateLocation(&(cmd_t->ecefX), cmd_t->pAcc);
+      // Check if time is valid
+      if(gps.timeValid) {
+        // Store location to WAVE header
+        ADC_updateLocation(&(cmd_t->ecefX), cmd_t->pAcc);
+      }
+      else {
+        WARN("Time invalid NOT updating location");
+      }
 
       return UBX_NAV_POSECEF;
     }

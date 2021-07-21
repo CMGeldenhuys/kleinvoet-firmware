@@ -453,8 +453,11 @@ int ADC_updateLocation(const int32_t ecef[3], uint32_t pAcc)
     DBUG("ECEF Update: %d,%d,%d", ecefX, ecefY, ecefZ);
     return WAVE_infoChunkPrintf(&adc.wav, WAVE_INFO_IDX_LOCATION, "%d,%d,%d", ecefX, ecefY, ecefZ);
   }
-  else
+  else{
+    INFO("No update, current loc. kept");
     return 0;
+  }
+
 }
 
 #ifdef DEBUG
