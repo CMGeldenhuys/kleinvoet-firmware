@@ -120,63 +120,60 @@ int GPS_yield ()
   return 1;
 }
 
-#define GPS_RX_STATE(__rx__) ((__rx__) & 0x00F0)
-#define GPS_RX_STATUS(__rx__) ((__rx__) & 0x0000)
-#define GPS_RX_ERROR(__rx__) ((__rx__) & 0x0000)
-#define GPS_RX_SUCCESS(__rx__) ((__rx__) & 0x0000)
-
-
-
 typedef enum {
     // STATES :   0b................XXXXXXXX................
     // ERROR :    0b................................1EEEEEEE
-    // OK :       0b........................1SSSSSSS........
-    //                          ...STATE|..STATUS
-    //                        0bSSSSSSSS|EEEEEEEE
-    GPS_RX_OK                = 0x0001,
-    GPS_RX_FAILED            = 0x0002,
+    // OK :       0b................................0KKKKKKK
 
-    GPS_RX_WAIT              = 0x0010,
-    GPS_RX_POTENTIAL_COMMAND = 0x0020,
-    GPS_RX_PREAMBLE          = 0x0030,
-    GPS_RX_PAYLOAD           = 0x0040,
-    GPS_RX_CK_A              = 0x0050,
-    GPS_RX_CK_B              = 0x0060,
-    GPS_RX_CHECKSUM          = 0x0070,
-    GPS_RX_CHECKSUM_FAIL     = GPS_RX_CHECKSUM | GPS_RX_FAILED,
-    GPS_RX_CHECKSUM_OK       = GPS_RX_CHECKSUM | GPS_RX_OK,
-    GPS_RX_NEMA_DET,
-    GPS_RX_UNEXPECTED,
+    GPS_RX_OK   = 0x00000000U,
+    GPS_RX_OK_1 = 0x00000001U,
+    GPS_RX_OK_2 = 0x00000002U,
+    GPS_RX_OK_3 = 0x00000003U,
 
+    GPS_RX_ERR_1 = 0x0000000FU,
+    GPS_RX_ERR_2 = 0x0000000EU,
+    GPS_RX_ERR_3 = 0x0000000DU,
 
+    GPS_RX_WAIT     = 0x00010000U,
+    GPS_RX_NEMA_DET = GPS_RX_WAIT | GPS_RX_ERR_1,
+
+    GPS_RX_POTENTIAL_COMMAND      = 0x00020000U,
+    GPS_RX_POTENTIAL_COMMAND_FAIL = GPS_RX_POTENTIAL_COMMAND | GPS_RX_ERR_1,
+
+    GPS_RX_PREAMBLE          = 0x00030000U,
+    GPS_RX_PREAMBLE_OVERRUN  = GPS_RX_PREAMBLE | GPS_RX_ERR_1,
+    GPS_RX_PREAMBLE_OVERFLOW = GPS_RX_PREAMBLE | GPS_RX_ERR_2,
+
+    GPS_RX_PAYLOAD = 0x00040000U,
+
+    GPS_RX_CK_A = 0x00050000U,
+
+    GPS_RX_CK_B = 0x00060000U,
+
+    GPS_RX_CHECKSUM        = 0x00070000U,
+    GPS_RX_CHECKSUM_FAILED = GPS_RX_CHECKSUM | GPS_RX_ERR_1,
+
+    GPS_RX_UNKNOWN = 0x00080000U,
 } GPS_rx_state_e;
 
 typedef struct {
-
-} GPS_rx_status_generic_t;
-
-typedef union {
-    GPS_rx_status_generic_t generic;
-
-} GPS_rx_status_u;
-
-typedef struct {
-
-} GPS_rx_res_t;
+    size_t len;
+    size_t idx;
+    union {
+        uint8_t mem[];
+        GPS_UBX_cmd_t cmd;
+    };
+} GPS_rx_cmd_buffer_t;
 
 
-int GPS_rxByte_ (uint8_t c)
+GPS_rx_state_e GPS_rxByte_ (GPS_rx_state_e state, uint8_t c, GPS_rx_cmd_buffer_t * buff)
 {
-  switch (gps.rx.state) {
+  switch (state) {
 
     // Sync 1
-    case GPS_IDLE: {
-      // Cache sample when time code was received
-      // TODO: ADC fix up
-//      gps.adcTimestamp = adc.sampleCount;
-
+    case GPS_RX_WAIT: {
       // Received start byte
-      if (c == GPS_SYNC_1_) gps.rx.state = GPS_RX_SYNC_2;
+      if (c == GPS_SYNC_1_) return GPS_RX_POTENTIAL_COMMAND;
       // Potential start of NMEA messga
       else if (c == '$') {
         INFO("Potential NMEA message detected");
@@ -205,22 +202,24 @@ int GPS_rxByte_ (uint8_t c)
         // Neither outcome resolved (not UBX nor complete NMEA)
         WARN("NMEA message not complete during processing");
         return -1;
+#else
+        return GPS_RX_NEMA_DET;
 #endif
       }
       break;
     }
 
       // Sync 2
-    case GPS_RX_SYNC_2: {
+    case GPS_RX_POTENTIAL_COMMAND: {
       // Received second byte
       if (c == GPS_SYNC_2_) {
         DBUG("New UBX command recv");
 
         // Reset internal state
-        gps.rx.idx = 0;
-        memset(gps.rx.cmd.mem, 0, GPS_BUF_LEN);
+        buff->idx = 0;
+        memset(buff->mem, 0, buff->len);
 
-        gps.rx.state = GPS_RX_PREAMBLE;
+        return GPS_RX_PREAMBLE;
       }
       else gps.rx.state = GPS_IDLE;
       break;
@@ -313,7 +312,7 @@ int GPS_rxByte_ (uint8_t c)
     }
   }
 
-  return 1;
+  return GPS_RX_UNKNOWN;
 }
 
 int GPS_processCmd_ (GPS_UBX_cmd_t *cmd)
