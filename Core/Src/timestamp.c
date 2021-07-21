@@ -90,6 +90,9 @@ __attribute__((always_inline))
 inline void TIME_stamp (const UBX_NAV_TIMEUTC_t *cmd)
 {
   if (!ts.timeLocked) return;
+#ifdef WAVE_MOCK_WRITES
+  INFO("Mock writes enabled, ignoring timestamp");
+#else
   if (_fff_is_empty((ts.fifo.timestamp))) {
     WARN("FIFO empty, no sample to mark...");
   }
@@ -103,6 +106,7 @@ inline void TIME_stamp (const UBX_NAV_TIMEUTC_t *cmd)
              cmd->tAcc);
     DBUG("new sample stamped (%d)", _fff_mem_level((ts.fifo.timestamp)));
   }
+#endif
 }
 
 __attribute__((always_inline))
