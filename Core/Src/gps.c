@@ -120,6 +120,32 @@ int GPS_yield ()
   return 1;
 }
 
+#define GPS_RX_STATE(__rx__) ((__rx__) & 0x0000)
+#define GPS_RX_STATUS(__rx__) ((__rx__) & 0x0000)
+#define GPS_RX_ERROR(__rx__) ((__rx__) & 0x0000)
+#define GPS_RX_SUCCESS(__rx__) ((__rx__) & 0x0000)
+typedef enum {
+    //                          ...STATE|..STATUS
+    //                        0bSSSSSSSS|EEEEEEEE
+    // STATES:
+  GPS_RX_WAIT               = 0b0000000100000000,
+
+  GPS_RX_POTENTIAL_COMMAND,
+
+  GPS_RX_PREAMBLE,
+  GPS_RX_PAYLOAD,
+  GPS_RX_CK_A,
+  GPS_RX_CK_B,
+  GPS_RX_CHECKSUM,
+
+  GPS_RX_CHECKSUM_FAIL,
+  GPS_RX_CHECKSUM_OK,
+  GPS_RX_NEMA_DET,
+  GPS_RX_UNEXPECTED
+
+
+} GPS_rx_e;
+
 int GPS_rxByte_ (uint8_t c)
 {
   switch (gps.rx.state) {
@@ -284,7 +310,7 @@ int GPS_processCmd_ (GPS_UBX_cmd_t *cmd)
       const UBX_ACK_t *cmd_t = (UBX_ACK_t *) cmd;
 
       if(cmd->id == UBX_ACK_ACK){
-        INFO("> ACK (0x%02X | 0x%02X)", cmd_t->msgClsID, cmd_t->msgID);
+        INFO("> ACK  (0x%02X | 0x%02X)", cmd_t->msgClsID, cmd_t->msgID);
         // TODO: Process ACK msg to make sure commands are successful
       }
       // NACK
