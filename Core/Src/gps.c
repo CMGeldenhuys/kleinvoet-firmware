@@ -107,6 +107,7 @@ int GPS_yield ()
   }
 
   if (Serial_available(&gps.serial) > 0) {
+    DBUG("---------NEW BYTE--------");
     // Receive and parse byte
     GPS_rx_state_e nextState = GPS_rxByte(&gps.serial, gps.rxState, &gps.rxBuff);
 
@@ -115,6 +116,7 @@ int GPS_yield ()
 
     // If checksum PASSED process CMD
     if (nextState == GPS_RX_CHECKSUM_PASS) {
+      DBUG("Processing Command");
       return GPS_processCmd_(&gps.rxBuff.cmd._t);
     }
   }
@@ -198,9 +200,9 @@ inline GPS_rx_state_e GPS_rxByte (Serial_t * serial, GPS_rx_state_e state, GPS_r
     if (nextState > 0) {
       Serial_read(serial);
     }
-
-//    GPS_logRxState(nextState);
-
+#ifdef GPS_DEBUG_SERIAL
+    GPS_logRxState(nextState);
+#endif
     return nextState;
   }
   else return GPS_RX_NO_DATA;

@@ -972,7 +972,7 @@ static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_TIMEUTC = {
 
         .msgClass = UBX_NAV,
         .msgID    = UBX_NAV_TIMEUTC,
-        .rate     = 1u
+        .rate     = 10u
 };
 
 static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_POSECEF = {
@@ -1111,10 +1111,10 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck, int retryOnNack);
 
 #define GPS_log_UBX_NAV_TIMEUTC(cmd_t) \
 ({ \
-    DBUG("UBX-NAV-TIMEUTC (%s)", \
+    INFO("UBX-NAV-TIMEUTC (%c)", \
          cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC \
-         ? "VALID" \
-         : "INVALID");                \
+         ? '1' \
+         : '0');                \
                                       \
     DBUG("  iTOW: %lu", cmd_t->iTOW); \
     DBUG("  tAcc: %lu", cmd_t->tAcc); \
