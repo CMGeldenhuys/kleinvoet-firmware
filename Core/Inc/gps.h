@@ -160,7 +160,8 @@ typedef enum {
 
     // State Transitions:                 STATUS        | NEXT STATE                            | CURRENT STATE
     // GPS_RX_WAIT                        ---------------------------------------------------------------------------------
-    GPS_RX_UBX_DET                      = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_POTENTIAL_COMMAND) | GPS_RX_WAIT,
+    GPS_RX_WAITING                      = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_WAIT)              | GPS_RX_WAIT,
+    GPS_RX_UBX_DET                      = GPS_RX_OK_1   | _NEXT_STATE(GPS_RX_POTENTIAL_COMMAND) | GPS_RX_WAIT,
     GPS_RX_NEMA_DET                     = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_WAIT,
     // GPS_RX_POTENTIAL_COMMAND           ---------------------------------------------------------------------------------
     GPS_RX_POTENTIAL_COMMAND_OK         = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_PREAMBLE)          | GPS_RX_POTENTIAL_COMMAND,
@@ -1098,7 +1099,7 @@ int GPS_yield ();
 /**
  * @brief Send command to GPS over serial
  *
- * @param [in] cmd Message to send
+ * @param [in] txCmd Message to send
  * @param [in] waitAck Block and wait till message ACK is received
  * @param [in] retryOnNack If command failed retry
  *
@@ -1107,7 +1108,7 @@ int GPS_yield ();
  * @note waitAck is not implemented
  * @note retryOnNack is not implemented
  */
-int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck, int retryOnNack);
+int GPS_sendCommand (const GPS_UBX_cmd_t *txCmd, int waitAck, int retryOnNack);
 
 #define GPS_log_UBX_NAV_TIMEUTC(cmd_t) \
 ({ \
