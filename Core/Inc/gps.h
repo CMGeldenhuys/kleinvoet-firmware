@@ -24,6 +24,8 @@ extern "C" {
 #ifndef GPS_BUF_LEN
 #define GPS_BUF_LEN 512
 #endif
+
+#define GPS_MAX_CMD_LEN ((GPS_BUF_LEN) - (GPS_PREAMBLE_LEN_))
 //                              cls                 id                len
 #define UBX_HEADER_SIZE (sizeof(GPS_cls_e) + sizeof(uint8_t) + sizeof(uint16_t))
 
@@ -32,6 +34,12 @@ extern "C" {
 #define bitfield_t uint8_t
 #define UBX_BIT_ENABLE (1U)
 #define UBX_BIT_DISBALE (0U)
+
+// Magic Numbers
+#define GPS_SYNC_1_ 0xB5
+#define GPS_SYNC_2_ 0x62
+#define GPS_NMEA_ID '$'
+#define GPS_PREAMBLE_LEN_ sizeof(GPS_UBX_cmd_t)
 
 typedef enum __attribute__ ((packed)) {
     UBX_NAV = 0x01,
@@ -110,29 +118,84 @@ typedef enum {
     GPS_IDLE   = 0x010000,
     GPS_CONFIG = 0x800000,
     GPS_RX     = 0x040000,
-
-    GPS_RX_SYNC_2      = 0x040001,
-    GPS_RX_PREAMBLE    = 0x040002,
-    GPS_RX_PAYLOAD     = 0x040004,
-    GPS_RX_CK_A        = 0x040008,
-    GPS_RX_CK_B        = 0x040010,
-    GPS_RX_CHECKSUM    = 0x040020,
-    GPS_RX_PROCESS_CMD = 0x040040
 } GPS_state_e;
+
+#define GPS_RX_OK_STATUS_CODE(__OP__) GPS_RX_STATUS_CODE((unsigned)(__OP__) & 0x7FU)
+#define GPS_RX_ERR_STAUS_CODE(__OP__) GPS_RX_STATUS_CODE((unsigned)(__OP__) | 0x80U)
+#define GPS_RX_STATUS_CODE(__OP__) (((unsigned)(__OP__) & 0xFFU) << 24U )
+#define GPS_RX_STATE(__STATE__) ((unsigned)(__STATE__) & 0xFFU)
+#define _NEXT_STATE(__STATE__) (GPS_RX_STATE(__STATE__) << 8U)
+#define GPS_RX_ADVANCE_STATE(__STATE__) (((unsigned)(__STATE__) & 0xFF00U) >> 8U)
+
+// "Sub-state" Status Codes:
+// Success Codes
+#define GPS_RX_OK    GPS_RX_OK_0
+#define GPS_RX_OK_0  GPS_RX_OK_STATUS_CODE(0)
+#define GPS_RX_OK_1  GPS_RX_OK_STATUS_CODE(1)
+#define GPS_RX_OK_2  GPS_RX_OK_STATUS_CODE(2)
+#define GPS_RX_OK_3  GPS_RX_OK_STATUS_CODE(3)
+// Error Codes
+#define GPS_RX_ERR_1  GPS_RX_ERR_STAUS_CODE(-1)
+#define GPS_RX_ERR_2  GPS_RX_ERR_STAUS_CODE(-2)
+#define GPS_RX_ERR_3  GPS_RX_ERR_STAUS_CODE(-3)
+
+typedef enum {
+    // Current State  : 0b....|....|....|....|....|....|XXXX|XXXX
+    // Next State     : 0b....|....|....|....|XXXX|XXXX|....|....
+    // ERROR          : 0b1XXX|XXXX|....|....|....|....|....|....
+    // OK             : 0b0XXX|XXXX|....|....|....|....|....|....
+
+    // States:
+    GPS_RX_RESET                        = GPS_RX_STATE(0),
+    GPS_RX_WAIT                         = GPS_RX_STATE(1),
+    GPS_RX_POTENTIAL_COMMAND            = GPS_RX_STATE(2),
+    GPS_RX_PREAMBLE                     = GPS_RX_STATE(3),
+    GPS_RX_PAYLOAD                      = GPS_RX_STATE(4),
+    GPS_RX_CK_A                         = GPS_RX_STATE(5),
+    GPS_RX_CK_B                         = GPS_RX_STATE(6),
+    GPS_RX_CHECKSUM                     = GPS_RX_STATE(7),
+    // Unrelated states
+    GPS_RX_NO_DATA                      = GPS_RX_STATE(-2),
+    GPS_RX_UNKNOWN                      = GPS_RX_STATE(-1),
+
+    // State Transitions:                 STATUS        | NEXT STATE                            | CURRENT STATE
+    // GPS_RX_WAIT                        ---------------------------------------------------------------------------------
+    GPS_RX_UBX_DET                      = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_POTENTIAL_COMMAND) | GPS_RX_WAIT,
+    GPS_RX_NEMA_DET                     = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_WAIT,
+    // GPS_RX_POTENTIAL_COMMAND           ---------------------------------------------------------------------------------
+    GPS_RX_POTENTIAL_COMMAND_OK         = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_PREAMBLE)          | GPS_RX_POTENTIAL_COMMAND,
+    GPS_RX_POTENTIAL_COMMAND_UNEXPECTED = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_POTENTIAL_COMMAND,
+    // GPS_RX_PREAMBLE                    ---------------------------------------------------------------------------------
+    GPS_RX_PREAMBLE_COMPLETE            = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_PAYLOAD)           | GPS_RX_PREAMBLE,
+    GPS_RX_PREAMBLE_PENDING             = GPS_RX_OK_1   | _NEXT_STATE(GPS_RX_PREAMBLE)          | GPS_RX_PREAMBLE,
+    GPS_RX_PREAMBLE_OVERFLOW            = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_PREAMBLE,
+    // GPS_RX_PAYLOAD                     ---------------------------------------------------------------------------------
+    GPS_RX_PAYLOAD_OK                   = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_CK_A)              | GPS_RX_PAYLOAD,
+    GPS_RX_PAYLOAD_PENDING              = GPS_RX_OK_1   | _NEXT_STATE(GPS_RX_PAYLOAD)           | GPS_RX_PAYLOAD,
+    GPS_RX_PAYLOAD_OVERFLOW             = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_PAYLOAD,
+    // GPS_RX_CK_A                        ---------------------------------------------------------------------------------
+    GPS_RX_CK_A_ACK                     = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_CK_B)              | GPS_RX_CK_A,
+    // GPS_RX_CHECKSUM                    ---------------------------------------------------------------------------------
+    GPS_RX_CHECKSUM_PASS                = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_CHECKSUM,
+    GPS_RX_CHECKSUM_FAIL                = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_CHECKSUM,
+
+} GPS_rx_state_e;
+
+typedef struct {
+    union {
+        uint8_t       mem[GPS_BUF_LEN];
+        GPS_UBX_cmd_t _t;
+    }       cmd;
+    size_t  idx;
+    uint8_t CK_A;
+    uint8_t CK_B;
+} GPS_rx_cmd_buffer_t;
+static_assert(GPS_BUF_LEN > GPS_PREAMBLE_LEN_, "GPS_BUF_LEN must be greater than preamble length ");
 
 typedef struct {
     Serial_t serial;
-    struct {
-        union {
-            uint8_t       mem[GPS_BUF_LEN];
-            GPS_UBX_cmd_t _t;
-        }       cmd;
-        size_t  idx;
-        uint8_t CK_A;
-        uint8_t CK_B;
-
-        GPS_state_e state;
-    }        rx;
+    GPS_rx_cmd_buffer_t rxBuff;
+    GPS_rx_state_e rxState;
 
     GPS_state_e state;
 
@@ -633,11 +696,6 @@ typedef union {
 static_assert(UBX_SIZEOF_PAYLOAD(UBX_NAV_PVT_t) == UBX_NAV_PVT_PAYLOAD_SIZE,
               "UBX_NAV_PVT_t payload size mismatch");
 
-// Magic Numbers
-#define GPS_SYNC_1_ 0xB5
-#define GPS_SYNC_2_ 0x62
-#define GPS_PREAMBLE_LEN_ sizeof(GPS_UBX_cmd_t)
-
 #define UBX_PORT_DDC    (0U)
 #define UBX_PORT_UART1  (1U)
 #define UBX_PORT_USB    (3U)
@@ -914,7 +972,7 @@ static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_TIMEUTC = {
 
         .msgClass = UBX_NAV,
         .msgID    = UBX_NAV_TIMEUTC,
-        .rate     = 1u
+        .rate     = 10u
 };
 
 static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_POSECEF = {
@@ -1053,10 +1111,10 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, int waitAck, int retryOnNack);
 
 #define GPS_log_UBX_NAV_TIMEUTC(cmd_t) \
 ({ \
-    DBUG("UBX-NAV-TIMEUTC (%s)", \
+    INFO("UBX-NAV-TIMEUTC (%c)", \
          cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC \
-         ? "VALID" \
-         : "INVALID");                \
+         ? '1' \
+         : '0');                \
                                       \
     DBUG("  iTOW: %lu", cmd_t->iTOW); \
     DBUG("  tAcc: %lu", cmd_t->tAcc); \
