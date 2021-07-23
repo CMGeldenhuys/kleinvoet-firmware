@@ -27,7 +27,7 @@ size_t GPS_cmdLen_ (const GPS_UBX_cmd_t *cmd);
 
 int GPS_configureUBX_ ();
 
-int GPS_processCmd_ (GPS_UBX_cmd_t *cmd);
+int GPS_processCmd_ (const GPS_UBX_cmd_t *cmd);
 
 int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd);
 
@@ -57,35 +57,84 @@ int GPS_init (UART_HandleTypeDef *uart)
 int GPS_configureUBX_ ()
 {
   DBUG("Size of DEFAULT_CONFIG: %u", GPS_LEN_DEFAULT_CONFIG);
+  gps.rxState  = GPS_RX_RESET;
+
   for (size_t i = 0; i < GPS_LEN_DEFAULT_CONFIG; i++) {
-    GPS_sendCommand(GPS_DEFAULT_CONFIG[i], 0, 0);
+    GPS_sendCommand(GPS_DEFAULT_CONFIG[i], 100, 3);
     // NB: NEED ACK QUEUE...
     // TODO Check ACK
     // Wait between messages to ensure success
     HAL_Delay(5);
   }
-  gps.rxState  = GPS_RX_RESET;
   gps.state    = GPS_IDLE;
   return 1;
 }
 
-int GPS_sendCommand (const GPS_UBX_cmd_t *cmd, __unused int waitAck, __unused int retryOnNack)
+int GPS_sendCommand (const GPS_UBX_cmd_t *txCmd, int waitAck, int retryOnNack)
 {
-  // TODO: Implement ACk & NACK to retry
-  GPS_UBX_msg_t msg = {0};
-  msg.cmd = cmd;
-  DBUG("Sending UBX command 0x%02X - 0x%02X (%u bytes)", cmd->cls, cmd->id, cmd->len);
-  INFO("< UBX 0x%02X|0x%02X (%uB)", cmd->cls, cmd->id, cmd->len);
-  GPS_packMsg_(&msg);
+  do {
+      GPS_UBX_msg_t msg = {0};
+      msg.cmd = txCmd;
+      DBUG("Sending UBX command 0x%02X - 0x%02X (%u bytes)", txCmd->cls, txCmd->id, txCmd->len);
+      INFO("< UBX 0x%02X|0x%02X (%uB)", txCmd->cls, txCmd->id, txCmd->len);
+      GPS_packMsg_(&msg);
 
-  // Send sync header
-  Serial_write(&gps.serial, (uint8_t *) &msg, 2);
-  // Send command
-  Serial_write(&gps.serial, (uint8_t *) cmd, GPS_cmdLen_(cmd));
-  // Send checksum
-  Serial_write(&gps.serial, (uint8_t *) &msg.CK_A, 2);
+      // Send sync header
+      Serial_write(&gps.serial, (uint8_t *) &msg, 2);
+      // Send command
+      Serial_write(&gps.serial, (uint8_t *) txCmd, GPS_cmdLen_(txCmd));
+      // Send checksum
+      Serial_write(&gps.serial, (uint8_t *) &msg.CK_A, 2);
 
-  return 1;
+      if (waitAck > 0) {
+        const uint32_t t0 = HAL_GetTick();
+        // Clear state machine
+        // Disassociate commands received from before command sent
+        gps.rxState = GPS_RX_RESET;
+        // Loop till ack or timeout
+        for (;;) {
+          if (Serial_available(&gps.serial) > 0) {
+            GPS_rx_state_e nextState = GPS_rxByte(&gps.serial, gps.rxState, &gps.rxBuff);
+
+            // Move to next state
+            gps.rxState = GPS_RX_ADVANCE_STATE(nextState);
+
+            const GPS_UBX_cmd_t *rxCmd = &gps.rxBuff.cmd._t;
+            if (nextState == GPS_RX_CHECKSUM_PASS) {
+              DBUG("Processing Command");
+              GPS_processCmd_(rxCmd);
+              // Check if Command is an ACK
+              if (rxCmd->cls == UBX_ACK && rxCmd->id == UBX_ACK_ACK) {
+                // Cast to ACK
+                const UBX_ACK_t *rxCmd_t = (const UBX_ACK_t *) rxCmd;
+                // Check if it is an ACK for the message sent
+                if (rxCmd_t->msgClsID == txCmd->cls && rxCmd_t->msgID == txCmd->id) {
+                  DBUG("ACK!");
+                  return 1;
+                }
+                else {
+                  DBUG("ACK Wrong message?");
+                }
+              }
+              else if (rxCmd->cls == UBX_ACK && rxCmd->id == UBX_ACK_NACK) {
+                DBUG("NACKed");
+                break;
+              }
+            }
+
+            // Check if timeout has expired
+            const uint32_t delT = HAL_GetTick() - t0;
+            if (delT > waitAck) {
+              WARN("ACK Timeout (%d)", delT);
+              break;
+            }
+          }
+          // If no data in serial wait a bit
+          else HAL_Delay(1);
+        }
+      }
+  } while (retryOnNack --> 0);
+  return -1;
 }
 
 inline size_t GPS_cmdLen_ (const GPS_UBX_cmd_t *cmd)
@@ -107,7 +156,6 @@ int GPS_yield ()
   }
 
   if (Serial_available(&gps.serial) > 0) {
-    DBUG("---------NEW BYTE--------");
     // Receive and parse byte
     GPS_rx_state_e nextState = GPS_rxByte(&gps.serial, gps.rxState, &gps.rxBuff);
 
@@ -179,6 +227,7 @@ void GPS_logRxState (GPS_rx_state_e state)
       INFO("Checksum FAIL");
       break;
 
+    case GPS_RX_NO_DATA:
     case GPS_RX_RESET:
       break;
 
@@ -194,8 +243,9 @@ inline GPS_rx_state_e GPS_rxByte (Serial_t * serial, GPS_rx_state_e state, GPS_r
   if (Serial_available(serial) > 0) {
     // Get byte from serial
     const uint8_t  c         = Serial_peek(serial);
-    GPS_rx_state_e nextState = GPS_parseByte_(c, state, buff);
+    DBUG("--------(0x%02X)--------", c);
 
+    GPS_rx_state_e nextState = GPS_parseByte_(c, state, buff);
     // Only advance serial `head` if byte was successfully parsed
     if (nextState > 0) {
       Serial_read(serial);
@@ -213,6 +263,7 @@ GPS_rx_state_e GPS_parseByte_ (uint8_t c, GPS_rx_state_e state, GPS_rx_cmd_buffe
   switch (state) {
 
     // Sync 1
+    default:
     case GPS_RX_RESET:
     case GPS_RX_WAIT: {
       // Received start byte
@@ -249,7 +300,7 @@ GPS_rx_state_e GPS_parseByte_ (uint8_t c, GPS_rx_state_e state, GPS_rx_cmd_buffe
         return GPS_RX_NEMA_DET;
 #endif
       }
-      else return GPS_RX_RESET;
+      else return GPS_RX_WAITING;
       break;
     }
 
@@ -347,17 +398,12 @@ GPS_rx_state_e GPS_parseByte_ (uint8_t c, GPS_rx_state_e state, GPS_rx_cmd_buffe
       }
       break;
     }
-
-    default: {
-      return GPS_RX_RESET;
-      break;
-    }
   }
 
-  return GPS_RX_RESET;
+  return GPS_RX_UNKNOWN;
 }
 
-int GPS_processCmd_ (GPS_UBX_cmd_t *cmd)
+int GPS_processCmd_ (const GPS_UBX_cmd_t *cmd)
 {
   DBUG("> UBX 0x%02X|0x%02X (%uB)", cmd->cls, cmd->id, cmd->len);
   switch (cmd->cls) {
@@ -367,7 +413,7 @@ int GPS_processCmd_ (GPS_UBX_cmd_t *cmd)
     }
 
     case UBX_ACK: {
-      const UBX_ACK_t *cmd_t = (UBX_ACK_t *) cmd;
+      const UBX_ACK_t *cmd_t = (const UBX_ACK_t *) cmd;
 
       if(cmd->id == UBX_ACK_ACK){
         INFO("> ACK  (0x%02X | 0x%02X)", cmd_t->msgClsID, cmd_t->msgID);
