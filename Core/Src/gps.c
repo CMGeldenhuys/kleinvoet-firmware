@@ -93,40 +93,43 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *txCmd, int waitAck, __unused int retry
     gps.rxState = GPS_RX_RESET;
     // Loop till ack or timeout
     for (;;) {
-      GPS_rx_state_e nextState = GPS_rxByte(&gps.serial, gps.rxState, &gps.rxBuff);
+      if (Serial_available(&gps.serial) > 0) {
+        GPS_rx_state_e nextState = GPS_rxByte(&gps.serial, gps.rxState, &gps.rxBuff);
 
-      // Move to next state
-      gps.rxState = GPS_RX_ADVANCE_STATE(nextState);
+        // Move to next state
+        gps.rxState = GPS_RX_ADVANCE_STATE(nextState);
 
-      const GPS_UBX_cmd_t * rxCmd = &gps.rxBuff.cmd._t;
-      if (nextState == GPS_RX_CHECKSUM_PASS) {
-        INFO("Processing Command");
-        GPS_processCmd_(rxCmd);
-        // Check if Command is an ACK
-        if(rxCmd->cls == UBX_ACK && rxCmd->id == UBX_ACK_ACK){
-          // Cast to ACK
-          const UBX_ACK_t *rxCmd_t = (const UBX_ACK_t *) rxCmd;
-          // Check if it is an ACK for the message sent
-          if (rxCmd_t->msgClsID == txCmd->cls && rxCmd_t->msgID == txCmd->id){
-            INFO("ACK!");
-            return 1;
+        const GPS_UBX_cmd_t *rxCmd = &gps.rxBuff.cmd._t;
+        if (nextState == GPS_RX_CHECKSUM_PASS) {
+          DBUG("Processing Command");
+          GPS_processCmd_(rxCmd);
+          // Check if Command is an ACK
+          if (rxCmd->cls == UBX_ACK && rxCmd->id == UBX_ACK_ACK) {
+            // Cast to ACK
+            const UBX_ACK_t *rxCmd_t = (const UBX_ACK_t *) rxCmd;
+            // Check if it is an ACK for the message sent
+            if (rxCmd_t->msgClsID == txCmd->cls && rxCmd_t->msgID == txCmd->id) {
+              DBUG("ACK!");
+              return 1;
+            }
+            else {
+              DBUG("ACK Wrong message?");
+            }
           }
-          else {
-            INFO("ACK Wrong message?");
+          else if (rxCmd->cls == UBX_ACK && rxCmd->id == UBX_ACK_NACK) {
+            DBUG("NACKed");
+            return -1;
           }
         }
-        else if (rxCmd->cls == UBX_ACK && rxCmd->id == UBX_ACK_NACK) {
-          INFO("NACKed");
+
+
+        const uint32_t delT = HAL_GetTick() - t0;
+        if (delT > waitAck) {
+          WARN("ACK Timeout (%d)", delT);
           return -1;
         }
       }
-
-
-      const uint32_t delT = HAL_GetTick() - t0;
-      if (delT > waitAck) {
-        WARN("ACK Timeout (%d)", delT);
-        return -1;
-      }
+      else HAL_Delay(1);
     }
   }
 
@@ -239,7 +242,7 @@ inline GPS_rx_state_e GPS_rxByte (Serial_t * serial, GPS_rx_state_e state, GPS_r
   if (Serial_available(serial) > 0) {
     // Get byte from serial
     const uint8_t  c         = Serial_peek(serial);
-    INFO("--------(0x%02X)--------", c);
+    DBUG("--------(0x%02X)--------", c);
 
     GPS_rx_state_e nextState = GPS_parseByte_(c, state, buff);
     // Only advance serial `head` if byte was successfully parsed
