@@ -36,8 +36,8 @@ extern "C" {
 #define UBX_BIT_DISBALE (0U)
 
 // Magic Numbers
-#define GPS_SYNC_1_ 0xB5
-#define GPS_SYNC_2_ 0x62
+#define GPS_UBX_SYNC_BYTE_1 0xB5
+#define GPS_UBX_SYNC_BYTE_2 0x62
 #define GPS_NMEA_ID '$'
 #define GPS_PREAMBLE_LEN_ sizeof(GPS_UBX_cmd_t)
 
@@ -183,13 +183,13 @@ typedef enum {
 } GPS_rx_state_e;
 
 typedef struct {
+    size_t  idx;
+    uint8_t CK_A;
+    uint8_t CK_B;
     union {
         uint8_t       mem[GPS_BUF_LEN];
         GPS_UBX_cmd_t _t;
     }       cmd;
-    size_t  idx;
-    uint8_t CK_A;
-    uint8_t CK_B;
 } GPS_rx_cmd_buffer_t;
 static_assert(GPS_BUF_LEN > GPS_PREAMBLE_LEN_, "GPS_BUF_LEN must be greater than preamble length ");
 
