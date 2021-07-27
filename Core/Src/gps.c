@@ -179,7 +179,7 @@ void GPS_logRxState (GPS_rx_state_e state)
       INFO("UBX Message Detected");
       break;
 
-    case GPS_RX_NEMA_DET:
+    case GPS_RX_NMEA_DET:
       INFO("NMEA Message Detected");
       break;
 
@@ -297,7 +297,7 @@ GPS_rx_state_e GPS_parseByte_ (uint8_t c, GPS_rx_state_e state, GPS_rx_cmd_buffe
         WARN("NMEA message not complete during processing");
         return -1;
 #else
-        return GPS_RX_NEMA_DET;
+        return GPS_RX_NMEA_DET;
 #endif
       }
       else return GPS_RX_WAITING;
