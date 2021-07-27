@@ -973,7 +973,7 @@ static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_TIMEUTC = {
 
         .msgClass = UBX_NAV,
         .msgID    = UBX_NAV_TIMEUTC,
-        .rate     = 10u
+        .rate     = 1u
 };
 
 static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_POSECEF = {
