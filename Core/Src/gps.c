@@ -227,6 +227,31 @@ void GPS_logRxState (GPS_rx_state_e state)
       INFO("Checksum FAIL");
       break;
 
+    case GPS_RX_NMEA_PENDING:
+      INFO("NMEA Message pending");
+      break;
+
+    case GPS_RX_NMEA_CR:
+      INFO("NMEA CR Received");
+      break;
+
+    case GPS_RX_NMEA_UBX_DET:
+      INFO("UBX detected during NMEA");
+      break;
+
+    case GPS_RX_NMEA_OVERFLOW:
+      INFO("NMEA Overflow");
+      break;
+
+    case GPS_RX_NMEA_END_SUCESS:
+      INFO("NMEA message complete");
+      break;
+
+    case GPS_RX_NMEA_END_FAIL:
+      INFO("NMEA message didn't end on <LF>");
+      break;
+
+
     case GPS_RX_NO_DATA:
     case GPS_RX_RESET:
       break;
@@ -243,7 +268,10 @@ inline GPS_rx_state_e GPS_rxByte (Serial_t * serial, GPS_rx_state_e state, GPS_r
   if (Serial_available(serial) > 0) {
     // Get byte from serial
     const uint8_t  c         = Serial_peek(serial);
-    DBUG("--------(0x%02X)--------", c);
+#ifdef GPS_DEBUG_SERIAL
+    if (' ' <= c && c <= '~') INFO("--------(0x%02X | '%c')--------", c, c);
+    else                      INFO("--------(0x%02X)--------", c);
+#endif
 
     GPS_rx_state_e nextState = GPS_parseByte_(c, state, buff);
     // Only advance serial `head` if byte was successfully parsed
@@ -270,7 +298,7 @@ GPS_rx_state_e GPS_parseByte_ (uint8_t c, GPS_rx_state_e state, GPS_rx_cmd_buffe
       if (c == GPS_UBX_SYNC_BYTE_1) return GPS_RX_UBX_DET;
       // Potential start of NMEA message
       else if (c == GPS_NMEA_ID) {
-        INFO("Potential NMEA message detected");
+        DBUG("Potential NMEA message detected");
 #ifdef GPS_PARSE_NMEA
 //        HAL_UART_DMAStop(gps.serial.config_.uart);
         // Store pointer to start of message
@@ -297,10 +325,41 @@ GPS_rx_state_e GPS_parseByte_ (uint8_t c, GPS_rx_state_e state, GPS_rx_cmd_buffe
         WARN("NMEA message not complete during processing");
         return -1;
 #else
+        // Reset internal state
+        buff->idx = 0;
+        memset(buff->cmd.mem, 0, GPS_BUF_LEN);
+
         return GPS_RX_NMEA_DET;
 #endif
       }
       else return GPS_RX_WAITING;
+      break;
+    }
+
+    case GPS_RX_NMEA: {
+      if (buff->idx >= GPS_BUF_LEN) return GPS_RX_NMEA_OVERFLOW;
+      switch(c) {
+        case GPS_UBX_SYNC_BYTE_1: return GPS_RX_NMEA_UBX_DET;
+        case GPS_NMEA_END_1:
+          // Terminate String
+          buff->cmd.mem[buff->idx++] = '\0';
+          return GPS_RX_NMEA_CR;
+        default:
+          // Append character to array
+          buff->cmd.mem[buff->idx++] = c;
+          return GPS_RX_NMEA_PENDING;
+      }
+      break;
+    }
+
+    case GPS_RX_NMEA_END: {
+      if (c == GPS_NMEA_END_2) {
+        INFO("NMEA> %s", buff->cmd.nmea);
+        return GPS_RX_NMEA_END_SUCESS;
+      }
+      else {
+        return GPS_RX_NMEA_END_FAIL;
+      }
       break;
     }
 

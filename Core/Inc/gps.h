@@ -167,11 +167,12 @@ typedef enum {
     // GPS_RX_WAIT                        ---------------------------------------------------------------------------------
     GPS_RX_WAITING                      = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_WAIT)              | GPS_RX_WAIT,
     GPS_RX_UBX_DET                      = GPS_RX_OK_1   | _NEXT_STATE(GPS_RX_POTENTIAL_COMMAND) | GPS_RX_WAIT,
-    GPS_RX_NMEA_DET                     = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_WAIT,
+    GPS_RX_NMEA_DET                     = GPS_RX_OK_2   | _NEXT_STATE(GPS_RX_NMEA)             | GPS_RX_WAIT,
     // GPS_RX_NMEA                        ---------------------------------------------------------------------------------
     GPS_RX_NMEA_PENDING                 = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_NMEA)              | GPS_RX_NMEA,
     GPS_RX_NMEA_CR                      = GPS_RX_OK_1   | _NEXT_STATE(GPS_RX_NMEA_END)          | GPS_RX_NMEA,
     GPS_RX_NMEA_UBX_DET                 = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_NMEA,
+    GPS_RX_NMEA_OVERFLOW                = GPS_RX_ERR_2  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_NMEA,
     // GPS_RX_NMEA                        ---------------------------------------------------------------------------------
     GPS_RX_NMEA_END_SUCESS              = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_NMEA_END,
     GPS_RX_NMEA_END_FAIL                = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_NMEA)              | GPS_RX_NMEA_END,
@@ -200,7 +201,7 @@ typedef struct {
     uint8_t CK_B;
     union {
         uint8_t       mem[GPS_BUF_LEN];
-        char *        nmea;
+        char          nmea[GPS_BUF_LEN];
         GPS_UBX_cmd_t ubx;
     }       cmd;
 } GPS_rx_cmd_buffer_t;
