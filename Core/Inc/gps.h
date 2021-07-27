@@ -36,9 +36,11 @@ extern "C" {
 #define UBX_BIT_DISBALE (0U)
 
 // Magic Numbers
-#define GPS_SYNC_1_ 0xB5
-#define GPS_SYNC_2_ 0x62
+#define GPS_UBX_SYNC_BYTE_1 0xB5
+#define GPS_UBX_SYNC_BYTE_2 0x62
 #define GPS_NMEA_ID '$'
+#define GPS_NMEA_END_1 '\r'
+#define GPS_NMEA_END_2 '\n'
 #define GPS_PREAMBLE_LEN_ sizeof(GPS_UBX_cmd_t)
 
 typedef enum __attribute__ ((packed)) {
@@ -154,6 +156,9 @@ typedef enum {
     GPS_RX_CK_A                         = GPS_RX_STATE(5),
     GPS_RX_CK_B                         = GPS_RX_STATE(6),
     GPS_RX_CHECKSUM                     = GPS_RX_STATE(7),
+    GPS_RX_NMEA                         = GPS_RX_STATE(8),
+    GPS_RX_NMEA_END                     = GPS_RX_STATE(9),
+
     // Unrelated states
     GPS_RX_NO_DATA                      = GPS_RX_STATE(-2),
     GPS_RX_UNKNOWN                      = GPS_RX_STATE(-1),
@@ -162,7 +167,15 @@ typedef enum {
     // GPS_RX_WAIT                        ---------------------------------------------------------------------------------
     GPS_RX_WAITING                      = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_WAIT)              | GPS_RX_WAIT,
     GPS_RX_UBX_DET                      = GPS_RX_OK_1   | _NEXT_STATE(GPS_RX_POTENTIAL_COMMAND) | GPS_RX_WAIT,
-    GPS_RX_NEMA_DET                     = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_WAIT,
+    GPS_RX_NMEA_DET                     = GPS_RX_OK_2   | _NEXT_STATE(GPS_RX_NMEA)             | GPS_RX_WAIT,
+    // GPS_RX_NMEA                        ---------------------------------------------------------------------------------
+    GPS_RX_NMEA_PENDING                 = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_NMEA)              | GPS_RX_NMEA,
+    GPS_RX_NMEA_CR                      = GPS_RX_OK_1   | _NEXT_STATE(GPS_RX_NMEA_END)          | GPS_RX_NMEA,
+    GPS_RX_NMEA_UBX_DET                 = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_NMEA,
+    GPS_RX_NMEA_OVERFLOW                = GPS_RX_ERR_2  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_NMEA,
+    // GPS_RX_NMEA                        ---------------------------------------------------------------------------------
+    GPS_RX_NMEA_END_SUCESS              = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_NMEA_END,
+    GPS_RX_NMEA_END_FAIL                = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_NMEA)              | GPS_RX_NMEA_END,
     // GPS_RX_POTENTIAL_COMMAND           ---------------------------------------------------------------------------------
     GPS_RX_POTENTIAL_COMMAND_OK         = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_PREAMBLE)          | GPS_RX_POTENTIAL_COMMAND,
     GPS_RX_POTENTIAL_COMMAND_UNEXPECTED = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_POTENTIAL_COMMAND,
@@ -183,13 +196,14 @@ typedef enum {
 } GPS_rx_state_e;
 
 typedef struct {
-    union {
-        uint8_t       mem[GPS_BUF_LEN];
-        GPS_UBX_cmd_t _t;
-    }       cmd;
     size_t  idx;
     uint8_t CK_A;
     uint8_t CK_B;
+    union {
+        uint8_t       mem[GPS_BUF_LEN];
+        char          nmea[GPS_BUF_LEN];
+        GPS_UBX_cmd_t ubx;
+    }       cmd;
 } GPS_rx_cmd_buffer_t;
 static_assert(GPS_BUF_LEN > GPS_PREAMBLE_LEN_, "GPS_BUF_LEN must be greater than preamble length ");
 
