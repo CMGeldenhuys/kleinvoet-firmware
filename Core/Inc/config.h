@@ -16,14 +16,19 @@ extern "C" {
 
 // Set logging level
 #define LOG_LEVEL_INFO
-// Set Log destination
-#define LOG_DEST_TTY
 
 #ifdef DEBUG
+// Enable performance metering
 #define PERF_ENABLE
 
 // Change ADC sampling Freq.
 #define ADC_SAMPLING_RATE 16000
+
+// Set Log destination
+#define LOG_DEST_TTY
+#else
+// Set Log destination
+#define LOG_DEST_FILE
 #endif
 
 // Enable static file allocation
