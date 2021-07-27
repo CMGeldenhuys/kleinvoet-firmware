@@ -89,7 +89,7 @@ __weak int TTY_greet_ ()
 {
   TTY_print(TTY_VT100_CLEAR_SCREEN TTY_VT100_COLOR_DEFAULT);
   Serial_write(tty.serial, oli, sizeof(oli));
-  TTY_println("VERSION: " VERSION);
+  TTY_println("VERSION: " KV_VERSION);
   TTY_println("AUTHORS: " AUTHORS);
 
   TTY_printf("UUID: 0x%08X (%08X-%08X-%08X)" TTY_EOL, KLEINVOET_UUID, STM32_UUID[0], STM32_UUID[1], STM32_UUID[2]);
