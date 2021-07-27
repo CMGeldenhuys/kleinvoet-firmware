@@ -167,7 +167,7 @@ int main(void)
   ERR("HELLO, WORLD!");
 
   // TODO: move to global state machine class once it exists
-  INFO("VERSION: " VERSION);
+  INFO("VERSION: " KV_VERSION);
   INFO("AUTHORS: " AUTHORS);
   INFO("UUID: 0x%08X (%08X-%08X-%08X)", KLEINVOET_UUID, STM32_UUID[0], STM32_UUID[1], STM32_UUID[2]);
   INFO("Core Freq: %uHz", HAL_RCC_GetHCLKFreq());
