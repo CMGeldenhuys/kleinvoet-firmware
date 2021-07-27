@@ -1,0 +1,22 @@
+//
+// Created by CM Geldenhuys on 2021/07/27.
+//
+
+#ifndef FIRMWARE_VERSION_H
+#define FIRMWARE_VERSION_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define KV_VERSION          "${APP_VERSION}"
+#define KV_VERSION_MAJOR    "${APP_VERSION_MAJOR}"
+#define KV_VERSION_MINOR    "${APP_VERSION_MINOR}"
+#define KV_VERSION_PATCH    "${APP_VERSION_PATCH}"
+#define KV_VERSION_MICRO    "${APP_VERSION_MICRO}"
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif //FIRMWARE_VERSION_H

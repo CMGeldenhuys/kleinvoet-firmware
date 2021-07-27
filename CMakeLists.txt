@@ -19,8 +19,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 
 # Generate version from git
-include(MyAppVersion.cmake)
-add_definitions(-DKV_VERSION="${MYAPP_VERSION}")
+add_custom_target( GitAppVersion
+        COMMAND ${CMAKE_COMMAND}
+        -D INPUT_FILE=${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/version.h.in
+        -D OUTPUT_FILE=${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/version.h
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/GitAppVersion.cmake
+        )
 
 #Uncomment for hardware floating point
 add_compile_definitions(ARM_MATH_CM4;ARM_MATH_MATRIX_CHECK;ARM_MATH_ROUNDING)
@@ -82,3 +86,6 @@ add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
         COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:${PROJECT_NAME}.elf> ${BIN_FILE}
         COMMENT "Building ${HEX_FILE}
 Building ${BIN_FILE}")
+
+# Add dependency to run GitVersionApp before build
+add_dependencies(${PROJECT_NAME}.elf GitAppVersion)

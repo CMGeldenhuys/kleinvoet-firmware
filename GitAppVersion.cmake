@@ -8,7 +8,7 @@ execute_process(
         COMMAND "${GIT_EXECUTABLE}" describe --abbrev=4 --dirty=* --always --tags
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
         RESULT_VARIABLE res
-        OUTPUT_VARIABLE MYAPP_VERSION
+        OUTPUT_VARIABLE APP_VERSION
         ERROR_QUIET
         OUTPUT_STRIP_TRAILING_WHITESPACE)
 
@@ -17,16 +17,16 @@ set_property(GLOBAL APPEND
         "${CMAKE_SOURCE_DIR}/.git/index")
 
 string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+).*$"
-        "\\1;\\2;\\3" _ver_parts "${MYAPP_VERSION}")
-list(GET _ver_parts 0 MYAPP_VERSION_MAJOR)
-list(GET _ver_parts 1 MYAPP_VERSION_MINOR)
-list(GET _ver_parts 2 MYAPP_VERSION_PATCH)
+        "\\1;\\2;\\3" _ver_parts "${APP_VERSION}")
+list(GET _ver_parts 0 APP_VERSION_MAJOR)
+list(GET _ver_parts 1 APP_VERSION_MINOR)
+list(GET _ver_parts 2 APP_VERSION_PATCH)
 
-if("${MYAPP_VERSION}" MATCHES "^.*-(.*)-g.*$")
-    string(REGEX REPLACE "^.*-(.*)-g.*$" "\\1" MYAPP_VERSION_MICRO
-            "${MYAPP_VERSION}")
+if("${APP_VERSION}" MATCHES "^.*-(.*)-g.*$")
+    string(REGEX REPLACE "^.*-(.*)-g.*$" "\\1" APP_VERSION_MICRO
+            "${APP_VERSION}")
 else()
-    set(MYAPP_VERSION_MICRO "0")
+    set(APP_VERSION_MICRO "0")
 endif()
-
-message(STATUS "APP Version: ${MYAPP_VERSION}")
+configure_file(${INPUT_FILE} ${OUTPUT_FILE})
+message(STATUS "APP Version: ${APP_VERSION}")

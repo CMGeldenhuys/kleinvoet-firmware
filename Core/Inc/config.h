@@ -8,6 +8,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include "version.h"
 
 #define ADC_MAX_DELAY 100
 
