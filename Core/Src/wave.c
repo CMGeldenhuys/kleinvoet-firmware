@@ -162,7 +162,7 @@ int WAVE_createHeader_ (WAVE_t *wav)
   WAVE_info_subchunk_t *iVersion_subchunk = &LIST_chunk->subChunks[WAVE_INFO_IDX_VERSION];
   iVersion_subchunk->SubchunkID   = WAVE_INFO_TAG_VERSION;
   iVersion_subchunk->SubchunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_info_subchunk_t);
-  snprintf(iVersion_subchunk->Value, WAVE_MAX_INFO_VALUE_LEN, "KV_" VERSION "_%08X", KLEINVOET_UUID);
+  snprintf(iVersion_subchunk->Value, WAVE_MAX_INFO_VALUE_LEN, "KV_" KV_VERSION "_%08X", KLEINVOET_UUID);
   DBUG("iVersion_subchunk->SubchunkSize: %u", iVersion_subchunk->SubchunkSize);
 
   WAVE_info_subchunk_t *iLocation_subchunk = &LIST_chunk->subChunks[WAVE_INFO_IDX_LOCATION];
