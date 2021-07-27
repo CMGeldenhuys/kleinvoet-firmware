@@ -99,7 +99,7 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *txCmd, int waitAck, int retryOnNack)
             // Move to next state
             gps.rxState = GPS_RX_ADVANCE_STATE(nextState);
 
-            const GPS_UBX_cmd_t *rxCmd = &gps.rxBuff.cmd._t;
+            const GPS_UBX_cmd_t *rxCmd = &gps.rxBuff.cmd.ubx;
             if (nextState == GPS_RX_CHECKSUM_PASS) {
               DBUG("Processing Command");
               GPS_processCmd_(rxCmd);
@@ -165,7 +165,7 @@ int GPS_yield ()
     // If checksum PASSED process CMD
     if (nextState == GPS_RX_CHECKSUM_PASS) {
       DBUG("Processing Command");
-      return GPS_processCmd_(&gps.rxBuff.cmd._t);
+      return GPS_processCmd_(&gps.rxBuff.cmd.ubx);
     }
   }
 
@@ -267,7 +267,7 @@ GPS_rx_state_e GPS_parseByte_ (uint8_t c, GPS_rx_state_e state, GPS_rx_cmd_buffe
     case GPS_RX_RESET:
     case GPS_RX_WAIT: {
       // Received start byte
-      if (c == GPS_SYNC_1_) return GPS_RX_UBX_DET;
+      if (c == GPS_UBX_SYNC_BYTE_1) return GPS_RX_UBX_DET;
       // Potential start of NMEA message
       else if (c == GPS_NMEA_ID) {
         INFO("Potential NMEA message detected");
@@ -307,7 +307,7 @@ GPS_rx_state_e GPS_parseByte_ (uint8_t c, GPS_rx_state_e state, GPS_rx_cmd_buffe
       // Sync 2
     case GPS_RX_POTENTIAL_COMMAND: {
       // Received second byte
-      if (c == GPS_SYNC_2_) {
+      if (c == GPS_UBX_SYNC_BYTE_2) {
         DBUG("New UBX command recv");
 
         // Reset internal state
@@ -351,9 +351,9 @@ GPS_rx_state_e GPS_parseByte_ (uint8_t c, GPS_rx_state_e state, GPS_rx_cmd_buffe
       DBUG("Recv payload \t[%03u] <- 0x%02X", gps.rx.idx, c);
 #endif
       // Store Payload
-      buff->cmd._t.payload[buff->idx++] = c;
+      buff->cmd.ubx.payload[buff->idx++] = c;
 
-      if (buff->idx == buff->cmd._t.len) return GPS_RX_PAYLOAD_OK;
+      if (buff->idx == buff->cmd.ubx.len) return GPS_RX_PAYLOAD_OK;
       else if (buff->idx >= GPS_MAX_CMD_LEN) {
         WARN("Command buffer overflow!");
         return GPS_RX_PAYLOAD_OVERFLOW;
@@ -385,7 +385,7 @@ GPS_rx_state_e GPS_parseByte_ (uint8_t c, GPS_rx_state_e state, GPS_rx_cmd_buffe
 
       // Pack message
       GPS_UBX_msg_t tmp = {0};
-      tmp.cmd           = &buff->cmd._t;
+      tmp.cmd           = &buff->cmd.ubx;
       tmp.CK_A          = buff->CK_A;
       tmp.CK_B          = buff->CK_B;
       if (GPS_checksum_(&tmp) > 0) {
@@ -445,7 +445,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
 
     case UBX_NAV_CLK: {
       // Parse Command
-      const UBX_NAV_CLK_t *cmd_t = (UBX_NAV_CLK_t *) &gps.rxBuff.cmd._t;
+      const UBX_NAV_CLK_t *cmd_t = (UBX_NAV_CLK_t *) &gps.rxBuff.cmd.ubx;
 
       // Log Message
       GPS_log_UBX_NAV_CLK(cmd_t);
@@ -455,7 +455,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
 
     case UBX_NAV_TIMEUTC: {
       // Parse serial command into struct
-      const UBX_NAV_TIMEUTC_t *cmd_t = (UBX_NAV_TIMEUTC_t *) &gps.rxBuff.cmd._t;
+      const UBX_NAV_TIMEUTC_t *cmd_t = (UBX_NAV_TIMEUTC_t *) &gps.rxBuff.cmd.ubx;
       // Log out command received
       GPS_log_UBX_NAV_TIMEUTC(cmd_t);
 
@@ -505,7 +505,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
     }
 
     case UBX_NAV_STATUS: {
-      const UBX_NAV_STATUS_t *cmd_t = (UBX_NAV_STATUS_t *) &gps.rxBuff.cmd._t;
+      const UBX_NAV_STATUS_t *cmd_t = (UBX_NAV_STATUS_t *) &gps.rxBuff.cmd.ubx;
 
       // Log message
       GPS_log_UBX_NAV_STATUS(cmd_t);
@@ -519,7 +519,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
 
     case UBX_NAV_SAT: {
       // Parse command
-      const UBX_NAV_SAT_t *cmd_t = (UBX_NAV_SAT_t *) &gps.rxBuff.cmd._t;
+      const UBX_NAV_SAT_t *cmd_t = (UBX_NAV_SAT_t *) &gps.rxBuff.cmd.ubx;
 
       // Log message
       GPS_log_UBX_NAV_SAT(cmd_t);
@@ -529,7 +529,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
 
     case UBX_NAV_HPPOSECEF: {
       // Parse Command
-      const UBX_NAV_HPPOSECEF_t *cmd_t = (UBX_NAV_HPPOSECEF_t *) &gps.rxBuff.cmd._t;
+      const UBX_NAV_HPPOSECEF_t *cmd_t = (UBX_NAV_HPPOSECEF_t *) &gps.rxBuff.cmd.ubx;
 
       // Log message
       GPS_log_UBX_NAV_HPPOSECEF(cmd_t);
@@ -539,7 +539,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
 
     case UBX_NAV_POSECEF: {
       // Parse Command
-      const UBX_NAV_POSECEF_t *cmd_t = (UBX_NAV_POSECEF_t *) &gps.rxBuff.cmd._t;
+      const UBX_NAV_POSECEF_t *cmd_t = (UBX_NAV_POSECEF_t *) &gps.rxBuff.cmd.ubx;
 
       // Log message
       GPS_log_UBX_NAV_POSECEF(cmd_t);
@@ -578,8 +578,8 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
 void GPS_packMsg_ (GPS_UBX_msg_t *ubx)
 {
   // Place synchronisation characters for bus speed
-  ubx->sync_1 = GPS_SYNC_1_;
-  ubx->sync_2 = GPS_SYNC_2_;
+  ubx->sync_1 = GPS_UBX_SYNC_BYTE_1;
+  ubx->sync_2 = GPS_UBX_SYNC_BYTE_2;
 
   GPS_checksum_(ubx);
 }

@@ -188,7 +188,8 @@ typedef struct {
     uint8_t CK_B;
     union {
         uint8_t       mem[GPS_BUF_LEN];
-        GPS_UBX_cmd_t _t;
+        char *        nmea;
+        GPS_UBX_cmd_t ubx;
     }       cmd;
 } GPS_rx_cmd_buffer_t;
 static_assert(GPS_BUF_LEN > GPS_PREAMBLE_LEN_, "GPS_BUF_LEN must be greater than preamble length ");
