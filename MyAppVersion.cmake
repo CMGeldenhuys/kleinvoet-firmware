@@ -5,7 +5,7 @@
 find_package(Git QUIET REQUIRED)
 
 execute_process(
-        COMMAND "${GIT_EXECUTABLE}" describe --always HEAD
+        COMMAND "${GIT_EXECUTABLE}" describe --abbrev=4 --dirty=* --always --tags
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
         RESULT_VARIABLE res
         OUTPUT_VARIABLE MYAPP_VERSION
