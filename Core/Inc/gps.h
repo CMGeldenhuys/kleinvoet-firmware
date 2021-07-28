@@ -227,16 +227,96 @@ typedef union {
         uint16_t  len;
 
         uint8_t  portID;
-        uint8_t  reserved1;
-        uint16_t txReady;
-        uint32_t mode;
+        uint8_t  _reserved1;
+        union {
+            struct {
+                // LSB
+                bitfield_t en: 1;
+                bitfield_t pol: 1;
+                bitfield_t pin: 5;
+                uint16_t thres: 9;
+                // MSB
+            };
+            uint16_t bitmask;
+        } txReady;
+
+        union {
+            struct {
+                // LSB
+                bitfield_t _reserved1: 6;
+                enum __packed {
+                    UBX_CFG_PRT_MODE_CHAR_LEN_5 = 0U,
+                    UBX_CFG_PRT_MODE_CHAR_LEN_6 = 1U,
+                    UBX_CFG_PRT_MODE_CHAR_LEN_7 = 2U,
+                    UBX_CFG_PRT_MODE_CHAR_LEN_8 = 3U,
+                } charLen : 2;
+                bitfield_t _reserved2: 1;
+                enum __packed {
+                    UBX_CFG_PRT_MODE_PARITY_EVEN = 0b000,
+                    UBX_CFG_PRT_MODE_PARITY_ODD = 0b001,
+                    UBX_CFG_PRT_MODE_PARITY_NO = 0b100,
+                } parity : 3;
+                enum __packed {
+                    UBX_CFG_PRT_MODE_STOP_BITS_1_0 = 0U,
+                    UBX_CFG_PRT_MODE_STOP_BITS_1_5 = 1U,
+                    UBX_CFG_PRT_MODE_STOP_BITS_2_0 = 2U,
+                    UBX_CFG_PRT_MODE_STOP_BITS_0_5 = 3U,
+                } nStopBits : 2;
+                bitfield_t _reserved3: 2;
+                bitfield_t _reserved4: 8;
+                bitfield_t _reserved5: 8;
+                // MSB
+            };
+            uint32_t bitmask;
+        } mode;
+
         uint32_t baudRate;
-        uint16_t inProtoMask;
-        uint16_t outProtoMask;
-        uint16_t flags;
-        uint8_t  reserved2[2];
+        union {
+            struct {
+                // LSB
+                bitfield_t Ubx: 1;
+                bitfield_t Nmea: 1;
+                bitfield_t Rtcm: 1;
+                bitfield_t _reserved1: 2;
+                bitfield_t Rctm3: 1;
+                bitfield_t _reserved2: 2;
+                bitfield_t _reserved3: 8;
+                // MSB
+            };
+            uint16_t bitmask;
+        } inProtoMask;
+
+        union {
+            struct {
+                // LSB
+                bitfield_t Ubx: 1;
+                bitfield_t Nmea: 1;
+                bitfield_t _reserved1: 3;
+                bitfield_t Rctm3: 1;
+                bitfield_t _reserved2: 2;
+                bitfield_t _reserved3: 8;
+                // MSB
+            };
+            uint16_t bitmask;
+        } outProtoMask;
+
+        union {
+            struct {
+                // LSB
+                bitfield_t _reserved1: 1;
+                bitfield_t extendedTxTimeout: 1;
+                bitfield_t _reserved2: 6;
+                bitfield_t _reserved3: 8;
+                // MSB
+            };
+            uint16_t bitmask;
+        } flags;
+
+        uint8_t  _reserved2[2];
     };
 } UBX_CFG_PRT_t;
+#define UBX_CFG_PRT_PAYLOAD_SIZE 20
+static_assert(UBX_SIZEOF_PAYLOAD(UBX_CFG_PRT_t) == UBX_CFG_PRT_PAYLOAD_SIZE, "UBX_CFG_PRT_t payload size mismatch");
 
 typedef union {
     GPS_UBX_cmd_t generic;
@@ -716,25 +796,6 @@ static_assert(UBX_SIZEOF_PAYLOAD(UBX_NAV_PVT_t) == UBX_NAV_PVT_PAYLOAD_SIZE,
 #define UBX_PORT_USB    (3U)
 #define UBX_PORT_SPI    (4U)
 
-#define UBX_CFG_PRT_TXREADY_DISABLE     (0x0000U)
-
-#define UBX_CFG_PRT_MODE_CHARLEN_5      (0b00U << 6U)
-#define UBX_CFG_PRT_MODE_CHARLEN_6      (0b01U << 6U)
-#define UBX_CFG_PRT_MODE_CHARLEN_7      (0b10U << 6U)
-#define UBX_CFG_PRT_MODE_CHARLEN_8      (0b11U << 6U)
-
-#define UBX_CFG_PRT_MODE_PARTIY_EVEN    (0b000U << 9U)
-#define UBX_CFG_PRT_MODE_PARTIY_ODD     (0b001U << 9U)
-#define UBX_CFG_PRT_MODE_PARTIY_NO      (0b100U << 9U)
-
-#define UBX_CFG_PRT_MODE_NSTOPBITS_1_0  (0b00U << 12U)
-#define UBX_CFG_PRT_MODE_NSTOPBITS_1_5  (0b01U << 12U)
-#define UBX_CFG_PRT_MODE_NSTOPBITS_2_0  (0b10U << 12U)
-#define UBX_CFG_PRT_MODE_NSTOPBITS_0_5  (0b11U << 12U)
-
-#define UBX_CFG_PRT_PROTO_UBX           (0x0001U)
-#define UBX_CFG_PRT_PROTO_NMEA          (0x0002U)
-
 #define UBX_NAV_TIMEUTC_VALIDUTC        (0b00000100U)
 
 #define UBX_CFG_TP5_FLAGS_ACTIVE          (0b00000001U)
@@ -754,13 +815,15 @@ static const UBX_CFG_PRT_t GPS_DEFAULT_PORT_CONFIG = {
         .id             = UBX_CFG_PRT,
         .len            = 20u,
         .portID         = UBX_PORT_UART1,
-        .txReady        = UBX_CFG_PRT_TXREADY_DISABLE,
-        .mode           = UBX_CFG_PRT_MODE_CHARLEN_8
-                          | UBX_CFG_PRT_MODE_PARTIY_NO
-                          | UBX_CFG_PRT_MODE_NSTOPBITS_1_0,
+        .txReady        = {.en = 0},
+        .mode           = {
+                .charLen  = UBX_CFG_PRT_MODE_CHAR_LEN_8,
+                .parity   = UBX_CFG_PRT_MODE_PARITY_NO,
+                .nStopBits= UBX_CFG_PRT_MODE_STOP_BITS_1_0
+        },
         .baudRate       = 9600UL,
-        .inProtoMask    = UBX_CFG_PRT_PROTO_UBX,
-        .outProtoMask   = UBX_CFG_PRT_PROTO_UBX
+        .inProtoMask    = {.Ubx = 1},
+        .outProtoMask   = {.Ubx = 1},
 };
 
 static const UBX_CFG_PRT_t GPS_GET_PORT_CONFIG = {
