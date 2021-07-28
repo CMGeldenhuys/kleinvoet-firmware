@@ -843,16 +843,6 @@ static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_DTM = {
         .rate     = 0u
 };
 
-static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GBQ = {
-        .cls      = UBX_CFG,
-        .id       = UBX_CFG_MSG,
-        .len      = 3u,
-
-        .msgClass = NMEA_STD,
-        .msgID    = NMEA_GBQ,
-        .rate     = 0u
-};
-
 static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GBS = {
         .cls      = UBX_CFG,
         .id       = UBX_CFG_MSG,
@@ -883,26 +873,6 @@ static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GLL = {
         .rate     = 0u
 };
 
-static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GLQ = {
-        .cls      = UBX_CFG,
-        .id       = UBX_CFG_MSG,
-        .len      = 3u,
-
-        .msgClass = NMEA_STD,
-        .msgID    = NMEA_GLQ,
-        .rate     = 0u
-};
-
-static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GNQ = {
-        .cls      = UBX_CFG,
-        .id       = UBX_CFG_MSG,
-        .len      = 3u,
-
-        .msgClass = NMEA_STD,
-        .msgID    = NMEA_GNQ,
-        .rate     = 0u
-};
-
 static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GNS = {
         .cls      = UBX_CFG,
         .id       = UBX_CFG_MSG,
@@ -910,16 +880,6 @@ static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GNS = {
 
         .msgClass = NMEA_STD,
         .msgID    = NMEA_GNS,
-        .rate     = 0u
-};
-
-static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GPQ = {
-        .cls      = UBX_CFG,
-        .id       = UBX_CFG_MSG,
-        .len      = 3u,
-
-        .msgClass = NMEA_STD,
-        .msgID    = NMEA_GPQ,
         .rate     = 0u
 };
 
