@@ -973,16 +973,6 @@ static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_RMC = {
         .rate     = 0u
 };
 
-static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_TXT = {
-        .cls      = UBX_CFG,
-        .id       = UBX_CFG_MSG,
-        .len      = 3u,
-
-        .msgClass = NMEA_STD,
-        .msgID    = NMEA_TXT,
-        .rate     = 0u
-};
-
 static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_VLW = {
         .cls      = UBX_CFG,
         .id       = UBX_CFG_MSG,
@@ -1125,20 +1115,15 @@ static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {
 
         // Disable all NMEA messages
         &GPS_DISABLE_NMEA_DTM.generic,
-        &GPS_DISABLE_NMEA_GBQ.generic,
         &GPS_DISABLE_NMEA_GBS.generic,
         &GPS_DISABLE_NMEA_GGA.generic,
         &GPS_DISABLE_NMEA_GLL.generic,
-        &GPS_DISABLE_NMEA_GLQ.generic,
-        &GPS_DISABLE_NMEA_GNQ.generic,
         &GPS_DISABLE_NMEA_GNS.generic,
-        &GPS_DISABLE_NMEA_GPQ.generic,
         &GPS_DISABLE_NMEA_GRS.generic,
         &GPS_DISABLE_NMEA_GSA.generic,
         &GPS_DISABLE_NMEA_GST.generic,
         &GPS_DISABLE_NMEA_GSV.generic,
         &GPS_DISABLE_NMEA_RMC.generic,
-        &GPS_DISABLE_NMEA_TXT.generic,
         &GPS_DISABLE_NMEA_VLW.generic,
         &GPS_DISABLE_NMEA_VTG.generic,
         &GPS_DISABLE_NMEA_ZDA.generic,
