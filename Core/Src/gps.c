@@ -60,7 +60,7 @@ int GPS_configureUBX_ ()
   gps.rxState  = GPS_RX_RESET;
 
   for (size_t i = 0; i < GPS_LEN_DEFAULT_CONFIG; i++) {
-    GPS_sendCommand(GPS_DEFAULT_CONFIG[i], 100, 3);
+    GPS_sendCommand(GPS_DEFAULT_CONFIG[i], 100, 1);
     // NB: NEED ACK QUEUE...
     // TODO Check ACK
     // Wait between messages to ensure success
