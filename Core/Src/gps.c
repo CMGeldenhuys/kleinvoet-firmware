@@ -59,8 +59,13 @@ int GPS_configureUBX_ ()
   DBUG("Size of DEFAULT_CONFIG: %u", GPS_LEN_DEFAULT_CONFIG);
   gps.rxState  = GPS_RX_RESET;
 
+#ifdef GPS_CLEAR_CONFIG
+  uint8_t const clearConfig[] = {0xB5, 0x62, 0x06, 0x09, 0x0D, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x03, 0x1B, 0x9A};
+  Serial_write(&gps.serial, (uint8_t *) clearConfig, sizeof(clearConfig));
+#endif
+
   for (size_t i = 0; i < GPS_LEN_DEFAULT_CONFIG; i++) {
-    GPS_sendCommand(GPS_DEFAULT_CONFIG[i], 100, 3);
+    GPS_sendCommand(GPS_DEFAULT_CONFIG[i], 100, 1);
     // NB: NEED ACK QUEUE...
     // TODO Check ACK
     // Wait between messages to ensure success
