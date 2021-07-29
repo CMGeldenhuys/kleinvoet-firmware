@@ -443,15 +443,14 @@ int ADC_updateLocation(const int32_t ecef[3], uint32_t pAcc)
 {
   static uint32_t prevAcc = UINT32_MAX;
   const uint32_t threshold = UINT32_MAX;
-  const uint8_t scalingFactor = 100U;
 
   if ( pAcc < threshold && pAcc < prevAcc){
     prevAcc = pAcc;
-    const int32_t ecefX = ecef[0] / scalingFactor;
-    const int32_t ecefY = ecef[1] / scalingFactor;
-    const int32_t ecefZ = ecef[2] / scalingFactor;
+    const int32_t ecefX = ecef[0];
+    const int32_t ecefY = ecef[1];
+    const int32_t ecefZ = ecef[2];
     DBUG("ECEF Update: %d,%d,%d", ecefX, ecefY, ecefZ);
-    return WAVE_infoChunkPrintf(&adc.wav, WAVE_INFO_IDX_LOCATION, "%d,%d,%d", ecefX, ecefY, ecefZ);
+    return WAVE_infoChunkPrintf(&adc.wav, WAVE_INFO_IDX_LOCATION, "%08X-%08X-%08X", ecefX, ecefY, ecefZ);
   }
   else{
     INFO("No update, current loc. kept");
