@@ -99,7 +99,7 @@ inline void TIME_stamp (const UBX_NAV_TIMEUTC_t *cmd)
   else {
     const uint32_t sample = _fff_read((ts.fifo.timestamp));
     // TODO: move to yield
-    f_printf(ts.fp, "%lu,%4u-%02u-%02uT%02u:%02u:%02u.%luZ,%lu,\"\"" FATFS_EOL,
+    f_printf(ts.fp, "%lu,%4u-%02u-%02uT%02u:%02u:%02u.%09dZ,%lu,\"\"" FATFS_EOL,
              sample,
              cmd->year, cmd->month, cmd->day,
              cmd->hour, cmd->min, cmd->sec, cmd->nano,
