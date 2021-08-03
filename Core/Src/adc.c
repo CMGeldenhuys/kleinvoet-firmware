@@ -97,6 +97,18 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
                     | ADC_MMUTE_NONE
                     | ADC_DC_CAL_NO);
 
+#ifdef ADC_EN_HPF
+  ADC_writeRegister(ADC_REG_HPF_CAL,
+                    ADC_DC_SUB_C4_OFF
+                    | ADC_DC_SUB_C3_OFF
+                    | ADC_DC_SUB_C2_OFF
+                    | ADC_DC_SUB_C1_OFF
+                    // Enable HPF
+                    | ADC_DC_HPF_C4_ON
+                    | ADC_DC_HPF_C3_ON
+                    | ADC_DC_HPF_C2_ON
+                    | ADC_DC_HPF_C1_ON);
+#endif
   if (ADC_powerUp() <= 0) {
     ERR("Failed to power up ADC Subsystems");
     return -2;

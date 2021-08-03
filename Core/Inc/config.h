@@ -26,6 +26,9 @@ extern "C" {
 
 // Set Log destination
 #define LOG_DEST_TTY
+
+// Enable HPF when in DEBUG mode
+#define ADC_EN_HPF
 #else
 // Set Log destination
 #define LOG_DEST_FILE
