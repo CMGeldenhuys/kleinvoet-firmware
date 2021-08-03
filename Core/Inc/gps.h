@@ -36,9 +36,11 @@ extern "C" {
 #define UBX_BIT_DISBALE (0U)
 
 // Magic Numbers
-#define GPS_SYNC_1_ 0xB5
-#define GPS_SYNC_2_ 0x62
+#define GPS_UBX_SYNC_BYTE_1 0xB5
+#define GPS_UBX_SYNC_BYTE_2 0x62
 #define GPS_NMEA_ID '$'
+#define GPS_NMEA_END_1 '\r'
+#define GPS_NMEA_END_2 '\n'
 #define GPS_PREAMBLE_LEN_ sizeof(GPS_UBX_cmd_t)
 
 typedef enum __attribute__ ((packed)) {
@@ -154,6 +156,9 @@ typedef enum {
     GPS_RX_CK_A                         = GPS_RX_STATE(5),
     GPS_RX_CK_B                         = GPS_RX_STATE(6),
     GPS_RX_CHECKSUM                     = GPS_RX_STATE(7),
+    GPS_RX_NMEA                         = GPS_RX_STATE(8),
+    GPS_RX_NMEA_END                     = GPS_RX_STATE(9),
+
     // Unrelated states
     GPS_RX_NO_DATA                      = GPS_RX_STATE(-2),
     GPS_RX_UNKNOWN                      = GPS_RX_STATE(-1),
@@ -162,7 +167,15 @@ typedef enum {
     // GPS_RX_WAIT                        ---------------------------------------------------------------------------------
     GPS_RX_WAITING                      = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_WAIT)              | GPS_RX_WAIT,
     GPS_RX_UBX_DET                      = GPS_RX_OK_1   | _NEXT_STATE(GPS_RX_POTENTIAL_COMMAND) | GPS_RX_WAIT,
-    GPS_RX_NEMA_DET                     = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_WAIT,
+    GPS_RX_NMEA_DET                     = GPS_RX_OK_2   | _NEXT_STATE(GPS_RX_NMEA)             | GPS_RX_WAIT,
+    // GPS_RX_NMEA                        ---------------------------------------------------------------------------------
+    GPS_RX_NMEA_PENDING                 = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_NMEA)              | GPS_RX_NMEA,
+    GPS_RX_NMEA_CR                      = GPS_RX_OK_1   | _NEXT_STATE(GPS_RX_NMEA_END)          | GPS_RX_NMEA,
+    GPS_RX_NMEA_UBX_DET                 = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_NMEA,
+    GPS_RX_NMEA_OVERFLOW                = GPS_RX_ERR_2  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_NMEA,
+    // GPS_RX_NMEA                        ---------------------------------------------------------------------------------
+    GPS_RX_NMEA_END_SUCESS              = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_NMEA_END,
+    GPS_RX_NMEA_END_FAIL                = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_NMEA)              | GPS_RX_NMEA_END,
     // GPS_RX_POTENTIAL_COMMAND           ---------------------------------------------------------------------------------
     GPS_RX_POTENTIAL_COMMAND_OK         = GPS_RX_OK_0   | _NEXT_STATE(GPS_RX_PREAMBLE)          | GPS_RX_POTENTIAL_COMMAND,
     GPS_RX_POTENTIAL_COMMAND_UNEXPECTED = GPS_RX_ERR_1  | _NEXT_STATE(GPS_RX_RESET)             | GPS_RX_POTENTIAL_COMMAND,
@@ -183,13 +196,14 @@ typedef enum {
 } GPS_rx_state_e;
 
 typedef struct {
-    union {
-        uint8_t       mem[GPS_BUF_LEN];
-        GPS_UBX_cmd_t _t;
-    }       cmd;
     size_t  idx;
     uint8_t CK_A;
     uint8_t CK_B;
+    union {
+        uint8_t       mem[GPS_BUF_LEN];
+        char          nmea[GPS_BUF_LEN];
+        GPS_UBX_cmd_t ubx;
+    }       cmd;
 } GPS_rx_cmd_buffer_t;
 static_assert(GPS_BUF_LEN > GPS_PREAMBLE_LEN_, "GPS_BUF_LEN must be greater than preamble length ");
 
@@ -213,16 +227,96 @@ typedef union {
         uint16_t  len;
 
         uint8_t  portID;
-        uint8_t  reserved1;
-        uint16_t txReady;
-        uint32_t mode;
+        uint8_t  _reserved1;
+        union {
+            struct {
+                // LSB
+                bitfield_t en: 1;
+                bitfield_t pol: 1;
+                bitfield_t pin: 5;
+                uint16_t thres: 9;
+                // MSB
+            };
+            uint16_t bitmask;
+        } txReady;
+
+        union {
+            struct {
+                // LSB
+                bitfield_t _reserved1: 6;
+                enum __packed {
+                    UBX_CFG_PRT_MODE_CHAR_LEN_5 = 0U,
+                    UBX_CFG_PRT_MODE_CHAR_LEN_6 = 1U,
+                    UBX_CFG_PRT_MODE_CHAR_LEN_7 = 2U,
+                    UBX_CFG_PRT_MODE_CHAR_LEN_8 = 3U,
+                } charLen : 2;
+                bitfield_t _reserved2: 1;
+                enum __packed {
+                    UBX_CFG_PRT_MODE_PARITY_EVEN = 0b000,
+                    UBX_CFG_PRT_MODE_PARITY_ODD = 0b001,
+                    UBX_CFG_PRT_MODE_PARITY_NO = 0b100,
+                } parity : 3;
+                enum __packed {
+                    UBX_CFG_PRT_MODE_STOP_BITS_1_0 = 0U,
+                    UBX_CFG_PRT_MODE_STOP_BITS_1_5 = 1U,
+                    UBX_CFG_PRT_MODE_STOP_BITS_2_0 = 2U,
+                    UBX_CFG_PRT_MODE_STOP_BITS_0_5 = 3U,
+                } nStopBits : 2;
+                bitfield_t _reserved3: 2;
+                bitfield_t _reserved4: 8;
+                bitfield_t _reserved5: 8;
+                // MSB
+            };
+            uint32_t bitmask;
+        } mode;
+
         uint32_t baudRate;
-        uint16_t inProtoMask;
-        uint16_t outProtoMask;
-        uint16_t flags;
-        uint8_t  reserved2[2];
+        union {
+            struct {
+                // LSB
+                bitfield_t Ubx: 1;
+                bitfield_t Nmea: 1;
+                bitfield_t Rtcm: 1;
+                bitfield_t _reserved1: 2;
+                bitfield_t Rctm3: 1;
+                bitfield_t _reserved2: 2;
+                bitfield_t _reserved3: 8;
+                // MSB
+            };
+            uint16_t bitmask;
+        } inProtoMask;
+
+        union {
+            struct {
+                // LSB
+                bitfield_t Ubx: 1;
+                bitfield_t Nmea: 1;
+                bitfield_t _reserved1: 3;
+                bitfield_t Rctm3: 1;
+                bitfield_t _reserved2: 2;
+                bitfield_t _reserved3: 8;
+                // MSB
+            };
+            uint16_t bitmask;
+        } outProtoMask;
+
+        union {
+            struct {
+                // LSB
+                bitfield_t _reserved1: 1;
+                bitfield_t extendedTxTimeout: 1;
+                bitfield_t _reserved2: 6;
+                bitfield_t _reserved3: 8;
+                // MSB
+            };
+            uint16_t bitmask;
+        } flags;
+
+        uint8_t  _reserved2[2];
     };
 } UBX_CFG_PRT_t;
+#define UBX_CFG_PRT_PAYLOAD_SIZE 20
+static_assert(UBX_SIZEOF_PAYLOAD(UBX_CFG_PRT_t) == UBX_CFG_PRT_PAYLOAD_SIZE, "UBX_CFG_PRT_t payload size mismatch");
 
 typedef union {
     GPS_UBX_cmd_t generic;
@@ -702,25 +796,6 @@ static_assert(UBX_SIZEOF_PAYLOAD(UBX_NAV_PVT_t) == UBX_NAV_PVT_PAYLOAD_SIZE,
 #define UBX_PORT_USB    (3U)
 #define UBX_PORT_SPI    (4U)
 
-#define UBX_CFG_PRT_TXREADY_DISABLE     (0x0000U)
-
-#define UBX_CFG_PRT_MODE_CHARLEN_5      (0b00U << 6U)
-#define UBX_CFG_PRT_MODE_CHARLEN_6      (0b01U << 6U)
-#define UBX_CFG_PRT_MODE_CHARLEN_7      (0b10U << 6U)
-#define UBX_CFG_PRT_MODE_CHARLEN_8      (0b11U << 6U)
-
-#define UBX_CFG_PRT_MODE_PARTIY_EVEN    (0b000U << 9U)
-#define UBX_CFG_PRT_MODE_PARTIY_ODD     (0b001U << 9U)
-#define UBX_CFG_PRT_MODE_PARTIY_NO      (0b100U << 9U)
-
-#define UBX_CFG_PRT_MODE_NSTOPBITS_1_0  (0b00U << 12U)
-#define UBX_CFG_PRT_MODE_NSTOPBITS_1_5  (0b01U << 12U)
-#define UBX_CFG_PRT_MODE_NSTOPBITS_2_0  (0b10U << 12U)
-#define UBX_CFG_PRT_MODE_NSTOPBITS_0_5  (0b11U << 12U)
-
-#define UBX_CFG_PRT_PROTO_UBX           (0x0001U)
-#define UBX_CFG_PRT_PROTO_NMEA          (0x0002U)
-
 #define UBX_NAV_TIMEUTC_VALIDUTC        (0b00000100U)
 
 #define UBX_CFG_TP5_FLAGS_ACTIVE          (0b00000001U)
@@ -740,13 +815,15 @@ static const UBX_CFG_PRT_t GPS_DEFAULT_PORT_CONFIG = {
         .id             = UBX_CFG_PRT,
         .len            = 20u,
         .portID         = UBX_PORT_UART1,
-        .txReady        = UBX_CFG_PRT_TXREADY_DISABLE,
-        .mode           = UBX_CFG_PRT_MODE_CHARLEN_8
-                          | UBX_CFG_PRT_MODE_PARTIY_NO
-                          | UBX_CFG_PRT_MODE_NSTOPBITS_1_0,
+        .txReady        = {.en = 0},
+        .mode           = {
+                .charLen  = UBX_CFG_PRT_MODE_CHAR_LEN_8,
+                .parity   = UBX_CFG_PRT_MODE_PARITY_NO,
+                .nStopBits= UBX_CFG_PRT_MODE_STOP_BITS_1_0
+        },
         .baudRate       = 9600UL,
-        .inProtoMask    = UBX_CFG_PRT_PROTO_UBX,
-        .outProtoMask   = UBX_CFG_PRT_PROTO_UBX
+        .inProtoMask    = {.Ubx = 1},
+        .outProtoMask   = {.Ubx = 1},
 };
 
 static const UBX_CFG_PRT_t GPS_GET_PORT_CONFIG = {
@@ -763,16 +840,6 @@ static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_DTM = {
 
         .msgClass = NMEA_STD,
         .msgID    = NMEA_DTM,
-        .rate     = 0u
-};
-
-static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GBQ = {
-        .cls      = UBX_CFG,
-        .id       = UBX_CFG_MSG,
-        .len      = 3u,
-
-        .msgClass = NMEA_STD,
-        .msgID    = NMEA_GBQ,
         .rate     = 0u
 };
 
@@ -806,26 +873,6 @@ static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GLL = {
         .rate     = 0u
 };
 
-static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GLQ = {
-        .cls      = UBX_CFG,
-        .id       = UBX_CFG_MSG,
-        .len      = 3u,
-
-        .msgClass = NMEA_STD,
-        .msgID    = NMEA_GLQ,
-        .rate     = 0u
-};
-
-static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GNQ = {
-        .cls      = UBX_CFG,
-        .id       = UBX_CFG_MSG,
-        .len      = 3u,
-
-        .msgClass = NMEA_STD,
-        .msgID    = NMEA_GNQ,
-        .rate     = 0u
-};
-
 static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GNS = {
         .cls      = UBX_CFG,
         .id       = UBX_CFG_MSG,
@@ -833,16 +880,6 @@ static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GNS = {
 
         .msgClass = NMEA_STD,
         .msgID    = NMEA_GNS,
-        .rate     = 0u
-};
-
-static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_GPQ = {
-        .cls      = UBX_CFG,
-        .id       = UBX_CFG_MSG,
-        .len      = 3u,
-
-        .msgClass = NMEA_STD,
-        .msgID    = NMEA_GPQ,
         .rate     = 0u
 };
 
@@ -893,16 +930,6 @@ static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_RMC = {
 
         .msgClass = NMEA_STD,
         .msgID    = NMEA_RMC,
-        .rate     = 0u
-};
-
-static const UBX_CFG_MSG_t GPS_DISABLE_NMEA_TXT = {
-        .cls      = UBX_CFG,
-        .id       = UBX_CFG_MSG,
-        .len      = 3u,
-
-        .msgClass = NMEA_STD,
-        .msgID    = NMEA_TXT,
         .rate     = 0u
 };
 
@@ -973,7 +1000,7 @@ static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_TIMEUTC = {
 
         .msgClass = UBX_NAV,
         .msgID    = UBX_NAV_TIMEUTC,
-        .rate     = 10u
+        .rate     = 1u
 };
 
 static const UBX_CFG_MSG_t GPS_ENABLE_UBX_NAV_POSECEF = {
@@ -1048,20 +1075,15 @@ static const GPS_UBX_cmd_t *const GPS_DEFAULT_CONFIG[] = {
 
         // Disable all NMEA messages
         &GPS_DISABLE_NMEA_DTM.generic,
-        &GPS_DISABLE_NMEA_GBQ.generic,
         &GPS_DISABLE_NMEA_GBS.generic,
         &GPS_DISABLE_NMEA_GGA.generic,
         &GPS_DISABLE_NMEA_GLL.generic,
-        &GPS_DISABLE_NMEA_GLQ.generic,
-        &GPS_DISABLE_NMEA_GNQ.generic,
         &GPS_DISABLE_NMEA_GNS.generic,
-        &GPS_DISABLE_NMEA_GPQ.generic,
         &GPS_DISABLE_NMEA_GRS.generic,
         &GPS_DISABLE_NMEA_GSA.generic,
         &GPS_DISABLE_NMEA_GST.generic,
         &GPS_DISABLE_NMEA_GSV.generic,
         &GPS_DISABLE_NMEA_RMC.generic,
-        &GPS_DISABLE_NMEA_TXT.generic,
         &GPS_DISABLE_NMEA_VLW.generic,
         &GPS_DISABLE_NMEA_VTG.generic,
         &GPS_DISABLE_NMEA_ZDA.generic,

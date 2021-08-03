@@ -97,6 +97,19 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
                     | ADC_MMUTE_NONE
                     | ADC_DC_CAL_NO);
 
+#ifdef ADC_EN_HPF
+  WARN("Enabling built-in HPF");
+  ADC_writeRegister(ADC_REG_HPF_CAL,
+                    ADC_DC_SUB_C4_OFF
+                    | ADC_DC_SUB_C3_OFF
+                    | ADC_DC_SUB_C2_OFF
+                    | ADC_DC_SUB_C1_OFF
+                    // Enable HPF
+                    | ADC_DC_HPF_C4_ON
+                    | ADC_DC_HPF_C3_ON
+                    | ADC_DC_HPF_C2_ON
+                    | ADC_DC_HPF_C1_ON);
+#endif
   if (ADC_powerUp() <= 0) {
     ERR("Failed to power up ADC Subsystems");
     return -2;
@@ -443,15 +456,14 @@ int ADC_updateLocation(const int32_t ecef[3], uint32_t pAcc)
 {
   static uint32_t prevAcc = UINT32_MAX;
   const uint32_t threshold = UINT32_MAX;
-  const uint8_t scalingFactor = 100U;
 
   if ( pAcc < threshold && pAcc < prevAcc){
     prevAcc = pAcc;
-    const int32_t ecefX = ecef[0] / scalingFactor;
-    const int32_t ecefY = ecef[1] / scalingFactor;
-    const int32_t ecefZ = ecef[2] / scalingFactor;
+    const int32_t ecefX = ecef[0];
+    const int32_t ecefY = ecef[1];
+    const int32_t ecefZ = ecef[2];
     DBUG("ECEF Update: %d,%d,%d", ecefX, ecefY, ecefZ);
-    return WAVE_infoChunkPrintf(&adc.wav, WAVE_INFO_IDX_LOCATION, "%d,%d,%d", ecefX, ecefY, ecefZ);
+    return WAVE_infoChunkPrintf(&adc.wav, WAVE_INFO_IDX_LOCATION, "%08X-%08X-%08X", ecefX, ecefY, ecefZ);
   }
   else{
     INFO("No update, current loc. kept");

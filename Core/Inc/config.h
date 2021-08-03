@@ -8,6 +8,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include "version.h"
 
 #define ADC_MAX_DELAY 100
 
@@ -15,14 +16,22 @@ extern "C" {
 
 // Set logging level
 #define LOG_LEVEL_INFO
-// Set Log destination
-#define LOG_DEST_TTY
 
 #ifdef DEBUG
+// Enable performance metering
 #define PERF_ENABLE
 
 // Change ADC sampling Freq.
 #define ADC_SAMPLING_RATE 16000
+
+// Set Log destination
+#define LOG_DEST_TTY
+
+// Enable HPF when in DEBUG mode
+#define ADC_EN_HPF
+#else
+// Set Log destination
+#define LOG_DEST_FILE
 #endif
 
 // Enable static file allocation

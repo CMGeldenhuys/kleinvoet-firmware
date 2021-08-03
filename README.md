@@ -76,6 +76,17 @@ seems to also be a good alternative if one is struggling with getting all the
 tooling to work. _CubeIDE_ also has support for OpenOCD but uses a shelf shipped
 version.
 
+#### Command-line Tools
+To build a release run, replacing `$BUILD_DIR` with the target output directory 
+of your choice:
+```shell
+cmake --build $BUILD_DIR --target all -- -j $(nproc)
+```
+To flash an `*.elf` file using `openocd` run:
+```shell
+openocd -f OCD_kleinvoet.cfg -c "tcl_port disabled" -c "gdb_port disabled" -c "tcl_port disabled" -c "program \"$BUILD_DIR/firmware.elf\"" -c reset -c shutdown
+```
+
 ### libusb_open() failed with LIBUSB_ERROR_ACCESS
 This is due to a udev rule problem. Installing _CubeIDE_ installs these rules.
 But creating them manually should work too. Place the appropriate file in the
