@@ -98,6 +98,7 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
                     | ADC_DC_CAL_NO);
 
 #ifdef ADC_EN_HPF
+  WARN("Enabling built-in HPF");
   ADC_writeRegister(ADC_REG_HPF_CAL,
                     ADC_DC_SUB_C4_OFF
                     | ADC_DC_SUB_C3_OFF
