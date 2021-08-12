@@ -471,6 +471,27 @@ int ADC_updateLocation(const int32_t ecef[3], uint32_t pAcc)
 
 }
 
+// TODO: Not the best place but works for now
+int ADC_updateTimecode(const char * date, const char * timestamp, uint32_t sample, uint32_t pAcc)
+{
+  static volatile uint32_t prevAcc = UINT32_MAX;
+
+  if ( pAcc < prevAcc ){
+    // First run
+    if (prevAcc == UINT32_MAX) {
+      WAVE_infoChunkPrintf(&adc.wav, WAVE_INFO_IDX_DATECREATED, "%s", date);
+    }
+    // Keep track of acc. to improve
+    prevAcc = pAcc;
+
+    return WAVE_infoChunkPrintf(&adc.wav, WAVE_INFO_IDX_TIMECODE, "%s-%08X", sample);
+  }
+  else{
+    INFO("No update, current timecode kept");
+    return 0;
+  }
+}
+
 #ifdef DEBUG
 int CMD_comment(int argc, char * argv[])
 {

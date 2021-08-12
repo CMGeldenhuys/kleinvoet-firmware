@@ -99,10 +99,18 @@ inline void TIME_stamp (const UBX_NAV_TIMEUTC_t *cmd)
   else {
     const uint32_t sample = _fff_read((ts.fifo.timestamp));
     // TODO: move to yield
-    f_printf(ts.fp, "%lu,%4u-%02u-%02uT%02u:%02u:%02u.%09dZ,%lu,\"ts\"" FATFS_EOL,
+    char date[] = "YYYY-MM-dd";
+    char timecode[] = "HH:MM.ss.000000000";
+    sniprintf(date, sizeof(date), "%4u-%02u-%02u",
+              cmd->year, cmd->month, cmd->day);
+    sniprintf(timecode, sizeof(timecode), "%02u:%02u:%02u.%09ld",
+              cmd->hour, cmd->min, cmd->sec, cmd->nano);
+
+
+    f_printf(ts.fp, "%lu,%sT%sZ,%lu,\"ts\"" FATFS_EOL,
              sample,
-             cmd->year, cmd->month, cmd->day,
-             cmd->hour, cmd->min, cmd->sec, cmd->nano,
+             date,
+             timecode,
              cmd->tAcc);
     DBUG("new sample stamped (%d)", _fff_mem_level((ts.fifo.timestamp)));
   }
