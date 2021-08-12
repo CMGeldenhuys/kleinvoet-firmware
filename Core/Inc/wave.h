@@ -105,6 +105,7 @@ const static WAVE_RIFF_STR_u WAVE_INFO_TAG_LOCA = {.str = {'L', 'O', 'C', 'A'}};
 const static WAVE_RIFF_STR_u WAVE_INFO_TAG_ISMP = {.str = {'I', 'S', 'M', 'P'}}; // TimeCode
 const static WAVE_RIFF_STR_u WAVE_INFO_TAG_TVER = {.str = {'T', 'V', 'E', 'R'}}; // Version
 const static WAVE_RIFF_STR_u WAVE_INFO_TAG_TORG = {.str = {'T', 'O', 'R', 'G'}}; // Organisation
+const static WAVE_RIFF_STR_u WAVE_INFO_TAG_ICRD = {.str = {'I', 'C', 'R', 'D'}}; // Date Created
 
 #define WAVE_INFO_TAG_COMMENT WAVE_INFO_TAG_ICMT
 #define WAVE_INFO_TAG_ENGINEER WAVE_INFO_TAG_IENG
@@ -115,6 +116,7 @@ const static WAVE_RIFF_STR_u WAVE_INFO_TAG_TORG = {.str = {'T', 'O', 'R', 'G'}};
 #define WAVE_INFO_TAG_TIMECODE WAVE_INFO_TAG_ISMP
 #define WAVE_INFO_TAG_VERSION WAVE_INFO_TAG_TVER
 #define WAVE_INFO_TAG_ORGANISATION WAVE_INFO_TAG_TORG
+#define WAVE_INFO_TAG_DATECREATED WAVE_INFO_TAG_ICRD
 
 const static WORD WAVE_AUDIO_PCM = 0x0001U;
 
@@ -125,6 +127,8 @@ typedef enum {
     WAVE_INFO_IDX_VERSION,
     WAVE_INFO_IDX_ENGINEER,
     WAVE_INFO_IDX_LOCATION,
+    WAVE_INFO_IDX_DATECREATED,
+    WAVE_INFO_IDX_TIMECODE,
 #ifdef DEBUG
     WAVE_INFO_IDX_COMMENT,
 #endif
