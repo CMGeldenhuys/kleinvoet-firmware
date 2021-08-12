@@ -32,6 +32,9 @@ extern "C" {
 #else
 // Set Log destination
 #define LOG_DEST_FILE
+
+// Change ADC sampling Freq.
+#define ADC_SAMPLING_RATE 16000
 #endif
 
 // Enable static file allocation
