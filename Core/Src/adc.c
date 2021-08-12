@@ -454,7 +454,7 @@ inline void ADC_WAVE_writeHeader()
 // TODO: Not the best place but works for now
 int ADC_updateLocation(const int32_t ecef[3], uint32_t pAcc)
 {
-  static uint32_t prevAcc = UINT32_MAX;
+  static volatile uint32_t prevAcc = UINT32_MAX;
   const uint32_t threshold = UINT32_MAX;
 
   if ( pAcc < threshold && pAcc < prevAcc){
