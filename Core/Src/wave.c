@@ -168,7 +168,7 @@ int WAVE_createHeader_ (WAVE_t *wav)
   WAVE_info_subchunk_t *iLocation_subchunk = &LIST_chunk->subChunks[WAVE_INFO_IDX_LOCATION];
   iLocation_subchunk->SubchunkID   = WAVE_INFO_TAG_LOCATION;
   iLocation_subchunk->SubchunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_info_subchunk_t);
-  strncpy(iLocation_subchunk->Value, "NO LOCK", WAVE_MAX_INFO_VALUE_LEN);
+  strncpy(iLocation_subchunk->Value, "NO_LOCK", WAVE_MAX_INFO_VALUE_LEN);
   DBUG("iLocation_subchunk->SubchunkSize: %u", iLocation_subchunk->SubchunkSize);
 
 #ifdef DEBUG
