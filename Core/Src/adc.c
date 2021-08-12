@@ -462,7 +462,7 @@ int ADC_updateLocation(const int32_t ecef[3], uint32_t pAcc)
     const int32_t ecefX = ecef[0];
     const int32_t ecefY = ecef[1];
     const int32_t ecefZ = ecef[2];
-    DBUG("ECEF Update: %d,%d,%d", ecefX, ecefY, ecefZ);
+    INFO("ECEF Update: %d,%d,%d", ecefX, ecefY, ecefZ);
     return WAVE_infoChunkPrintf(&adc.wav, WAVE_INFO_IDX_LOCATION, "%08X-%08X-%08X", ecefX, ecefY, ecefZ);
   }
   else{
