@@ -1134,7 +1134,7 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *txCmd, int waitAck, int retryOnNack);
 
 #define GPS_log_UBX_NAV_TIMEUTC(cmd_t) \
 ({ \
-    INFO("UBX-NAV-TIMEUTC (%c)", \
+    DBUG("UBX-NAV-TIMEUTC (%c)", \
          cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC \
          ? '1' \
          : '0');                \
