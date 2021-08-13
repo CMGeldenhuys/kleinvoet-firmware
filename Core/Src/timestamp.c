@@ -8,6 +8,7 @@
  *
  */
 
+#include "adc.h"
 #include "timestamp.h"
 
 // NB: see _fff_init for initialisation
@@ -100,17 +101,18 @@ inline void TIME_stamp (const UBX_NAV_TIMEUTC_t *cmd)
     const uint32_t sample = _fff_read((ts.fifo.timestamp));
     // TODO: move to yield
     char date[] = "YYYY-MM-dd";
-    char timecode[] = "HH:MM.ss.000000000";
+    char timestamp[] = "HH:MM.ss.000000000";
     sniprintf(date, sizeof(date), "%4u-%02u-%02u",
               cmd->year, cmd->month, cmd->day);
-    sniprintf(timecode, sizeof(timecode), "%02u:%02u:%02u.%09ld",
+    sniprintf(timestamp, sizeof(timestamp), "%02u:%02u:%02u.%09ld",
               cmd->hour, cmd->min, cmd->sec, cmd->nano);
 
+    ADC_updateTimecode(date, timestamp, sample, cmd->tAcc);
 
     f_printf(ts.fp, "%lu,%sT%sZ,%lu,\"ts\"" FATFS_EOL,
              sample,
              date,
-             timecode,
+             timestamp,
              cmd->tAcc);
     DBUG("new sample stamped (%d)", _fff_mem_level((ts.fifo.timestamp)));
   }

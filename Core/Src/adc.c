@@ -484,12 +484,10 @@ int ADC_updateTimecode(const char * date, const char * timestamp, uint32_t sampl
     // Keep track of acc. to improve
     prevAcc = pAcc;
 
-    return WAVE_infoChunkPrintf(&adc.wav, WAVE_INFO_IDX_TIMECODE, "%s-%08X", sample);
+    return WAVE_infoChunkPrintf(&adc.wav, WAVE_INFO_IDX_TIMECODE, "%s-%08X", timestamp, sample);
   }
-  else{
-    INFO("No update, current timecode kept");
-    return 0;
-  }
+
+  return 0;
 }
 
 #ifdef DEBUG
