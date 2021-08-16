@@ -240,6 +240,12 @@ int WAVE_close (WAVE_t *wav)
 int WAVE_infoChunkPrintf(WAVE_t *wav, WAVE_INFO_IDX_e infoTag, const char* fmt, ...)
 {
   INFO("Changing info tag (%lu)", infoTag);
+
+  if (infoTag > WAVE_INFO_IDX_LENGTH) {
+    ERR("infoTag out of range!");
+    return -1;
+  }
+
   WAVE_LIST_chunk_t *LIST_chunk = &wav->header->listChunk;
   WAVE_info_subchunk_t *infoSubchunk = &LIST_chunk->subChunks[infoTag];
 
