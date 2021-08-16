@@ -179,7 +179,7 @@ int TTY_registerCommand (const char *alias, REPL_cmd_t func)
           .name = alias,
           .func = func
   };
-  return idx;
+  return (int) idx;
 }
 
 #ifdef TTY_PRINTF
@@ -265,6 +265,8 @@ int TTY_testArgs (int argc, char *args[])
   for (int i = 0; i < argc; i++) {
     TTY_printf("  [%i] -> '%s'" TTY_EOL, i, args[i]);
   }
+
+  return 1;
 }
 
 

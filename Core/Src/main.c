@@ -77,7 +77,7 @@ uint32_t KLEINVOET_UUID = 0xDEADBEEFU;
 int ready = 0;
 // TODO: Just a quick fix
 static int flushLog = 0;
-static uint32_t wavWriteHeaderFlag = 0;
+static volatile uint32_t wavWriteHeaderFlag = 0;
 static int adcSyncWrite = 0;
 /* USER CODE END PV */
 
@@ -169,8 +169,8 @@ int main(void)
   // TODO: move to global state machine class once it exists
   INFO("VERSION: " KV_VERSION);
   INFO("AUTHORS: " AUTHORS);
-  INFO("UUID: 0x%08X (%08X-%08X-%08X)", KLEINVOET_UUID, STM32_UUID[0], STM32_UUID[1], STM32_UUID[2]);
-  INFO("Core Freq: %uHz", HAL_RCC_GetHCLKFreq());
+  INFO("UUID: 0x%08lX (%08lX-%08lX-%08lX)", KLEINVOET_UUID, STM32_UUID[0], STM32_UUID[1], STM32_UUID[2]);
+  INFO("Core Freq: %luHz", HAL_RCC_GetHCLKFreq());
 
   INFO("Waiting for GPS to finish starting up..");
   HAL_Delay(1500);

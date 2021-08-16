@@ -131,7 +131,7 @@ int WAVE_createHeader_ (WAVE_t *wav)
 {
   // Prevent memory leak if file already exists, otherwise reuse header
   if (!wav->header) {
-    INFO("Allocating memory to WAVE file header (%u bytes)", sizeof(WAVE_header_t));
+    INFO("Allocating memory to WAVE file header (%lu bytes)", sizeof(WAVE_header_t));
     wav->header = (WAVE_header_t *) malloc(sizeof(WAVE_header_t));
 
     if (!wav->sampleRate) wav->sampleRate       = WAVE_DEFAULT_SAMPLE_RATE;
@@ -162,7 +162,7 @@ int WAVE_createHeader_ (WAVE_t *wav)
   WAVE_info_subchunk_t *iVersion_subchunk = &LIST_chunk->subChunks[WAVE_INFO_IDX_VERSION];
   iVersion_subchunk->SubchunkID   = WAVE_INFO_TAG_VERSION;
   iVersion_subchunk->SubchunkSize = WAVE_SIZEOF_SUBCHUNK(WAVE_info_subchunk_t);
-  snprintf(iVersion_subchunk->Value, WAVE_MAX_INFO_VALUE_LEN, "KV_" KV_VERSION "_%08X", KLEINVOET_UUID);
+  snprintf(iVersion_subchunk->Value, WAVE_MAX_INFO_VALUE_LEN, "KV_" KV_VERSION "_%08lX", KLEINVOET_UUID);
   DBUG("iVersion_subchunk->SubchunkSize: %u", iVersion_subchunk->SubchunkSize);
 
   WAVE_info_subchunk_t *iLocation_subchunk = &LIST_chunk->subChunks[WAVE_INFO_IDX_LOCATION];
@@ -239,7 +239,7 @@ int WAVE_close (WAVE_t *wav)
 
 int WAVE_infoChunkPrintf(WAVE_t *wav, WAVE_INFO_IDX_e infoTag, const char* fmt, ...)
 {
-  INFO("Changing info tag (%u)", infoTag);
+  INFO("Changing info tag (%lu)", infoTag);
   WAVE_LIST_chunk_t *LIST_chunk = &wav->header->listChunk;
   WAVE_info_subchunk_t *infoSubchunk = &LIST_chunk->subChunks[infoTag];
 

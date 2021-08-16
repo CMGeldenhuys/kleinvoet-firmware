@@ -25,7 +25,7 @@
   } \
 }
 
-#define PERF_THRESHOLD(_threshold_) (threshold = _threshold_)
+#define PERF_THRESHOLD(_threshold_) (threshold = (_threshold_))
 
 #else
 

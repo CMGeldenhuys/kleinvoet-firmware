@@ -208,15 +208,15 @@ typedef struct {
 static_assert(GPS_BUF_LEN > GPS_PREAMBLE_LEN_, "GPS_BUF_LEN must be greater than preamble length ");
 
 typedef struct {
-    Serial_t serial;
-    GPS_rx_cmd_buffer_t rxBuff;
-    GPS_rx_state_e rxState;
-
     GPS_state_e state;
 
     uint8_t timeValid;
-    uint_least16_t timeValidN;
-    uint_least16_t timeInvalidN;
+    uint16_t timeValidN;
+    uint16_t timeInvalidN;
+
+    Serial_t serial;
+    GPS_rx_state_e rxState;
+    GPS_rx_cmd_buffer_t rxBuff;
 } GPS_t;
 
 typedef union {
@@ -1135,139 +1135,139 @@ int GPS_sendCommand (const GPS_UBX_cmd_t *txCmd, int waitAck, int retryOnNack);
 #define GPS_log_UBX_NAV_TIMEUTC(cmd_t) \
 ({ \
     DBUG("UBX-NAV-TIMEUTC (%c)", \
-         cmd_t->valid & UBX_NAV_TIMEUTC_VALIDUTC \
+         (cmd_t)->valid & UBX_NAV_TIMEUTC_VALIDUTC \
          ? '1' \
          : '0');                \
                                       \
-    DBUG("  iTOW: %lu", cmd_t->iTOW); \
-    DBUG("  tAcc: %lu", cmd_t->tAcc); \
-    DBUG("  nano: %0l", cmd_t->nano); \
-    DBUG("  year: %u", cmd_t->year); \
-    DBUG("  month: %02u", cmd_t->month); \
-    DBUG("  day: %02u", cmd_t->day); \
-    DBUG("  hour: %02u", cmd_t->hour); \
-    DBUG("  min: %02u", cmd_t->min); \
-    DBUG("  sec: %02u", cmd_t->sec); \
-    DBUG("  validTOW: %u", cmd_t->validTOW);     \
-    DBUG("  validWKN: %u", cmd_t->validWKN);        \
-    DBUG("  validUTC: %u", cmd_t->validUTC); \
-    DBUG("  utcStandard: %u", cmd_t->utcStandard); \
+    DBUG("  iTOW: %lu", (cmd_t)->iTOW); \
+    DBUG("  tAcc: %lu", (cmd_t)->tAcc); \
+    DBUG("  nano: %0l", (cmd_t)->nano); \
+    DBUG("  year: %u", (cmd_t)->year); \
+    DBUG("  month: %02u", (cmd_t)->month); \
+    DBUG("  day: %02u", (cmd_t)->day); \
+    DBUG("  hour: %02u", (cmd_t)->hour); \
+    DBUG("  min: %02u", (cmd_t)->min); \
+    DBUG("  sec: %02u", (cmd_t)->sec); \
+    DBUG("  validTOW: %u", (cmd_t)->validTOW);     \
+    DBUG("  validWKN: %u", (cmd_t)->validWKN);        \
+    DBUG("  validUTC: %u", (cmd_t)->validUTC); \
+    DBUG("  utcStandard: %u", (cmd_t)->utcStandard); \
 })
 
 #define GPS_log_UBX_NAV_STATUS(cmd_t) \
 ({                                    \
   INFO("UBX-NAV-STATUS (V:%d, N:%d)", gps.timeValidN, gps.timeInvalidN); \
-  DBUG("  iTOW: %lu", cmd_t->iTOW); \
-  DBUG("  gpsFix: 0x%02X", cmd_t->gpsFix);                               \
-  DBUG("  gpsFixOk: 0x%02X", cmd_t->gpsFixOk); \
-  DBUG("  diffSoln: 0x%02X", cmd_t->diffSoln); \
-  DBUG("  wknSet: 0x%02X", cmd_t->wknSet); \
-  DBUG("  towSet: 0x%02X", cmd_t->towSet); \
-  DBUG("  diffCorr: 0x%02X", cmd_t->diffCorr); \
-  DBUG("  carrSolnValid: 0x%02X", cmd_t->carrSolnValid); \
-  DBUG("  mapMatching: 0x%02X", cmd_t->mapMatching); \
-  DBUG("  psmState: 0x%02X", cmd_t->psmState); \
-  DBUG("  spoofDetState: 0x%02X", cmd_t->spoofDetState); \
-  DBUG("  carrSoln: 0x%02X", cmd_t->carrSoln); \
-  DBUG("  ttff: %lu", cmd_t->ttff); \
-  DBUG("  msss: %lu", cmd_t->msss); \
+  DBUG("  iTOW: %lu", (cmd_t)->iTOW); \
+  DBUG("  gpsFix: 0x%02X", (cmd_t)->gpsFix);                               \
+  DBUG("  gpsFixOk: 0x%02X", (cmd_t)->gpsFixOk); \
+  DBUG("  diffSoln: 0x%02X", (cmd_t)->diffSoln); \
+  DBUG("  wknSet: 0x%02X", (cmd_t)->wknSet); \
+  DBUG("  towSet: 0x%02X", (cmd_t)->towSet); \
+  DBUG("  diffCorr: 0x%02X", (cmd_t)->diffCorr); \
+  DBUG("  carrSolnValid: 0x%02X", (cmd_t)->carrSolnValid); \
+  DBUG("  mapMatching: 0x%02X", (cmd_t)->mapMatching); \
+  DBUG("  psmState: 0x%02X", (cmd_t)->psmState); \
+  DBUG("  spoofDetState: 0x%02X", (cmd_t)->spoofDetState); \
+  DBUG("  carrSoln: 0x%02X", (cmd_t)->carrSoln); \
+  DBUG("  ttff: %lu", (cmd_t)->ttff); \
+  DBUG("  msss: %lu", (cmd_t)->msss); \
 })
 
 #define GPS_log_UBX_NAV_SAT(cmd_t) \
 ({                                 \
-  INFO("UBX-NAV-SAT (%u)", cmd_t->numSvs); \
+  INFO("UBX-NAV-SAT (%u)", (cmd_t)->numSvs); \
   \
-  DBUG("  iTOW: %lu", cmd_t->iTOW); \
-  DBUG("  version: %u", cmd_t->version); \
-  DBUG("  numSvs: %u", cmd_t->numSvs); \
+  DBUG("  iTOW: %lu", (cmd_t)->iTOW); \
+  DBUG("  version: %u", (cmd_t)->version); \
+  DBUG("  numSvs: %u", (cmd_t)->numSvs); \
   \
-  for (uint8_t i = 0; i < cmd_t->numSvs; i++) { \
+  for (uint8_t i = 0; i < (cmd_t)->numSvs; i++) { \
     DBUG("  ---- Svs %u ----", i); \
-    DBUG("    gnssId: %u", cmd_t->svs[i].gnssId); \
-    DBUG("    svId: %u", cmd_t->svs[i].svId); \
-    DBUG("    cno: %u", cmd_t->svs[i].cno); \
-    DBUG("    elev: %d", cmd_t->svs[i].elev); \
-    DBUG("    azim: %d", cmd_t->svs[i].azim); \
-    DBUG("    prRes: %d", cmd_t->svs[i].prRes); \
-    DBUG("    flags: 0x%02X", cmd_t->svs[i].flags); \
+    DBUG("    gnssId: %u", (cmd_t)->svs[i].gnssId); \
+    DBUG("    svId: %u", (cmd_t)->svs[i].svId); \
+    DBUG("    cno: %u", (cmd_t)->svs[i].cno); \
+    DBUG("    elev: %d", (cmd_t)->svs[i].elev); \
+    DBUG("    azim: %d", (cmd_t)->svs[i].azim); \
+    DBUG("    prRes: %d", (cmd_t)->svs[i].prRes); \
+    DBUG("    flags: 0x%02X", (cmd_t)->svs[i].flags); \
   } \
 })
 
 #define GPS_log_UBX_NAV_CLK(cmd_t) \
 ({                                 \
   INFO("UBX-NAV-CLK"); \
-  DBUG("  iTOW: %lu", cmd_t->iTOW); \
-  DBUG("  clkB: %l", cmd_t->clkB); \
-  DBUG("  clkD: %l", cmd_t->clkD); \
-  DBUG("  tAcc: %lu", cmd_t->tAcc); \
-  DBUG("  fAcc: %lu", cmd_t->fAcc); \
+  DBUG("  iTOW: %lu", (cmd_t)->iTOW); \
+  DBUG("  clkB: %l", (cmd_t)->clkB); \
+  DBUG("  clkD: %l", (cmd_t)->clkD); \
+  DBUG("  tAcc: %lu", (cmd_t)->tAcc); \
+  DBUG("  fAcc: %lu", (cmd_t)->fAcc); \
 })
 
 #define GPS_log_UBX_NAV_HPPOSECEF(cmd_t) \
 ({                                 \
-  INFO("UBX-NAV-HPPOSECEF (%l, %l, %l)", cmd_t->ecefX, cmd_t->ecefY, cmd_t->ecefZ); \
-  DBUG("  version: %u", cmd_t->version);      \
-  DBUG("  iTOW: %lu", cmd_t->iTOW);      \
-  DBUG("  ecefX: %l", cmd_t->ecefX);     \
-  DBUG("  ecefY: %l", cmd_t->ecefY);      \
-  DBUG("  ecefZ: %l", cmd_t->ecefZ);      \
-  DBUG("  ecefXHp: %d", cmd_t->ecefXHp);      \
-  DBUG("  ecefYHp: %d", cmd_t->ecefYHp);      \
-  DBUG("  ecefZHp: %d", cmd_t->ecefZHp);      \
-  DBUG("  flags.invalidEcef: %u", cmd_t->invalidEcef);      \
-  DBUG("  pAcc: %lu", cmd_t->pAcc);      \
+  INFO("UBX-NAV-HPPOSECEF (%l, %l, %l)", (cmd_t)->ecefX, (cmd_t)->ecefY, (cmd_t)->ecefZ); \
+  DBUG("  version: %u", (cmd_t)->version);      \
+  DBUG("  iTOW: %lu", (cmd_t)->iTOW);      \
+  DBUG("  ecefX: %l", (cmd_t)->ecefX);     \
+  DBUG("  ecefY: %l", (cmd_t)->ecefY);      \
+  DBUG("  ecefZ: %l", (cmd_t)->ecefZ);      \
+  DBUG("  ecefXHp: %d", (cmd_t)->ecefXHp);      \
+  DBUG("  ecefYHp: %d", (cmd_t)->ecefYHp);      \
+  DBUG("  ecefZHp: %d", (cmd_t)->ecefZHp);      \
+  DBUG("  flags.invalidEcef: %u", (cmd_t)->invalidEcef);      \
+  DBUG("  pAcc: %lu", (cmd_t)->pAcc);      \
 })
 
 #define GPS_log_UBX_NAV_POSECEF(cmd_t) \
 ({                                 \
-  INFO("UBX-NAV-POSECEF (%d, %d, %d, %u)", cmd_t->ecefX, cmd_t->ecefY, cmd_t->ecefZ, cmd_t->pAcc); \
-  DBUG("  iTOW: %u", cmd_t->iTOW);      \
-  DBUG("  ecefX: %d", cmd_t->ecefX);     \
-  DBUG("  ecefY: %d", cmd_t->ecefY);      \
-  DBUG("  ecefZ: %d", cmd_t->ecefZ);      \
-  DBUG("  pAcc: %u", cmd_t->pAcc);      \
+  INFO("UBX-NAV-POSECEF (%l, %l, %l, %lu)", (cmd_t)->ecefX, (cmd_t)->ecefY, (cmd_t)->ecefZ, (cmd_t)->pAcc); \
+  DBUG("  iTOW: %u", (cmd_t)->iTOW);      \
+  DBUG("  ecefX: %d", (cmd_t)->ecefX);     \
+  DBUG("  ecefY: %d", (cmd_t)->ecefY);      \
+  DBUG("  ecefZ: %d", (cmd_t)->ecefZ);      \
+  DBUG("  pAcc: %u", (cmd_t)->pAcc);      \
 })
 
 #define GPS_log_UBX_NAV_PVT(cmd_t) \
 ({                                 \
   INFO("UBX-NAV-PVT");               \
-  DBUG("  iTOW: %d", cmd_t->iTOW);    \
-  INFO("  year: %u", cmd_t->year);    \
-  INFO("  month: %u", cmd_t->month);    \
-  INFO("  day: %u", cmd_t->day);    \
-  INFO("  hour: %u", cmd_t->hour);    \
-  INFO("  min: %u", cmd_t->min);    \
-  INFO("  sec: %u", cmd_t->sec);    \
-  INFO("  nano: %d", cmd_t->nano);    \
-  INFO("  tAcc: %u", cmd_t->tAcc);    \
-  INFO("  fixType: %u", cmd_t->fixType);    \
-  INFO("  validDate: %u", cmd_t->validDate);    \
-  INFO("  validTime: %u", cmd_t->validTime);    \
-  INFO("  fullyResolved: %u", cmd_t->fullyResolved);    \
-  DBUG("  validMag: %u", cmd_t->validMag);    \
-  INFO("  gnssFixOK: %u", cmd_t->gnssFixOK);    \
-  DBUG("  diffSoln: %u", cmd_t->diffSoln);    \
-  DBUG("  headVehValid: %u", cmd_t->headVehValid);    \
-  DBUG("  carrSoln: %u", cmd_t->carrSoln);    \
-  INFO("  numSV: %u", cmd_t->numSV);    \
-  INFO("  lon: %d", cmd_t->lon);    \
-  INFO("  lat: %d", cmd_t->lat);    \
-  INFO("  height: %d", cmd_t->height);    \
-  INFO("  hMSL: %d", cmd_t->hMSL);    \
-  INFO("  hAcc: %u", cmd_t->hAcc);    \
-  INFO("  vAcc: %u", cmd_t->vAcc);    \
-  DBUG("  velN: %d", cmd_t->velN);    \
-  DBUG("  velE: %d", cmd_t->velE);    \
-  DBUG("  velD: %d", cmd_t->velD);    \
-  DBUG("  gSpeed: %d", cmd_t->gSpeed);    \
-  DBUG("  headMot: %d", cmd_t->headMot);    \
-  DBUG("  sAcc: %d", cmd_t->sAcc);    \
-  DBUG("  headAcc: %d", cmd_t->headAcc);    \
-  DBUG("  pDOP: %u", cmd_t->pDOP);    \
-  DBUG("  invalidLlh: %u", cmd_t->invalidLlh);    \
-  DBUG("  headVeh: %d", cmd_t->headVeh);    \
-  DBUG("  magDec: %d", cmd_t->magDec);    \
-  DBUG("  magAcc: %u", cmd_t->magAcc);    \
+  DBUG("  iTOW: %d", (cmd_t)->iTOW);    \
+  INFO("  year: %u", (cmd_t)->year);    \
+  INFO("  month: %u", (cmd_t)->month);    \
+  INFO("  day: %u", (cmd_t)->day);    \
+  INFO("  hour: %u", (cmd_t)->hour);    \
+  INFO("  min: %u", (cmd_t)->min);    \
+  INFO("  sec: %u", (cmd_t)->sec);    \
+  INFO("  nano: %d", (cmd_t)->nano);    \
+  INFO("  tAcc: %u", (cmd_t)->tAcc);    \
+  INFO("  fixType: %u", (cmd_t)->fixType);    \
+  INFO("  validDate: %u", (cmd_t)->validDate);    \
+  INFO("  validTime: %u", (cmd_t)->validTime);    \
+  INFO("  fullyResolved: %u", (cmd_t)->fullyResolved);    \
+  DBUG("  validMag: %u", (cmd_t)->validMag);    \
+  INFO("  gnssFixOK: %u", (cmd_t)->gnssFixOK);    \
+  DBUG("  diffSoln: %u", (cmd_t)->diffSoln);    \
+  DBUG("  headVehValid: %u", (cmd_t)->headVehValid);    \
+  DBUG("  carrSoln: %u", (cmd_t)->carrSoln);    \
+  INFO("  numSV: %u", (cmd_t)->numSV);    \
+  INFO("  lon: %d", (cmd_t)->lon);    \
+  INFO("  lat: %d", (cmd_t)->lat);    \
+  INFO("  height: %d", (cmd_t)->height);    \
+  INFO("  hMSL: %d", (cmd_t)->hMSL);    \
+  INFO("  hAcc: %u", (cmd_t)->hAcc);    \
+  INFO("  vAcc: %u", (cmd_t)->vAcc);    \
+  DBUG("  velN: %d", (cmd_t)->velN);    \
+  DBUG("  velE: %d", (cmd_t)->velE);    \
+  DBUG("  velD: %d", (cmd_t)->velD);    \
+  DBUG("  gSpeed: %d", (cmd_t)->gSpeed);    \
+  DBUG("  headMot: %d", (cmd_t)->headMot);    \
+  DBUG("  sAcc: %d", (cmd_t)->sAcc);    \
+  DBUG("  headAcc: %d", (cmd_t)->headAcc);    \
+  DBUG("  pDOP: %u", (cmd_t)->pDOP);    \
+  DBUG("  invalidLlh: %u", (cmd_t)->invalidLlh);    \
+  DBUG("  headVeh: %d", (cmd_t)->headVeh);    \
+  DBUG("  magDec: %d", (cmd_t)->magDec);    \
+  DBUG("  magAcc: %u", (cmd_t)->magAcc);    \
 })
 
 #ifdef __cplusplus

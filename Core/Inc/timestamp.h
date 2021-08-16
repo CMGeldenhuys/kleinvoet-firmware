@@ -110,7 +110,7 @@ void TIME_timeInvalid ();
  *
  * @param comment
  */
-void TIME_meta (const char *const comment);
+void TIME_meta (const char * const comment);
 
 /**
  * @brief Flush any changes and cached filesystem data to SD card

@@ -124,7 +124,7 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
     }
   }
 
-  INFO("Allocating DMA Buffer size: %u bytes", ADC_DMA_BUF_LEN);
+  INFO("Allocating DMA Buffer size: %lu bytes", ADC_DMA_BUF_LEN);
   adc.dmaBuf = (uint8_t *) malloc(ADC_DMA_BUF_LEN);
 
   if (adc.dmaBuf == NULL) {
@@ -190,7 +190,7 @@ int ADC_yield (int * sync)
       }
 
       case ADC_ERR_SAMPLE_MISSED: {
-        const float lossRate = adc.nFramesMissed * 100.0f / adc.nFrames;
+        const float lossRate = (float) adc.nFramesMissed * 100.0f / (float) adc.nFrames;
         WARN("Frames missed: %d (%.2f%%)", adc.nFramesMissed, lossRate);
         DBUG("Persisting zeros for missed samples");
         WAVE_appendData(&adc.wav, ADC_MISSED_SAMPLES_ZERO, sizeof(ADC_MISSED_SAMPLES_ZERO), 0);
@@ -237,6 +237,14 @@ int ADC_yield (int * sync)
     case ADC_STOP: {
       ERR("ADC STOPPED HALTING DEVICE");
       for(;;);
+    }
+
+    case ADC_RESUME:
+    case ADC_PAUSE:
+    case ADC_START:
+    default: {
+      WARN("Unhandled case in switch");
+      break;
     }
   }
 
@@ -461,7 +469,7 @@ int ADC_updateLocation(const int32_t ecef[3], uint32_t pAcc)
     const int32_t ecefX = ecef[0];
     const int32_t ecefY = ecef[1];
     const int32_t ecefZ = ecef[2];
-    INFO("ECEF Update: %d,%d,%d", ecefX, ecefY, ecefZ);
+    INFO("ECEF Update: %ld,%ld,%ld", ecefX, ecefY, ecefZ);
     return WAVE_infoChunkPrintf(&adc.wav, WAVE_INFO_IDX_LOCATION, "%08X-%08X-%08X", ecefX, ecefY, ecefZ);
   }
   else{

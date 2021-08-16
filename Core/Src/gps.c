@@ -262,7 +262,7 @@ void GPS_logRxState (GPS_rx_state_e state)
       break;
 
     default:
-      INFO("Unknown State (0x%08X)", state);
+      INFO("Unknown State (0x%08lX)", state);
       break;
   }
 }
