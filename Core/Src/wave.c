@@ -237,7 +237,7 @@ int WAVE_close (WAVE_t *wav)
   else return 0;
 }
 
-int WAVE_infoChunkPrintf(WAVE_t *wav, WAVE_INFO_IDX_e infoTag, const char* fmt, ...)
+int WAVE_infoChunkPrintf(WAVE_t *wav, WAVE_INFO_IDX_e infoTag, const char * const fmt, ...)
 {
   INFO("Changing info tag (%lu)", infoTag);
 

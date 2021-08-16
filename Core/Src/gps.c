@@ -612,7 +612,7 @@ int GPS_processCmdNav_ (const GPS_UBX_cmd_t *cmd)
       // Check if time is valid
       if(gps.timeValid) {
         // Store location to WAVE header
-        ADC_updateLocation(&(cmd_t->ecefX), cmd_t->pAcc);
+        ADC_updateLocation(cmd_t->pAcc, cmd_t->ecefX, cmd_t->ecefY, cmd_t->ecefZ);
       }
       else {
         WARN("Time invalid NOT updating location");

@@ -460,21 +460,15 @@ inline void ADC_WAVE_writeHeader()
 }
 
 // TODO: Not the best place but works for now
-int ADC_updateLocation(const int32_t ecef[3], uint32_t pAcc)
+ int ADC_updateLocation(uint32_t pAcc, int32_t ecefX, int32_t ecefY, int32_t ecefZ)
 {
   static volatile uint32_t prevAcc = UINT32_MAX;
   DBUG("prevAcc: %lu, pAcc: %lu", prevAcc, pAcc);
   if ( pAcc < prevAcc ){
     DBUG("Storing pAcc");
     prevAcc = pAcc;
-    DBUG("---ECEF---");
-    const int32_t ecefX = ecef[0];
-    DBUG("\tX: %ld", ecefX);
-    const int32_t ecefY = ecef[1];
-    DBUG("\tZ: %ld", ecefY);
-    const int32_t ecefZ = ecef[2];
-    DBUG("\tZ: %ld", ecefY);
     INFO("ECEF Update: %ld,%ld,%ld", ecefX, ecefY, ecefZ);
+    DBUG("\t%08lX-%08lX-%08lX", ecefX, ecefY, ecefZ);
     return WAVE_infoChunkPrintf(&adc.wav, WAVE_INFO_IDX_LOCATION, "%08lX-%08lX-%08lX", ecefX, ecefY, ecefZ);
   }
   else{

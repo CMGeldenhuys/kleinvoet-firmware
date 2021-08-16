@@ -216,11 +216,13 @@ void ADC_WAVE_writeHeader();
  *
  * @deprecated
  *
- * @param [in] ecef ECEF coordinates as a array (given in cm)
  * @param [in] pAcc Positional accuracy
+ * @param [in] ecefX ECEF X coordinates (given in cm)
+ * @param [in] ecefY ECEF Y coordinates (given in cm)
+ * @param [in] ecefZ ECEF Z coordinates (given in cm)
  * @return Returns positive integer if update was successful, otherwise returns -1 if write failed or if pAcc is not high enough
  */
-int ADC_updateLocation(const int32_t ecef[3], uint32_t pAcc);
+int ADC_updateLocation(uint32_t pAcc, int32_t ecefX, int32_t ecefY, int32_t ecefZ);
 
 int ADC_updateTimecode(const char * date, const char * timestamp, uint32_t sample, uint32_t pAcc);
 
