@@ -57,6 +57,7 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
                     ADC_MCS_512);
 #elif ADC_CRYSTAL_FREQ / ADC_SAMPLING_RATE == 768
                     ADC_MCS_768);
+#warning "ADC seems to misbehave on this setting?"
 #else
 #error "Unable to configure ADC sampling rate using current crystal"
 #endif
@@ -79,7 +80,19 @@ int ADC_init (I2C_HandleTypeDef *controlInterface, SAI_HandleTypeDef *audioInter
                     // them to in the FIFO. Also note `Data size` of the SAI
                     // since the fifo only shifts in so many bits and then stops
                     | ADC_SAI_TDM4
-                    | ADC_FS_32_48); // This register seems to subdivide FS?
+#if   8000 <= ADC_SAMPLING_RATE && ADC_SAMPLING_RATE <= 12000
+                    | ADC_FS_8_12);
+#elif 16000 <= ADC_SAMPLING_RATE && ADC_SAMPLING_RATE <= 24000
+                    | ADC_FS_16_24);
+#elif 32000 <= ADC_SAMPLING_RATE && ADC_SAMPLING_RATE <= 48000
+                    | ADC_FS_32_48);
+#elif 64000 <= ADC_SAMPLING_RATE && ADC_SAMPLING_RATE <= 96000
+                    | ADC_FS_64_96);
+#elif 128000 <= ADC_SAMPLING_RATE && ADC_SAMPLING_RATE <= 192000
+                    | ADC_FS_128_192);
+#else
+#error "Specified ADC sampling rate is not possible with current ADC, please see datasheet."
+#endif
   // Does not actually correspond to FS...
   // Leaving at default
 
