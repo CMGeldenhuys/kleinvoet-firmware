@@ -206,6 +206,7 @@ int ADC_yield (int * sync)
         const float lossRate = (float) adc.nFramesMissed * 100.0f / (float) adc.nFrames;
         WARN("Frames missed: %d (%.2f%%)", adc.nFramesMissed, lossRate);
         DBUG("Persisting zeros for missed samples");
+//        ERR("Would double persist? %s", ADC_is_interrupt_set ? "YES" : "NO");
         WAVE_appendData(&adc.wav, ADC_MISSED_SAMPLES_ZERO, sizeof(ADC_MISSED_SAMPLES_ZERO), 0);
         // TODO: if more than % missed samples then reset device
         break;
@@ -220,6 +221,7 @@ int ADC_yield (int * sync)
 
   switch (adc.state.mode) {
     case ADC_REC: {
+      // When frame missed interrupt is not set and so it will not persist twice
       if (ADC_is_interrupt_set) {
         const size_t dmaLen = ADC_DMA_BUF_LEN / 2;
         uint8_t *dmaBuf = ADC_is_cplt_half
@@ -227,8 +229,6 @@ int ADC_yield (int * sync)
                           : (uint8_t *) adc.dmaBuf + dmaLen;
 
         DBUG("Flushing buffer (0x%08X -> %d)", dmaBuf, dmaLen);
-        // CRITICAL ISSUE : After frames missed buffer is still persisted
-        // TODO: skip if in error state
         ADC_persistBuf_(dmaBuf, dmaLen, sync);
         ADC_clear_flag_cplt;
       }
