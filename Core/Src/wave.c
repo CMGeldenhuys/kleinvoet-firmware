@@ -105,14 +105,15 @@ int WAVE_appendData (WAVE_t *wav, const void *buff, size_t len, int sync)
 
     DBUG("Appending WAVE data");
     // TODO: Handle errs
-    int temp;
+    int bw;
     PERF_START("WAVE_write");
       PERF_THRESHOLD(50);
       // TODO Don't sync every write might help with throughput and reduce dropped frames?
-      temp = FATFS_swrite(wav->fp, buff, len, sync);
+      bw = FATFS_swrite(wav->fp, buff, len, sync);
     PERF_END("WAVE_write");
-    if(temp <= 0)ERR("Writing Error");
-    return temp;
+    if(bw <= 0) ERR("Writing Error");
+    else if (bw != len) WARN("Bytes written not eq (%d, %u)", bw, len);
+    return bw;
   }
   else {
     // TODO: Check return
