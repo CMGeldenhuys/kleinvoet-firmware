@@ -227,6 +227,8 @@ int ADC_yield (int * sync)
                           : (uint8_t *) adc.dmaBuf + dmaLen;
 
         DBUG("Flushing buffer (0x%08X -> %d)", dmaBuf, dmaLen);
+        // CRITICAL ISSUE : After frames missed buffer is still persisted
+        // TODO: skip if in error state
         ADC_persistBuf_(dmaBuf, dmaLen, sync);
         ADC_clear_flag_cplt;
       }
