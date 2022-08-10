@@ -256,6 +256,3 @@ DRESULT SD_ioctl(BYTE lun, BYTE cmd, void *buff)
 /* USER CODE BEGIN lastSection */
 /* can be used to modify / undefine previous code or add new code */
 /* USER CODE END lastSection */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
-
