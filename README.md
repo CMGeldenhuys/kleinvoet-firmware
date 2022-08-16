@@ -43,7 +43,7 @@ sudo apt install make libtool pkg-config autoconf automake texinfo libusb libusb
 
 #### Fedora
 ```shell script
-sudo dnf install make libtool pkg-config autoconf automake texinfo libusb libusb-devel
+sudo dnf install make libtool pkg-config autoconf automake texinfo libusb libusb-devel arm-none-eabi-gcc-cs arm-none-eabi-gcc-cs-c++
 ```
 
 ### OpenOCD
