@@ -34,7 +34,7 @@ sudo parted /dev/sdX --script -- print
 - CubeMx (>= v6.0.1)
 - OpenOCD (>= v0.10.0)
 - gdb (>= 9.1-6)
-- arm-none-eabi-gcc (>= v9.2.0-4)
+- arm-none-eabi-gcc (>= v9.2.0-4, < v11.2)
 
 Recommend using [ARM Build tools](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) from their website, as these are more up to date.
 
@@ -45,7 +45,7 @@ sudo apt install make libtool pkg-config autoconf automake texinfo libusb libusb
 
 #### Fedora
 ```shell script
-sudo dnf install make libtool pkg-config autoconf automake texinfo libusb libusb-devel arm-none-eabi-gcc-cs arm-none-eabi-gcc-cs-c++
+sudo dnf install make libtool pkg-config autoconf automake texinfo libusb libusb-devel
 ```
 
 ### OpenOCD
@@ -53,15 +53,16 @@ If using an ST-Link V3 then OpenOCD requires _stlink.cfg_ which isn't shipped
 with most linux distros. It is thus recommended that one compiles it from
 scratch. [See this tutorial for a guide on how to compile](https://mbd.kleier.net/integrating-st-link-v3.html)
 
-#### Building
+Alternatively make use of the STM32 fork of OpenOCD:
+
 ```shell script
-git clone git://git.code.sf.net/p/openocd/code openocd
-cd openocd
+git clone https://github.com/STMicroelectronics/OpenOCD.git
+cd OpenOCD
 git pull
 # [Recommended] Optionally checkout a specific version
 git checkout v0.X.Y
 ./bootstrap
-./configure
+./configure --enable-stlink
 make
 sudo make install
 ```
@@ -143,3 +144,6 @@ sox --ignore-length corrupted.wav fixed.wav
 - `shntool info` : Useful for checking the PCM data
 - `exiftool` : Useful for checking _chunk_/_subchunk_ info
 - `mediainfo` : General purpose tool
+
+### Illegal Instruction Float
+[See forum post](https://community.arm.com/support-forums/f/compilers-and-libraries-forum/52623/gcc-11-2-arm-none-eabi-internal-compiler-error-illegal-instruction). Seems to be an problem with gcc >= 11.2
