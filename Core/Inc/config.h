@@ -22,7 +22,7 @@ extern "C" {
 #define PERF_ENABLE
 
 // Change ADC sampling Freq.
-#define ADC_SAMPLING_RATE 16000
+#define ADC_SAMPLING_RATE 24000
 
 // Set Log destination
 #define LOG_DEST_TTY
