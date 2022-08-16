@@ -36,6 +36,8 @@ sudo parted /dev/sdX --script -- print
 - gdb (>= 9.1-6)
 - arm-none-eabi-gcc (>= v9.2.0-4)
 
+Recommend using [ARM Build tools](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) from their website, as these are more up to date.
+
 #### Ubuntu
 ```shell script
 sudo apt install make libtool pkg-config autoconf automake texinfo libusb libusb-dev
