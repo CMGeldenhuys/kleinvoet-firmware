@@ -11,10 +11,10 @@ script=$(cat <<'EOF'
 {
     if (NR != 1) {
         if ($2 != "") {
-           print $1/fs "\t" $1/fs "\t" $2
+           print ($1-8192)/fs "\t" $1/fs "\t" $2
         }
         else {
-             print $1/fs "\t" $1/fs "\t" $4
+             print ($1-8192)/fs "\t" $1/fs "\t" $4
         }
     }
 }
