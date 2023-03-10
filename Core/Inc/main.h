@@ -110,6 +110,7 @@ void Error_Handler(void);
 #define ADC_FS_GPIO_Port GPIOB
 #define ADC_SAI_FS_Pin GPIO_PIN_9
 #define ADC_SAI_FS_GPIO_Port GPIOB
+
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
