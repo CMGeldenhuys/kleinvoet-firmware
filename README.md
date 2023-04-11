@@ -1,4 +1,7 @@
 # Kleinvoet - Firmware
+
+[![DOI](https://zenodo.org/badge/284653068.svg)](https://zenodo.org/badge/latestdoi/284653068)
+
 Firmware for _Kleinvoet_ hardware project. Written in embedded C and compiled
 with ARM GCC.
 
