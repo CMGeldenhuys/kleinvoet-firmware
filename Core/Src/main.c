@@ -146,7 +146,9 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  LED_ORANGE_START_BLINK();
+//  LED_ORANGE_START_BLINK();
+  LED_ORANGE_SET_LOW();
+  LED_BLUE_SET_LOW();
   // Give time for RTC to init properly
   HAL_RTC_WaitForSynchro(&hrtc);
   // Calculate UUID
@@ -165,6 +167,7 @@ int main(void)
   INFO("Hello, World!");
   WARN("HELLO, World!");
   ERR("HELLO, WORLD!");
+  LED_ORANGE_TOGGLE();
 
   // TODO: move to global state machine class once it exists
   INFO("VERSION: " KV_VERSION);
@@ -174,6 +177,7 @@ int main(void)
 
   INFO("Waiting for GPS to finish starting up..");
   HAL_Delay(1500);
+  LED_ORANGE_TOGGLE();
   INFO("Done waiting for GPS");
   HAL_IWDG_Refresh(&hiwdg);
   if (GPS_init(&huart4) <= 0) Error_Handler();
@@ -197,7 +201,7 @@ int main(void)
   // Store logs
   LOG_flush();
   wavWriteHeaderFlag = 0;
-  LED_ORANGE_STOP_BLINK();
+//  LED_ORANGE_STOP_BLINK();
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "EndlessLoop"
   while (1) {
@@ -285,10 +289,6 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-
-  /** Enables the Clock Security System
-  */
-  HAL_RCC_EnableCSS();
 }
 
 /**
@@ -644,7 +644,6 @@ static void MX_TIM3_Init(void)
 
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
 
   /* USER CODE BEGIN TIM3_Init 1 */
 
@@ -664,28 +663,15 @@ static void MX_TIM3_Init(void)
   {
     Error_Handler();
   }
-  if (HAL_TIM_OC_Init(&htim3) != HAL_OK)
-  {
-    Error_Handler();
-  }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
   {
     Error_Handler();
   }
-  sConfigOC.OCMode = TIM_OCMODE_TOGGLE;
-  sConfigOC.Pulse = 1000;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_OC_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
   /* USER CODE BEGIN TIM3_Init 2 */
 
   /* USER CODE END TIM3_Init 2 */
-  HAL_TIM_MspPostInit(&htim3);
 
 }
 
@@ -828,10 +814,13 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LED_ORANGE_Pin|LED_BLUE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(ADC_nRST_GPIO_Port, ADC_nRST_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOC, LORA_NSS_Pin|EPD_NSS_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(LORA_NRST_GPIO_Port, LORA_NRST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : GPS_SYNC_Pin */
   GPIO_InitStruct.Pin = GPS_SYNC_Pin;
@@ -839,50 +828,84 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPS_SYNC_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : SDIO_CD_Pin */
-  GPIO_InitStruct.Pin = SDIO_CD_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(SDIO_CD_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : LED_BLUE_Pin */
-  GPIO_InitStruct.Pin = LED_BLUE_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LED_BLUE_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : USR_BTN_Pin */
-  GPIO_InitStruct.Pin = USR_BTN_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(USR_BTN_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : GPS_nSAFEBOOT_Pin GPS_WAKE_Pin */
-  GPIO_InitStruct.Pin = GPS_nSAFEBOOT_Pin|GPS_WAKE_Pin;
+  /*Configure GPIO pins : EPD_NCMD_Pin EPD_NRST_Pin EPD_BUSY_Pin LORA_INT_Pin
+                           CHARGE_EN2_Pin CHARGE_EN1_Pin */
+  GPIO_InitStruct.Pin = EPD_NCMD_Pin|EPD_NRST_Pin|EPD_BUSY_Pin|LORA_INT_Pin
+                          |CHARGE_EN2_Pin|CHARGE_EN1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : ADC_nRST_Pin */
-  GPIO_InitStruct.Pin = ADC_nRST_Pin;
+  /*Configure GPIO pins : BATT_NCHG_Pin AVCC_EN_Pin */
+  GPIO_InitStruct.Pin = BATT_NCHG_Pin|AVCC_EN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : SRAM_SCK_Pin SRAM_MISO_Pin SRAM_MOSI_Pin */
+  GPIO_InitStruct.Pin = SRAM_SCK_Pin|SRAM_MISO_Pin|SRAM_MOSI_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : LED_ORANGE_Pin LED_BLUE_Pin */
+  GPIO_InitStruct.Pin = LED_ORANGE_Pin|LED_BLUE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(ADC_nRST_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA11 PA12 */
-  GPIO_InitStruct.Pin = GPIO_PIN_11|GPIO_PIN_12;
+  /*Configure GPIO pins : CONN_SCK_Pin CONN_MISO_Pin CONN_MOSI_Pin */
+  GPIO_InitStruct.Pin = CONN_SCK_Pin|CONN_MISO_Pin|CONN_MOSI_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : LORA_NSS_Pin EPD_NSS_Pin */
+  GPIO_InitStruct.Pin = LORA_NSS_Pin|EPD_NSS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : LORA_NRST_Pin */
+  GPIO_InitStruct.Pin = LORA_NRST_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LORA_NRST_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : USB_DN_Pin USB_DP_Pin */
+  GPIO_InitStruct.Pin = USB_DN_Pin|USB_DP_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   GPIO_InitStruct.Alternate = GPIO_AF10_OTG_FS;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 3, 3);
-  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+  /*Configure GPIO pin : SDIO_CD_Pin */
+  GPIO_InitStruct.Pin = SDIO_CD_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(SDIO_CD_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : MAG_INT_Pin */
+  GPIO_InitStruct.Pin = MAG_INT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(MAG_INT_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : USR_BTN_Pin */
+  GPIO_InitStruct.Pin = USR_BTN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(USR_BTN_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 1);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 

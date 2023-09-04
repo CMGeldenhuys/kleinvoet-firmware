@@ -335,11 +335,13 @@ int ADC_writeRegister (uint8_t registerAddr, uint8_t data)
 
 void ADC_reset ()
 {
-  HAL_GPIO_WritePin(ADC_nRST_GPIO_Port, ADC_nRST_Pin, GPIO_PIN_RESET);
-  INFO("Resetting ADC");
+  // TODO: Change to software reset
+//  HAL_GPIO_WritePin(ADC_nRST_GPIO_Port, ADC_nRST_Pin, GPIO_PIN_RESET);
+  INFO("Resetting ADC (LIE)");
   // Allow time to latch
   HAL_Delay(10);
-  HAL_GPIO_WritePin(ADC_nRST_GPIO_Port, ADC_nRST_Pin, GPIO_PIN_SET);
+  // TODO: Change to software reset
+//  HAL_GPIO_WritePin(ADC_nRST_GPIO_Port, ADC_nRST_Pin, GPIO_PIN_SET);
 }
 
 int ADC_powerUp ()
